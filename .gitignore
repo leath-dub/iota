@@ -1,0 +1,9 @@
+.redo
+.cache
+.do_built
+.do_built.dir/
+*.o
+cmd/iotac
+lex/ucgen
+lex/uc.c
+config.env
