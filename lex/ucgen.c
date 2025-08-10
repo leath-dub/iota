@@ -206,12 +206,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	int ec = 0, lno = 0;
-	char *ln = NULL;
-	size_t sz = 0;
-	ssize_t nrd = 0;
+	static char ln[BUFSIZ] = {0};
+	size_t sz = BUFSIZ;
 	FILE *fs = fopen(dp, "r");
 
-	while ((nrd = getline(&ln, &sz, fs)) != -1) {
+	while (fgets(ln, sz, fs)) {
 		char *cps = strtok(ln, ";");
 		if (cps == NULL || strlen(cps) < 4) {
 			fprintf(stderr, "%d: invalid format\n", lno);
@@ -313,7 +312,6 @@ bail:
 		free(it); // initial pointer is not on heap
 		it = n;
 	}
-	free(ln);
 	fclose(fs);
 
 	exit(ec);

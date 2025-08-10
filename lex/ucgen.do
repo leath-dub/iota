@@ -1,2 +1,3 @@
-redo-ifchange ucgen.c
-cc -o $3 ucgen.c -Wall -Werror -Wextra -Wpedantic -O0 -g
+redo-ifchange ucgen.c ../config.env
+. ../config.env
+cc -o $3 ucgen.c $CFLAGS

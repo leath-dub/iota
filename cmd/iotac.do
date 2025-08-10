@@ -1,3 +1,3 @@
-redo-ifchange iotac.c ../lex/liblex.a
-. $(redo-ifchange ../config.env)
+redo-ifchange iotac.c ../lex/liblex.a ../config.env
+. ../config.env
 cc -o $3 iotac.c ../lex/liblex.a $CFLAGS

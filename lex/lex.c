@@ -1,15 +1,9 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "lex.h"
-
-
-// 12
-// [10, 11, 12, 44]
-//   l   m       h
-//       l   m   h
-//       lm  h
-//       
 
 uc_gcat runecat(rune cp) {
 	// binary search for category
@@ -63,4 +57,97 @@ const char *gctoa(uc_gcat cat) {
 	default: break;
 	}
 	return NULL;
+}
+
+size_t chartorune(rune *r, const char *s) {
+	assert(s != NULL);
+	int len = strlen(s);
+	rune c = (unsigned char)*s;
+	if (c == '\0') return 0;
+
+	if ((c >> 7) == 0) {
+		*r = c;
+		return 1;
+	} else if ((c >> 5) == 0x6) {
+		if (len < 2) return 0;
+		unsigned char c0 = (unsigned char)s[0];
+		unsigned char c1 = (unsigned char)s[1];
+		if ((c1 >> 6) != 0x2) {
+			return 0;
+		}
+		*r = ((c0 & 0x1f) << 6) | (c1 & 0x3f);
+		return 2;
+	} else if ((c >> 4) == 0xE) {
+		if (len < 3) return 0;
+		unsigned char c0 = (unsigned char)s[0];
+		unsigned char c1 = (unsigned char)s[1];
+		unsigned char c2 = (unsigned char)s[2];
+		if ((c1 >> 6) != 0x2 ||
+	       	    (c2 >> 6) != 0x2) {
+			return 0;
+		}
+		*r = ((c0 & 0xf) << 12) | ((c1 & 0x3f) << 6) | (c2 & 0x3f);
+		return 3;
+	} else if ((c >> 3) == 0x1E) {
+		if (len < 4) return 0;
+		unsigned char c0 = (unsigned char)s[0];
+		unsigned char c1 = (unsigned char)s[1];
+		unsigned char c2 = (unsigned char)s[2];
+		unsigned char c3 = (unsigned char)s[3];
+		if ((c1 >> 6) != 0x2 ||
+		    (c2 >> 6) != 0x2 ||
+		    (c3 >> 6) != 0x2) {
+			return 0;
+		}
+		*r = ((c0 & 0x7) << 18) | ((c1 & 0x3f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f);
+		return 4;
+	}
+	return 0;
+}	
+
+bool id_start(rune r) {
+	switch (runecat(r)) {
+	case GC_Lu:
+	case GC_Ll:
+	case GC_Lt:
+	case GC_Lm:
+	case GC_Lo:
+	case GC_Nl: return true;
+	default: return false;
+	}
+}
+
+bool id_continue(rune r) {
+	switch (runecat(r)) {
+	case GC_Mn:
+	case GC_Mc:
+	case GC_Nd:
+	case GC_Pc: return true;
+	default: return id_start(r);
+	}
+}
+
+// return the last length of the matching identifier (0 if no match)
+size_t lex_id(const char *txt) {
+	const char *it = txt;
+	int n = 0, l = 0;
+	rune r;
+	while (*it) {
+		n = chartorune(&r, it);
+		if (n == 0) {
+			fprintf(stderr, "TODO: propagate utf8 decode error");
+			abort();
+		}
+		bool is_id = it == txt ? id_start(r) : id_continue(r);
+		if (!is_id) {
+			break;
+		}
+		it += n;
+		l += n;
+	}
+	// allow a trailing "'" if exists
+	if (it && *it == '\'') {
+		return l + 1;
+	}
+	return l;
 }

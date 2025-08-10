@@ -1,1 +1,1 @@
-set makeprg=ninja
+set makeprg=redo

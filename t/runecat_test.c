@@ -10,11 +10,10 @@ int main(void) {
 	ASSERT(fs != NULL);
 
 	int ec = 0, lno = 0;
-	char *ln = NULL;
-	size_t sz = 0;
-	ssize_t nrd = 0;
+	static char ln[BUFSIZ] = {0};
+	size_t sz = BUFSIZ;
 
-	while ((nrd = getline(&ln, &sz, fs)) != -1) {
+	while (fgets(ln, sz, fs)) {
 		char *cps = strtok(ln, ";");
 		ASSERT(cps != NULL && strlen(cps) >= 4);
 
@@ -32,7 +31,6 @@ int main(void) {
 		lno++;
 	}
 
-	if (ln != NULL) free(ln);
 	fclose(fs);
 	exit(ec);
 }
