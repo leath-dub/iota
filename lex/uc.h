@@ -49,7 +49,9 @@ typedef struct {
 	uc_gcat gc;
 } uc_map;
 
-extern uc_map *uc_data;
+extern uc_map uc_data[];
 extern size_t uc_data_size;
+
+typedef uint32_t rune;
 
 #endif

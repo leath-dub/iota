@@ -6,4 +6,7 @@
 cmd/iotac
 lex/ucgen
 lex/uc.c
+lex/liblex.a
 config.env
+t/test.o
+t/runecat_test

@@ -295,13 +295,16 @@ int main(int argc, char *argv[]) {
 	// output range mapping data
 	printf(ESC(#include "uc.h"\n\n));
 	printf("uc_map uc_data[] = {\n");
+	size_t c = 0;
 	rune_ranges *it = fst;
 	while (it != NULL) {
 		const char *gcn = cattos(it->gc);
 		printf("\t{ %ld, %ld, GC_%s },\n", it->range.start, it->range.end, gcn);
 		it = it->next;
+		c++;
 	}
-	printf("};\n");
+	printf("};\n\n");
+	printf("size_t uc_data_size = %ld;\n", c);
 
 bail:
 	it = fst;
