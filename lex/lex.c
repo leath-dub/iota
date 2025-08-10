@@ -127,7 +127,7 @@ bool id_continue(rune r) {
 	}
 }
 
-// return the last length of the matching identifier (0 if no match)
+// return the length of the matching identifier (0 if no match)
 size_t lex_id(const char *txt) {
 	const char *it = txt;
 	int n = 0, l = 0;
