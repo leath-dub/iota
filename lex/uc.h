@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 // see: https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-4/#G134153
 typedef enum {
@@ -53,5 +54,18 @@ extern uc_map uc_data[];
 extern size_t uc_data_size;
 
 typedef uint32_t rune;
+
+uc_gcat runecat(rune cp);
+const char *gctoa(uc_gcat cat);
+
+// insert the next rune into "r" and return the number
+// of bytes the rune represents (ever heard of plan 9?)
+size_t chartorune(rune *r, const char *s);
+
+// Not arsed to pull in a huge dependency for unicode so we have limited
+// bespoke identifier detection which does not care about normalization or
+// historical Other_ID_Start bullshit that I just don't want to deal with.
+bool id_start(rune r);
+bool id_continue(rune r);
 
 #endif

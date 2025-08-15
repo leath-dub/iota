@@ -205,6 +205,8 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	rune_ranges *fst = NULL;
+
 	int ec = 0, lno = 0;
 	static char ln[BUFSIZ] = {0};
 	size_t sz = BUFSIZ;
@@ -269,7 +271,7 @@ int main(int argc, char *argv[]) {
 
 	// Join the ranges into a single list so they can be sorted
 	// together.
-	rune_ranges *prev = NULL, *fst = NULL;
+	rune_ranges *prev = NULL;
 	for (uc_gcat gc = 0; gc < GC_COUNT; gc++) {
 		rune_ranges *r = ranges[gc];
 		if (r == NULL) {
