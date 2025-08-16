@@ -2,6 +2,7 @@
 .cache
 .do_built
 .do_built.dir/
+*.did.tmp
 *.o
 cmd/iotac
 lex/ucgen
