@@ -2,6 +2,9 @@ rm -f **/*.o
 rm -f lex/uc_data.c
 rm -f lex/ucgen
 rm -f lex/liblex.a
+rm -f syn/libsyn.a
+rm -f ast/libast.a
 rm -f cmd/iotac
-rm -f t/test.o
 rm -f t/runecat_test
+rm -f t/lex_test
+rm -f t/ast_test
