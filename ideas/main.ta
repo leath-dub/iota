@@ -1,0 +1,69 @@
+import strings;
+
+// For tuples we could have
+fun add(x u32, y u32) (u32, bool) { ... }
+// Or...
+fun add(x u32, y u32) tuple { u32, bool } { ... }
+// I am partial to the first as destructure syntax being special for
+// tuples will be less surprising
+
+// We will have annotations which are just regular types
+type Point = struct {
+	x u32; @json.Field { .fmt = "%d" }
+	y u32;
+};
+
+// You can attach arbitrary literals onto declarations
+@Point { .x = 10, .y = 12 }
+type Foo = struct {};
+
+// ... in module "http"
+type Get = string;
+// TODO: conversion rules for distinct types
+
+@http.Get("/route")
+fun handle_get() { ... }
+
+// You can retreive this info via:
+// type_info(handle_get).annotations
+
+fun main() {
+  // Switch statements
+  case x {
+    10 -> /* ... */,
+    11 -> /* ... */,
+  }
+
+  type Lit = struct {
+    t enum { num, str }
+    union {
+      num s32;
+      str string;
+    }
+  }
+
+  let x Lit = { .num, 10 };
+  case x {
+    .num -> /* ... */,
+    .str -> /* ... */,
+  }
+
+  fun lines(s string) (string, bool) {
+    let i = strings.indexOf(s, '\n')?;
+    return s[:i];
+  }
+
+  let s = "hello\nworld\nend";
+
+  // Iterators
+  mut it = s;
+  for it, ok = lines(it); ok; {
+    fmt.printfln("line '%s'", it);
+  }
+
+  // Enumerated
+  mut i = 0;
+  for it, ok = lines(it); ok; i++ {
+    fmt.printfln("line %d", i);
+  }
+}

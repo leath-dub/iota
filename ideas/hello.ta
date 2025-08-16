@@ -1,0 +1,6 @@
+import fmt;
+export main;
+
+fun main() {
+  fmt.println("Hello, world");
+}

@@ -3,13 +3,13 @@
 #include <string.h>
 
 #include "test.h"
-#include "../lex/lex.h"
+#include "../lex/uc.h"
 
 int main(void) {
 	FILE *fs = fopen("../lex/UnicodeData.txt", "r");
 	ASSERT(fs != NULL);
 
-	int ec = 0, lno = 0;
+	u32 ec = 0, lno = 0;
 	static char ln[BUFSIZ] = {0};
 	size_t sz = BUFSIZ;
 

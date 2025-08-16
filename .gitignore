@@ -10,3 +10,4 @@ lex/liblex.a
 config.env
 t/test.o
 t/runecat_test
+t/lex_test

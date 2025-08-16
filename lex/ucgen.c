@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "uc.h"
+#include "../common/common.h"
 
 #define MAX(a, b) (a) > (b) ? (a) : (b)
 #define ESC(code) #code
@@ -22,7 +23,7 @@ typedef struct rune_ranges {
 } rune_ranges;
 
 uc_gcat stocat(char *s) {
-	int len = strlen(s);
+	u32 len = strlen(s);
 	assert(len == 2);
 	switch (s[0]) {
 	case 'L':
@@ -199,7 +200,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	char *dp = argv[1];
-	int r = access(dp, F_OK);
+	u32 r = access(dp, F_OK);
 	if (r != 0) {
 		fprintf(stderr, "ucgen: failed to access %s: %s\n", dp, strerror(errno));
 		exit(1);
@@ -207,7 +208,7 @@ int main(int argc, char *argv[]) {
 
 	rune_ranges *fst = NULL;
 
-	int ec = 0, lno = 0;
+	u32 ec = 0, lno = 0;
 	static char ln[BUFSIZ] = {0};
 	size_t sz = BUFSIZ;
 	FILE *fs = fopen(dp, "r");
