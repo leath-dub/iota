@@ -48,8 +48,6 @@ Arena new_arena() {
 	};
 }
 
-const size_t max_align = _Alignof(max_align_t);
-
 static inline uptr align_forward(uptr p, uptr align) {
 	return (p + (align - 1)) & ~(align - 1);
 }
