@@ -10,6 +10,52 @@ typedef struct {
 	Tok_Kind type;
 } Keyword_Binding;
 
+string tok_to_string[TOK_KIND_COUNT] = {
+	[T_LBRK] = ZTOS("'['"),
+	[T_RBRK] = ZTOS("']'"),
+	[T_LPAR] = ZTOS("'('"),
+	[T_RPAR] = ZTOS("')'"),
+	[T_LBRC] = ZTOS("'{'"),
+	[T_RBRC] = ZTOS("'}'"),
+	[T_SCLN] = ZTOS("';'"),
+	[T_CLN] = ZTOS("':'"),
+	[T_COMMA] = ZTOS("','"),
+
+	[T_PLUS] = ZTOS("'+'"),
+	[T_MINUS] = ZTOS("'-'"),
+	[T_STAR] = ZTOS("'*'"),
+	[T_SLASH] = ZTOS("'/'"),
+	[T_EQ] = ZTOS("'='"),
+	[T_EQEQ] = ZTOS("'=='"),
+	[T_NEQ] = ZTOS("'!='"),
+
+	[T_CHAR] = ZTOS("character"),
+	[T_STR] = ZTOS("string"),
+	[T_NUM] = ZTOS("number"),
+
+	[T_NOT] = ZTOS("keyword not"),
+	[T_AND] = ZTOS("keyword and"),
+	[T_OR] = ZTOS("keyword or"),
+	[T_FUN] = ZTOS("keyword fun"),
+	[T_IF] = ZTOS("keyword if"),
+	[T_ELSE] = ZTOS("keyword else"),
+	[T_FOR] = ZTOS("keyword for"),
+	[T_DEFER] = ZTOS("keyword defer"),
+	[T_STRUCT] = ZTOS("keyword struct"),
+	[T_UNION] = ZTOS("keyword union"),
+	[T_ENUM] = ZTOS("keyword enum"),
+	[T_LET] = ZTOS("keyword let"),
+	[T_MUT] = ZTOS("keyword mut"),
+	[T_TYPE] = ZTOS("keyword type"),
+	[T_S32] = ZTOS("keyword s32"),
+	[T_IDENT] = ZTOS("identifier"),
+
+	[T_EOF] = ZTOS("EOF"),
+	[T_CMNT] = ZTOS("comment"),
+	[T_EMPTY] = ZTOS("<empty token>"),
+	[T_ILLEGAL] = ZTOS("<illegal token>"),
+};
+
 static const Keyword_Binding keyword_to_kind[] = {
 	{ ZTOS("not"), T_NOT },
 	{ ZTOS("and"), T_AND },
@@ -32,7 +78,7 @@ static const u32 keyword_to_kind_count = sizeof(keyword_to_kind) / sizeof(Keywor
 static Tok new_tok(Lexer *l, Tok_Kind t, u32 len) {
 	Tok r = (Tok) {
 		.t = t,
-		.text = t != T_EOF ? substr(l->source, l->cursor, l->cursor + len) : (string) { .data = NULL, .len = 0 },
+		.text = t != T_EOF ? substr(l->source.text, l->cursor, l->cursor + len) : (string) { .data = NULL, .len = 0 },
 		.offset = l->cursor,
 	};
 	l->lookahead = r;
@@ -40,26 +86,26 @@ static Tok new_tok(Lexer *l, Tok_Kind t, u32 len) {
 }
 
 static void skipws(Lexer *l) {
-	char c = l->source.data[l->cursor];
+	char c = l->source.text.data[l->cursor];
 	tok: switch (c) {
+	case '\n':
 	case '\t':
 	case '\r':
-	case '\n':
 	case ' ':
 		l->cursor++;
-		if (l->cursor >= l->source.len) {
+		if (l->cursor >= l->source.text.len) {
 			return;
 		}
-		c = l->source.data[l->cursor];
+		c = l->source.text.data[l->cursor];
 		goto tok;
 	}
 }
 
-Lexer new_lexer(string source) {
+Lexer new_lexer(Source_Code source) {
 	Lexer l = {
 		.source = source,
 		.cursor = 0,
-		.lookahead = (Tok) { .t = T_EMPTY },
+		.lookahead = { .t = T_EMPTY },
 	};
 	skipws(&l);
 	return l;
@@ -74,10 +120,10 @@ Tok lex_peek(Lexer *l) {
 	if (l->cursor == l->lookahead.offset && l->lookahead.t != T_EMPTY) {
 		return l->lookahead;
 	}
-	if (l->cursor >= l->source.len) {
+	if (l->cursor >= l->source.text.len) {
 		return new_tok(l, T_EOF, 0);
 	}
-	char c = l->source.data[l->cursor];
+	char c = l->source.text.data[l->cursor];
 	switch (c) {
 	case '[': return new_tok(l, T_LBRK, 1);
 	case ']': return new_tok(l, T_RBRK, 1);
@@ -89,19 +135,19 @@ Tok lex_peek(Lexer *l) {
 	case ':': return new_tok(l, T_CLN, 1);
 	case ',': return new_tok(l, T_COMMA, 1);
 	case '=': {
-		if (l->cursor + 1 < l->source.len && l->source.data[l->cursor + 1] == '=') {
+		if (l->cursor + 1 < l->source.text.len && l->source.text.data[l->cursor + 1] == '=') {
 			return new_tok(l, T_EQEQ, 2);
 		}
 		return new_tok(l, T_EQ, 1);
 	}
 	case '*': return new_tok(l, T_STAR, 1);
 	case '/': {
-		if (l->cursor + 1 < l->source.len && l->source.data[l->cursor + 1] == '/') {
+		if (l->cursor + 1 < l->source.text.len && l->source.text.data[l->cursor + 1] == '/') {
 			// Its a comment look for '\n' or eof
 			u32 peek = l->cursor;
-			char c = l->source.data[peek];
-			while (c != '\n' && peek < l->source.len) {
-				c = l->source.data[++peek];
+			char c = l->source.text.data[peek];
+			while (c != '\n' && peek < l->source.text.len) {
+				c = l->source.text.data[++peek];
 			}
 			return new_tok(l, T_CMNT, peek - l->cursor);
 		}
@@ -110,27 +156,30 @@ Tok lex_peek(Lexer *l) {
 	case '\'':  {
 		// TODO: escape codes
 		u32 peek = l->cursor + 1;
-		char c = l->source.data[peek];
-		while (c != '\'' && peek < l->source.len) {
-			c = l->source.data[++peek];
+		char c = l->source.text.data[peek];
+		while (c != '\'' && peek < l->source.text.len) {
+			c = l->source.text.data[++peek];
 		}
 		if (c != '\'') {
-			assert(false && "log: unmatched '");
+			ERROR(l->source, l->cursor, "unmatched quote in character literal");
+			return new_tok(l, T_ILLEGAL, 1);
 		}
 		if (peek - l->cursor - 1 != 1) {
-			assert(false && "log: character literals must have only single character");
+			ERROR(l->source, l->cursor, "extraneous elements in character literal");
+			return new_tok(l, T_ILLEGAL, peek - l->cursor + 1);
 		}
 		return new_tok(l, T_CHAR, peek - l->cursor + 1);
         }
 	case '"': {
 		// TODO: escape codes
 		u32 peek = l->cursor + 1;
-		char c = l->source.data[peek];
-		while (c != '"' && peek < l->source.len) {
-			c = l->source.data[++peek];
+		char c = l->source.text.data[peek];
+		while (c != '"' && peek < l->source.text.len) {
+			c = l->source.text.data[++peek];
 		}
 		if (c != '"') {
-			assert(false && "log: unmatched \"");
+			ERROR(l->source, l->cursor, "unmatched quote in string literal");
+			return new_tok(l, T_ILLEGAL, 1);
 		}
 		return new_tok(l, T_STR, peek - l->cursor + 1);
         }
@@ -138,13 +187,17 @@ Tok lex_peek(Lexer *l) {
 		// Unlike identifiers, numbers work with only ascii
 		if ('0' <= c && c <= '9') {
 			size_t len = scan_num(l);
-			return eval_num(l, substr(l->source, l->cursor, l->cursor + len));
+			if (len == 0) {
+				return new_tok(l, T_ILLEGAL, 1);
+			}
+			return eval_num(l, substr(l->source.text, l->cursor, l->cursor + len));
 		}
-		size_t len = scan_id(&l->source.data[l->cursor]);
+		size_t len = scan_id(&l->source.text.data[l->cursor]);
 	 	if (len == 0) {
-			assert(false && "log: invalid/unrecognized char");
+			ERRORF(l->source, l->cursor, "invalid character '%c'", c);
+			return new_tok(l, T_ILLEGAL, 1);
 		}
-		string id_text = substr(l->source, l->cursor, l->cursor + len);
+		string id_text = substr(l->source.text, l->cursor, l->cursor + len);
 		for (u32 i = 0; i < keyword_to_kind_count; i++) {
 			Keyword_Binding b = keyword_to_kind[i];
 			if (id_text.len == b.keyword.len
@@ -155,14 +208,14 @@ Tok lex_peek(Lexer *l) {
 		return new_tok(l, T_IDENT, len);
 	}
 	}
-	assert(false && "todo");
+	panic("unreachable state");
 }
 
 void lex_consume(Lexer *l) {
 	// set cursor position to be pointing to the last byte of the current
 	// token.
 	l->cursor = l->lookahead.offset + l->lookahead.text.len;
-	if (l->cursor >= l->source.len) {
+	if (l->cursor >= l->source.text.len) {
 		return;
 	}
 	skipws(l);
@@ -171,13 +224,14 @@ void lex_consume(Lexer *l) {
 static size_t scan_num(Lexer *l) {
 	// TODO: different base integers + floating point support
 	u32 peek = l->cursor;
-	char c = l->source.data[peek];
-	while ('0' <= c && c <= '9' && peek < l->source.len) {
-		c = l->source.data[++peek];
+	char c = l->source.text.data[peek];
+	while ('0' <= c && c <= '9' && peek < l->source.text.len) {
+		c = l->source.text.data[++peek];
 	}
-	string text = substr(l->source, l->cursor, peek);
+	string text = substr(l->source.text, l->cursor, peek);
 	if (text.data[0] == '0' && text.len != 1) {
-			assert(false && "log: 0 can not be at the start of a multi digit number");
+		ERROR(l->source, l->cursor, "0 is illegal at start of multi-digit number");
+		return 0;
 	}
 	return peek - l->cursor;
 }

@@ -12,6 +12,13 @@ string substr(string s, u32 start, u32 end) {
 	return (string) { .data = &s.data[start], .len = end - start };
 }
 
+bool streql(string a, string b) {
+	if (a.len != b.len) {
+		return false;
+	}
+	return memcmp(a.data, b.data, a.len) == 0;
+}
+
 string ztos(char *s) {
 	return (string) {
 		.data = s,
@@ -72,7 +79,7 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
 	}
 
 	if (a->blocks.items == NULL) {
-		void *alloc = malloc(a->block_size);
+		void *alloc = calloc(a->block_size, 1);
 		if (alloc == NULL) {
 			panic("out of memory");
 		}
@@ -91,7 +98,7 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
 	}
 
 	// No block currently has enough memory, create a new block
-	void *alloc = malloc(a->block_size);
+	void *alloc = calloc(a->block_size, 1);
 	if (alloc == NULL) {
 		panic("out of memory");
 	}

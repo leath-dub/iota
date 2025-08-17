@@ -1,3 +1,3 @@
-objs="lex.o uc.o uc_data.o ../common/common.o"
-redo-ifchange $objs
+objs="lex.o uc.o uc_data.o"
+redo-ifchange $objs ../common/common.o
 ar rcs $3 $objs

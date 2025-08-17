@@ -1,5 +1,9 @@
+// For fmemopen
+#define _POSIX_C_SOURCE 200809L
+
 #include "test.h"
 #include "../lex/lex.h"
+#include "../mod/mod.h"
 
 #include <string.h>
 
@@ -25,7 +29,8 @@ void test_basic(void) {
 		"       let c = 'x';\n"
 		"       let msg = \"Hello, world\";\n"
 		"}");
-	Lexer l = new_lexer(source);
+	Source_Code code = new_source_code(ztos("<string>"), source);
+	Lexer l = new_lexer(code);
 	
 	ASSERT(peek_and_consume(&l).t == T_FUN);
 	ASSERT(peek_and_consume(&l).t == T_IDENT);
@@ -85,34 +90,43 @@ void test_basic(void) {
 
 	ASSERT(peek_and_consume(&l).t == T_RBRC);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+
+	source_code_free(&code);
 }
 
 void test_empty_file(void) {
 	string source = ztos("");
-	Lexer l = new_lexer(source);
+	Source_Code code = new_source_code(ztos("<string>"), source);
+	Lexer l = new_lexer(code);
 	// 3 times for good measure :)
 	ASSERT(peek_and_consume(&l).t == T_EOF);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
 }
 
 void test_just_whitespace(void) {
 	// just whitespace
 	string source = ztos("    \n\t  \t  ");
-	Lexer l = new_lexer(source);
+	Source_Code code = new_source_code(ztos("<string>"), source);
+	Lexer l = new_lexer(code);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
 }
 
 void test_single_token(void) {
 	string source = ztos("x");
-	Lexer l = new_lexer(source);
+	Source_Code code = new_source_code(ztos("<string>"), source);
+	Lexer l = new_lexer(code);
 	ASSERT(peek_and_consume(&l).t == T_IDENT);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
 }
 
 void test_keywords(void) {
 	string source = ztos("funbar fun if ifdo struct structx");
-	Lexer l = new_lexer(source);
+	Source_Code code = new_source_code(ztos("<string>"), source);
+	Lexer l = new_lexer(code);
 
 	Tok tok = peek_and_consume(&l);
 	ASSERT(tok.t == T_IDENT);
@@ -139,20 +153,61 @@ void test_keywords(void) {
 	ASSERT(strncmp(tok.text.data, "structx", 7) == 0);
 
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
 }
 
 void test_number(void) {
-	Lexer l = new_lexer(ztos("0"));
+	Source_Code code = new_source_code(ztos("<string>"), ztos("0"));
+	Lexer l = new_lexer(code);
 	Tok tok = peek_and_consume(&l);
 	ASSERT(tok.t == T_NUM);
 	ASSERT(tok.ival == 0);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
 
-	l = new_lexer(ztos("1024"));
+	code = new_source_code(ztos("<string>"), ztos("1024"));
+	l = new_lexer(code);
 	tok = peek_and_consume(&l);
 	ASSERT(tok.t == T_NUM);
 	ASSERT(tok.ival == 1024);
 	ASSERT(peek_and_consume(&l).t == T_EOF);
+	source_code_free(&code);
+}
+
+// Test that the lexer can report error tokens but still recover
+void test_error(void) {
+	char *buf = NULL;
+	usize len = 0;
+	error_stream = open_memstream(&buf, &len);
+
+	Source_Code code = new_source_code(ztos("<string>"), ztos("'x"));
+	Lexer l = new_lexer(code);
+	ASSERT(peek_and_consume(&l).t == T_ILLEGAL);
+	ASSERT(peek_and_consume(&l).t == T_IDENT);
+	source_code_free(&code);
+
+	code = new_source_code(ztos("<string>"), ztos("fun main($)"));
+	l = new_lexer(code);
+	ASSERT(peek_and_consume(&l).t == T_FUN);
+	ASSERT(peek_and_consume(&l).t == T_IDENT);
+	ASSERT(peek_and_consume(&l).t == T_LPAR);
+	ASSERT(peek_and_consume(&l).t == T_ILLEGAL);
+	ASSERT(peek_and_consume(&l).t == T_RPAR);
+	source_code_free(&code);
+
+	fflush(error_stream);
+
+	string output = ztos(buf);
+	string expected_output = ztos(
+		"<string>:1:1: unmatched quote in character literal\n"
+		"<string>:1:10: invalid character '$'\n"
+	);
+	ASSERT_STREQL(output, expected_output);
+
+	fclose(error_stream);
+	if (buf != NULL) {
+		free(buf);
+	}
 }
 
 int main(void) {
@@ -162,4 +217,5 @@ int main(void) {
 	test_single_token();
 	test_keywords();
 	test_number();
+	test_error();
 }

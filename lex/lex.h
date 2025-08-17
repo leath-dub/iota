@@ -4,6 +4,7 @@
 #include "uc.h"
 
 #include "../common/common.h"
+#include "../mod/mod.h"
 
 typedef enum {
 	T_LBRK,   // [
@@ -48,9 +49,12 @@ typedef enum {
 	T_EOF,    // EOF
 	T_CMNT,   // comment
 	T_EMPTY,  // sentinal token value (used for initial state of lexer)
+	T_ILLEGAL,
 
 	TOK_KIND_COUNT,
 } Tok_Kind;
+
+extern string tok_to_string[TOK_KIND_COUNT];
 
 typedef struct {
 	Tok_Kind t;
@@ -63,12 +67,12 @@ typedef struct {
 } Tok;
 
 typedef struct {
-	string source;
+	Source_Code source;
 	u32 cursor;
 	Tok lookahead; // is set every time `lex_peek` is called
 } Lexer;
 
-Lexer new_lexer(string source);
+Lexer new_lexer(Source_Code source);
 Tok lex_peek(Lexer *l);
 void lex_consume(Lexer *l);
 

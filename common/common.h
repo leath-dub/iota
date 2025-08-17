@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 typedef int8_t s8;
 typedef uint8_t u8;
@@ -30,6 +33,7 @@ typedef struct {
 
 // Return a sub string (view) of 's' from 'start' inclusive to 'end' exclusive
 string substr(string s, u32 start, u32 end);
+bool streql(string a, string b);
 
 // Converts sentinal c string to 'string'
 string ztos(char *s);
@@ -44,6 +48,11 @@ u64 atou64(string s);
 
 // Logging
 void panic(const char *msg);
+#define PANICF(fmt, ...) do { \
+	fprintf(stderr, "panic: " fmt "\n", __VA_ARGS__); \
+	abort(); \
+} while (0)
+#define LOGF(fmt, ...) fprintf(stderr, fmt "\n", __VA_ARGS__)
 
 // Generic dynamic array append. expects "arr" to have shape
 // *struct { <int> len, <int> cap, <typeof(item)*> items }
@@ -90,5 +99,7 @@ void arena_free(Arena *a);
 void arena_own(Arena *a, void *alloc, u32 size);
 
 #define NEW(a, type) arena_alloc(a, sizeof(type), _Alignof(type))
+
+#define ARRAY(...) sizeof(__VA_ARGS__) / sizeof(*__VA_ARGS__), __VA_ARGS__
 
 #endif
