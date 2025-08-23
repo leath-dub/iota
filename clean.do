@@ -1,4 +1,5 @@
 rm -f **/*.o
+rm -f **/*.d
 rm -f lex/uc_data.c
 rm -f lex/ucgen
 rm -f lex/liblex.a

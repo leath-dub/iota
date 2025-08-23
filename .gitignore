@@ -4,10 +4,12 @@
 .do_built.dir/
 *.did.tmp
 *.o
+*.d
 cmd/iotac
 lex/ucgen
 lex/uc_data.c
 lex/liblex.a
+syn/libsyn.a
 config.env
 t/test.o
 t/runecat_test

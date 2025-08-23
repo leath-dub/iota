@@ -7,134 +7,135 @@
 #include <unistd.h>
 
 string substr(string s, u32 start, u32 end) {
-	assert(start < s.len);
-	assert(end <= s.len);
-	return (string) { .data = &s.data[start], .len = end - start };
+  assert(start < s.len);
+  assert(end <= s.len);
+  return (string){.data = &s.data[start], .len = end - start};
 }
 
 bool streql(string a, string b) {
-	if (a.len != b.len) {
-		return false;
-	}
-	return memcmp(a.data, b.data, a.len) == 0;
+  if (a.len != b.len) {
+    return false;
+  }
+  return memcmp(a.data, b.data, a.len) == 0;
 }
 
 string ztos(char *s) {
-	return (string) {
-		.data = s,
-		.len = strlen(s),
-	};
+  return (string){
+      .data = s,
+      .len = strlen(s),
+  };
 }
 
 static u64 powu64(u64 b, u64 exp) {
-	u64 r = 1;
-	for (u32 n = exp; n > 0; n--) {
-		r *= b;
-	}
-	return r;
+  u64 r = 1;
+  for (u32 n = exp; n > 0; n--) {
+    r *= b;
+  }
+  return r;
 }
 
 u64 atou64(string s) {
-	u64 r = 0;
-	for (u32 i = 0; i < s.len; i++) {
-		r += (s.data[i] - '0') * powu64(10, s.len - i - 1);
-	}
-	return r;
+  u64 r = 0;
+  for (u32 i = 0; i < s.len; i++) {
+    r += (s.data[i] - '0') * powu64(10, s.len - i - 1);
+  }
+  return r;
 }
 
 void panic(const char *msg) {
-	fprintf(stderr, "panic: %s\n", msg);
-	fflush(stderr);
-	abort();
+  fprintf(stderr, "panic: %s\n", msg);
+  fflush(stderr);
+  abort();
 }
 
 Arena new_arena() {
-	return (Arena) {
-		.block_size = sysconf(_SC_PAGESIZE),
-		.blocks = (Blocks) { .cap = 0, .len = 0, .items = NULL },
-	};
+  return (Arena){
+      .block_size = sysconf(_SC_PAGESIZE),
+      .blocks = (Blocks){.cap = 0, .len = 0, .items = NULL},
+  };
 }
 
 static inline uptr align_forward(uptr p, uptr align) {
-	return (p + (align - 1)) & ~(align - 1);
+  return (p + (align - 1)) & ~(align - 1);
 }
 
 // Trys to allocate size bytes in block, returning NULL if not successful
 static void *block_alloc(Block *block, size_t size, uptr align) {
-	uptr base_ptr = (uptr)&block->alloc[block->used];
-	uptr aligned_ptr = align_forward(base_ptr, align);
-	uptr padding = aligned_ptr - base_ptr;
-	if (block->used + padding + size < block->cap) {
-		block->used += padding + size;
-		return (void *)aligned_ptr;
-	}
-	return NULL;
+  uptr base_ptr = (uptr)&block->alloc[block->used];
+  uptr aligned_ptr = align_forward(base_ptr, align);
+  uptr padding = aligned_ptr - base_ptr;
+  if (block->used + padding + size < block->cap) {
+    block->used += padding + size;
+    return (void *)aligned_ptr;
+  }
+  return NULL;
 }
 
 void *arena_alloc(Arena *a, size_t size, uptr align) {
-	if (size + align > a->block_size) {
-		panic("arena: tried to allocate something larger than blocksize.\n"
-		      "if you need a larger allocation, allocate it separately and"
-		      "transfer ownership to the arena using 'arena_own' function.");
-	}
+  if (size + align > a->block_size) {
+    panic(
+        "arena: tried to allocate something larger than blocksize.\n"
+        "if you need a larger allocation, allocate it separately and"
+        "transfer ownership to the arena using 'arena_own' function.");
+  }
 
-	if (a->blocks.items == NULL) {
-		void *alloc = calloc(a->block_size, 1);
-		if (alloc == NULL) {
-			panic("out of memory");
-		}
-		APPEND(&a->blocks, (Block) {
-			.cap = a->block_size,
-			.used = 0,
-			.alloc = alloc,
-		});
-	}
+  if (a->blocks.items == NULL) {
+    void *alloc = calloc(a->block_size, 1);
+    if (alloc == NULL) {
+      panic("out of memory");
+    }
+    APPEND(&a->blocks, (Block){
+                           .cap = a->block_size,
+                           .used = 0,
+                           .alloc = alloc,
+                       });
+  }
 
-	for (u32 i = 0; i < a->blocks.len; i++) {
-		void *p = block_alloc(&a->blocks.items[i], size, align);
-		if (p != NULL) {
-			return p;
-		}
-	}
+  for (u32 i = 0; i < a->blocks.len; i++) {
+    void *p = block_alloc(&a->blocks.items[i], size, align);
+    if (p != NULL) {
+      return p;
+    }
+  }
 
-	// No block currently has enough memory, create a new block
-	void *alloc = calloc(a->block_size, 1);
-	if (alloc == NULL) {
-		panic("out of memory");
-	}
-	APPEND(&a->blocks, (Block) {
-		.cap = a->block_size,
-		.used = 0,
-		.alloc = alloc,
-	});
-	void *p = block_alloc(&a->blocks.items[a->blocks.len - 1], size, align);
-	assert(p != NULL);
-	return p;
+  // No block currently has enough memory, create a new block
+  void *alloc = calloc(a->block_size, 1);
+  if (alloc == NULL) {
+    panic("out of memory");
+  }
+  APPEND(&a->blocks, (Block){
+                         .cap = a->block_size,
+                         .used = 0,
+                         .alloc = alloc,
+                     });
+  void *p = block_alloc(&a->blocks.items[a->blocks.len - 1], size, align);
+  assert(p != NULL);
+  return p;
 }
 
 void arena_reset(Arena *a) {
-	for (u32 i = 0; i < a->blocks.len; i++) {
-		a->blocks.items[i].used = 0;
-	}
+  for (u32 i = 0; i < a->blocks.len; i++) {
+    a->blocks.items[i].used = 0;
+  }
 }
 
 void arena_free(Arena *a) {
-	for (u32 i = 0; i < a->blocks.len; i++) {
-		const Block *block = &a->blocks.items[i];
-		free(block->alloc);
-	}
-	if (a->blocks.items != NULL) {
-		free(a->blocks.items);
-	}
-	a->blocks.items = NULL;
-	a->blocks.cap = 0;
-	a->blocks.len = 0;
+  for (u32 i = 0; i < a->blocks.len; i++) {
+    const Block *block = &a->blocks.items[i];
+    free(block->alloc);
+  }
+  if (a->blocks.items != NULL) {
+    free(a->blocks.items);
+  }
+  a->blocks.items = NULL;
+  a->blocks.cap = 0;
+  a->blocks.len = 0;
 }
 
 void arena_own(Arena *a, void *alloc, u32 size) {
-	APPEND(&a->blocks, (Block) {
-		.cap = size,
-		.used = size,
-		.alloc = alloc,
-	});
+  APPEND(&a->blocks, (Block){
+                         .cap = size,
+                         .used = size,
+                         .alloc = alloc,
+                     });
 }
