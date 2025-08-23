@@ -6,21 +6,17 @@
 
 int main(void) {
   Source_Code code =
-      new_source_code(ztos("<string>"), ztos("fun main(x s32, foo s32) {\n"
-                                             "  let x = 10;\n"
-                                             "  fun foo() {\n"
-                                             "    {\n"
-                                             "      fun bar() {}\n"
-                                             "    }\n"
-                                             "  }\n"
-                                             "  fun bar() {}\n"
-                                             "}"));
+      new_source_code(ztos("<string>"), ztos(
+        "fun main() {\n"
+        "  x int = 10;\n"
+        "}"));
   Parse_Context pc = new_parse_context(code);
-  Declaration *decl = parse_decl(&pc);
+  Module *mod = parse_module(&pc);
   Dump_Out out = new_dump_out();
-  DUMP(&out, &pc, decl);
-  __builtin_trap();
-  (void)decl;
+  DUMP(&out, &pc, mod);
+  printf("\n");
+  fflush(out.fs);
+  // __builtin_trap();
   source_code_free(&code);
   parse_context_free(&pc);
 }

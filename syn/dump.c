@@ -17,6 +17,17 @@ Dump_Out new_dump_out(void) {
   };
 }
 
+void dump_mod(Dump_Out *dmp, Parse_Context *c, Module *m) {
+  dumpf(dmp, "[");
+  for (u32 i = 0; i < m->len; i++) {
+    if (i != 0) {
+      dumpf(dmp, ", ");
+    }
+    DUMP(dmp, c, m->items[i]);
+  }
+  dumpf(dmp, "]");
+}
+
 // For debug and testing purposes
 void dump_decl(Dump_Out *dmp, Parse_Context *c, Declaration *d) {
   if (c->flags.items[d->id] & NFLAG_ERROR) {

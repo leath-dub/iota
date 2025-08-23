@@ -127,6 +127,16 @@ static bool expect(Parse_Context *c, Expect_Args args) {
   }
 #define EXPECT(c, ...) expect(c, (Expect_Args){__VA_ARGS__})
 
+Module *parse_module(Parse_Context *c) {
+  Module *mod = NEW(&c->arena, Module);
+  mod->id = new_node_id(c);
+  while (lex_peek(&c->lex).t != T_EOF) {
+    APPEND(mod, parse_decl(c));
+  }
+  arena_own(&c->arena, mod->items, mod->cap);
+  return mod;
+}
+
 // TODO: support more types
 Type *parse_type(Parse_Context *c) {
   Tok tok = lex_peek(&c->lex);
@@ -385,7 +395,13 @@ Declaration *parse_decl(Parse_Context *c) {
   Tok tok = lex_peek(&c->lex);
 
   Declaration *decl = NEW(&c->arena, Declaration);
+
   decl->id = new_node_id(c);
+
+  if (!EXPECT(c, TOKS(T_FUN, T_MUT, T_LET), TOKS(T_SCLN, T_LBRC))) {
+    add_node_flags(c, decl->id, NFLAG_ERROR);
+    return decl;
+  }
 
   switch (tok.t) {
     case T_FUN: {
@@ -397,12 +413,8 @@ Declaration *parse_decl(Parse_Context *c) {
       decl->t = DECL_VAR;
       decl->var = parse_var_decl(c);
     } break;
-    default: {
-      Tok_Kind toks[] = {T_FUN, T_MUT, T_LET};
-      expected_one_of(c, toks, LEN(toks));
-      // TODO: add error meta data through parsing context
-      return decl;
-    } break;
+    default:
+      break;
   }
 
   return decl;

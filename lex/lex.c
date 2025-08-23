@@ -103,7 +103,9 @@ Lexer new_lexer(Source_Code source) {
       .cursor = 0,
       .lookahead = {.t = T_EMPTY},
   };
-  skipws(&l);
+  if (source.text.len != 0) {
+    skipws(&l);
+  }
   return l;
 }
 

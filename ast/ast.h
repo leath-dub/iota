@@ -167,4 +167,11 @@ typedef struct Declaration {
   };
 } Declaration;
 
+typedef struct {
+  Node_ID id;
+  Declaration **items;
+  u32 len;
+  u32 cap;
+} Module;
+
 #endif

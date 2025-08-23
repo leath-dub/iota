@@ -26,12 +26,15 @@ typedef struct {
 Parse_Context new_parse_context(Source_Code code);
 void parse_context_free(Parse_Context *c);
 
+Module *parse_module(Parse_Context *c);
+
 Declaration *parse_decl(Parse_Context *c);
 Compound_Statement *parse_compound_stmt(Parse_Context *c);
 Expr *parse_expr(Parse_Context *c);
 
 #define DUMP(o, pc, n)                          \
   _Generic((n),                                 \
+      Module *: dump_mod,                       \
       Declaration *: dump_decl,                 \
       Variable_Declaration *: dump_var_decl,    \
       Type *: dump_type,                        \
@@ -53,6 +56,7 @@ void dumpf(Dump_Out *dmp, const char *fmt, ...) PRINTF_CHECK(2, 3);
 Dump_Out new_dump_out(void);
 
 // For debug and testing purposes
+void dump_mod(Dump_Out *dmp, Parse_Context *c, Module *m);
 void dump_decl(Dump_Out *dmp, Parse_Context *c, Declaration *d);
 void dump_var_decl(Dump_Out *dmp, Parse_Context *c, Variable_Declaration *vd);
 void dump_type(Dump_Out *dmp, Parse_Context *c, Type *t);
