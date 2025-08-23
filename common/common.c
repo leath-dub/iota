@@ -66,6 +66,7 @@ static void *block_alloc(Block *block, size_t size, uptr align) {
   uptr padding = aligned_ptr - base_ptr;
   if (block->used + padding + size < block->cap) {
     block->used += padding + size;
+    memset((void *)aligned_ptr, 0, size);
     return (void *)aligned_ptr;
   }
   return NULL;
@@ -80,7 +81,7 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
   }
 
   if (a->blocks.items == NULL) {
-    void *alloc = calloc(a->block_size, 1);
+    void *alloc = malloc(a->block_size);
     if (alloc == NULL) {
       panic("out of memory");
     }
@@ -99,7 +100,7 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
   }
 
   // No block currently has enough memory, create a new block
-  void *alloc = calloc(a->block_size, 1);
+  void *alloc = malloc(a->block_size);
   if (alloc == NULL) {
     panic("out of memory");
   }

@@ -1,3 +1,3 @@
-objs="syn.o"
+objs="syn.o dump.o"
 redo-ifchange $objs
 ar rcs $3 $objs

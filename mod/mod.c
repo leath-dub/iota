@@ -15,6 +15,17 @@ void errorf(Source_Code code, const char *fmt, ...) {
 void report(Source_Code code, u32 at) {
   Position pos = line_and_column(code.lines, at);
   string path = code.file_path;
+  string line = line_of(code, at);
+  // Trim '\n'
+  if (line.data[line.len - 1] == '\n') {
+    line.len -= 1;
+  }
+  static char fbuf[1024];
+  snprintf(fbuf, sizeof(fbuf), " %d |", pos.line);
+  u32 flen = strlen(fbuf);
+  fprintf(code.errors.fs, "%s %.*s\n", fbuf, line.len, line.data);
+  snprintf(fbuf, sizeof(fbuf), "%*s|", flen - 1, " ");
+  fprintf(code.errors.fs, "%s %*s^\n", fbuf, pos.column - 1, "");
   fprintf(code.errors.fs, "%.*s:%d:%d:", path.len, path.data, pos.line,
           pos.column);
 }
@@ -65,6 +76,18 @@ Position line_and_column(Lines lines, u32 offset) {
     }
   }
   PANICF("offset %d has no associated line", offset);
+}
+
+string line_of(Source_Code code, u32 offset) {
+  Position pos = line_and_column(code.lines, offset);
+  u32 line_start = code.lines.items[pos.line - 1];
+  u32 line_end;
+  if (pos.line >= code.lines.len) {
+    line_end = code.text.len;
+  } else {
+    line_end = code.lines.items[pos.line];
+  }
+  return substr(code.text, line_start, line_end);
 }
 
 void source_code_free(Source_Code *code) {

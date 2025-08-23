@@ -30,6 +30,7 @@ Source_Code new_source_code(string file_path, string text);
 void source_code_free(Source_Code *code);
 
 Position line_and_column(Lines lines, u32 offset);
+string line_of(Source_Code code, u32 offset);
 
 void errorf(Source_Code code, const char *fmt, ...) PRINTF_CHECK(2, 3);
 void report(Source_Code code, u32 at);

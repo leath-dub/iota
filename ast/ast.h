@@ -9,6 +9,7 @@ struct Expr;
 struct Statement;
 struct If_Statement;
 struct Assign_Statement;
+struct Statement_List;
 struct Compound_Statement;
 struct Else_Branch;
 struct Argument;
@@ -20,12 +21,6 @@ struct Declaration;
 // For storing metadata like the resolved type or the location (span) of
 // ast nodes we store a handle.
 typedef u32 Node_ID;
-
-typedef struct {
-  Lexer lex;
-  Arena arena;
-  Node_ID next_id;
-} Parse_Context;
 
 typedef enum {
   BUILTIN_S32,
@@ -72,11 +67,16 @@ typedef struct Expr {
   };
 } Expr;
 
-typedef struct Compound_Statement {
+typedef struct Statement_List {
   Node_ID id;
   struct Statement *items;
   u32 cap;
   u32 len;
+} Statement_List;
+
+typedef struct Compound_Statement {
+  Node_ID id;
+  Statement_List *statements;
 } Compound_Statement;
 
 typedef enum {
@@ -109,6 +109,8 @@ typedef struct Assign_Statement {
 typedef enum {
   STMT_IF,
   STMT_ASSIGN,
+  STMT_DECL,
+  STMT_COMP,
 } Statement_Kind;
 
 typedef struct Statement {
@@ -117,6 +119,8 @@ typedef struct Statement {
   union {
     If_Statement *if_;
     Assign_Statement *assign;
+    struct Declaration *decl;
+    struct Compound_Statement *compound;
   };
 } Statement;
 

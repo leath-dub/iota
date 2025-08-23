@@ -18,6 +18,10 @@ void test_arena(void) {
   arena_reset(&a);
   for (u32 i = 0; i < last; i++) {
     u32 *x = NEW(&a, u32);
+    // Ensure the memory is zeroed
+    for (u32 j = 0; j < sizeof(u32); j++) {
+      ASSERT(((u8 *)x)[j] == 0);
+    }
     *x = i;
     ASSERT(*x == i);
   }
