@@ -1,0 +1,47 @@
+file : declarations
+     ;
+
+declarations : declaration declarations
+			 |
+             ;
+
+declaration : variable_declaration
+            | function_declaration
+			;
+
+variable_declartion : ('let' | 'mut') IDENT type? '=' expr ';'
+                    | ('let' | 'mut') IDENT type? ';'
+					;
+
+function_declaration : 'fun' IDENT '(' function_argument_list ')' type? compound_statement
+					 ;
+
+function_argument_list : function_argument ','? function_argument_list
+              		   |
+			  		   ;
+
+function_argument : IDENT type?
+             	  ;
+
+compound_statement : '{' statement_list '}'
+				   ;
+
+statement_list : statement statement_list
+               |
+			   ;
+
+statement : declaration
+		  | compound_statement
+		  | assignment_statement
+		  | if_statement
+		  ;
+
+assignment_statement : IDENT '=' NUM ';'
+					 ;
+
+if_statement : 'if' expr compound_statement 'else' (compound_statement | if_statement)
+			 | 'if' expr compound_statement
+			 ;
+
+expr : NUM
+     ;

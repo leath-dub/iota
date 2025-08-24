@@ -64,18 +64,19 @@ Source_Code new_source_code(string file_path, string text) {
 }
 
 Position line_and_column(Lines lines, u32 offset) {
-  for (u32 i = 0; i < lines.len; i++) {
-    if (lines.items[i] <= offset) {
-      bool last_line = i == lines.len - 1;
-      if (last_line || offset <= lines.items[i + 1]) {
-        return (Position){
-            .line = i + 1,
-            .column = offset - lines.items[i] + 1,
-        };
-      }
+  for (u32 i = 0; i < lines.len - 1; i++) {
+    if (lines.items[i] <= offset && offset <= lines.items[i + 1]) {
+      return (Position) {
+        .line = i + 1,
+        .column = offset - lines.items[i] + 1,
+      };
     }
   }
-  PANICF("offset %d has no associated line", offset);
+  // Must be in the last line
+  return (Position){
+    .line = lines.len,
+    .column = offset - lines.items[lines.len - 1] + 1,
+  };
 }
 
 string line_of(Source_Code code, u32 offset) {

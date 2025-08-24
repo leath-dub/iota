@@ -139,6 +139,9 @@ void dump_stmt(Dump_Out *dmp, Parse_Context *c, Statement *st) {
     case STMT_COMP:
       DUMP(dmp, c, st->compound);
       break;
+    case STMT_ASSIGN:
+      DUMP(dmp, c, st->assign);
+      break;
     default:
       assert(false && "TODO");
   }
@@ -167,6 +170,16 @@ void dump_stmt_list(Dump_Out *dmp, Parse_Context *c, Statement_List *sl) {
     Statement *stmt = &sl->items[i];
     DUMP(dmp, c, stmt);
   }
+}
+
+void dump_assign_stmt(Dump_Out *dmp, Parse_Context *c, Assign_Statement *as) {
+  if (c->flags.items[as->id] & NFLAG_ERROR) {
+    dumpf(dmp, "\"<Assignment_Statement>\"");
+    return;
+  }
+  dumpf(dmp, "{\"kind\": \"assign\", \"lhs\": %.*s, \"rhs\":", as->lhs.text.len, as->lhs.text.data);
+  DUMP(dmp, c, as->rhs);
+  dumpf(dmp, "}");
 }
 
 void dump_expr(Dump_Out *dmp, Parse_Context *c, Expr *e) {

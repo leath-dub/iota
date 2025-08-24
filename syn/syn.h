@@ -43,6 +43,7 @@ Expr *parse_expr(Parse_Context *c);
       Argument *: dump_arg,                     \
       Statement *: dump_stmt,                   \
       Compound_Statement *: dump_compound_stmt, \
+      Assign_Statement *: dump_assign_stmt,     \
       Statement_List *: dump_stmt_list,         \
       Expr *: dump_expr)(o, pc, n)
 
@@ -66,6 +67,7 @@ void dump_arg(Dump_Out *dmp, Parse_Context *c, Argument *a);
 void dump_stmt(Dump_Out *dmp, Parse_Context *c, Statement *st);
 void dump_compound_stmt(Dump_Out *dmp, Parse_Context *c,
                         Compound_Statement *cs);
+void dump_assign_stmt(Dump_Out *dmp, Parse_Context *c, Assign_Statement *as);
 void dump_stmt_list(Dump_Out *dmp, Parse_Context *c, Statement_List *sl);
 void dump_expr(Dump_Out *dmp, Parse_Context *c, Expr *e);
 

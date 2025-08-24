@@ -102,8 +102,8 @@ typedef struct If_Statement {
 
 typedef struct Assign_Statement {
   Node_ID id;
-  Tok name;  // TODO: allow *x = 10 or x[0] = 10
-  Expr *value;
+  Tok lhs;  // TODO: allow *x = 10 or x[0] = 10
+  Expr *rhs;
 } Assign_Statement;
 
 typedef enum {

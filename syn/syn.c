@@ -26,72 +26,70 @@ void parse_context_free(Parse_Context *c) {
   arena_free(&c->arena);
 }
 
-static void expected_one_of(Parse_Context *c, Tok_Kind *toks, u32 count) {
-  Tok_Kind curr = lex_peek(&c->lex).t;
-  report(c->lex.source, c->lex.cursor);
-  string curr_tok_str = tok_to_string[curr];
-  char *expected_text;
-  if (count == 1) {
-    expected_text = "expected";
-  } else {
-    expected_text = "expected:";
-  }
-  errorf(c->lex.source, "syntax error: unexpected %.*s, %s ", curr_tok_str.len,
-         curr_tok_str.data, expected_text);
-  for (u32 i = 0; i < count; i++) {
-    string tok_str = tok_to_string[toks[i]];
-    char *delim;
-    if (i == 0) {
-      delim = "";
-    } else if (i == count - 1) {
-      delim = " or ";
-    } else {
-      delim = ", ";
-    }
-    errorf(c->lex.source, "%s%.*s", delim, tok_str.len, tok_str.data);
-  }
-  errorf(c->lex.source, "\n");
-}
+// static void expected_one_of(Parse_Context *c, Tok_Kind *toks, u32 count) {
+//   Tok_Kind curr = lex_peek(&c->lex).t;
+//   report(c->lex.source, c->lex.cursor);
+//   string curr_tok_str = tok_to_string[curr];
+//   char *expected_text;
+//   if (count == 1) {
+//     expected_text = "expected";
+//   } else {
+//     expected_text = "expected:";
+//   }
+//   errorf(c->lex.source, "syntax error: unexpected %.*s, %s ", curr_tok_str.len,
+//          curr_tok_str.data, expected_text);
+//   for (u32 i = 0; i < count; i++) {
+//     string tok_str = tok_to_string[toks[i]];
+//     char *delim;
+//     if (i == 0) {
+//       delim = "";
+//     } else if (i == count - 1) {
+//       delim = " or ";
+//     } else {
+//       delim = ", ";
+//     }
+//     errorf(c->lex.source, "%s%.*s", delim, tok_str.len, tok_str.data);
+//   }
+//   errorf(c->lex.source, "\n");
+// }
 
-static bool skip_if(Parse_Context *c, Tok_Kind t) {
-  Tok tok = lex_peek(&c->lex);
-  bool match = tok.t == t;
-  if (match) {
-    lex_consume(&c->lex);
-  }
-  return match;
-}
-
-static bool skip(Parse_Context *c, Tok_Kind t) {
-  bool match = skip_if(c, t);
-  if (!match) {
-    Tok_Kind toks[] = {t};
-    expected_one_of(c, toks, LEN(toks));
-  }
-  return match;
-}
+// static bool skip_if(Parse_Context *c, Tok_Kind t) {
+//   Tok tok = lex_peek(&c->lex);
+//   bool match = tok.t == t;
+//   if (match) {
+//     lex_consume(&c->lex);
+//   }
+//   return match;
+// }
+//
+// static bool skip(Parse_Context *c, Tok_Kind t) {
+//   bool match = skip_if(c, t);
+//   if (!match) {
+//     Tok_Kind toks[] = {t};
+//     expected_one_of(c, toks, LEN(toks));
+//   }
+//   return match;
+// }
 
 static void add_node_flags(Parse_Context *c, Node_ID id, Node_Flags flags) {
   c->flags.items[id] |= flags;
 }
 
-#define MAX_RECOVER_SCAN 20
+static Tok tnext(Parse_Context *c) {
+  Tok tok;
+  do {
+    lex_consume(&c->lex);
+    tok = lex_peek(&c->lex);
+  } while (tok.t == T_CMNT);
+  return tok;
+}
 
-static bool recover_at(Parse_Context *c, Tok_Kind *toks, u32 count) {
-  Lexer tmp = c->lex;
-  Tok tok = lex_peek(&tmp);
-  for (u32 tc = 0; tc < MAX_RECOVER_SCAN && tok.t != T_EOF; tc++) {
-    for (u32 i = 0; i < count; i++) {
-      if (tok.t == toks[i]) {
-        // safe to commit the scan as we found a recovery token
-        c->lex = tmp;
-        return true;
-      }
-    }
-    lex_consume(&tmp);
-    tok = lex_peek(&tmp);
-  }
-  return false;
+static void next(Parse_Context *c) {
+  (void)tnext(c);
+}
+
+static bool looking_at(Parse_Context *c, Tok_Kind t) {
+  return lex_peek(&c->lex).t == t;
 }
 
 typedef struct {
@@ -99,24 +97,72 @@ typedef struct {
   u32 len;
 } Toks;
 
-typedef struct {
-  Toks expected;
-  Toks recovery;
-} Expect_Args;
-
-static bool expect(Parse_Context *c, Expect_Args args) {
-  Tok tok = lex_peek(&c->lex);
-  for (u32 i = 0; i < args.expected.len; i++) {
-    if (tok.t == args.expected.items[i]) {
-      return true;
+static void advance(Parse_Context *c, Toks toks) {
+  for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
+    for (u32 i = 0; i < toks.len; i++) {
+      if (tok.t == toks.items[i]) {
+        return;
+      }
     }
   }
-  expected_one_of(c, args.expected.items, args.expected.len);
-  if (recover_at(c, args.recovery.items, args.recovery.len)) {
-    lex_consume(&c->lex);
-  }
-  return false;
 }
+
+static void expected(Parse_Context *c, Node_ID in, const char *msg) {
+  Tok tok = lex_peek(&c->lex);
+  reportf(c->lex.source, c->lex.cursor, "syntax error: expected %s, found %s",
+          msg, tok_to_string[tok.t].data);
+  add_node_flags(c, in, NFLAG_ERROR);
+}
+
+static bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
+  Tok tok = lex_peek(&c->lex);
+  bool match = tok.t == t;
+  if (!match) {
+    expected(c, in, tok_to_string[t].data);
+  } else {
+    next(c);
+  }
+  return match;
+}
+
+
+// #define MAX_RECOVER_SCAN 20
+
+// static bool recover_at(Parse_Context *c, Tok_Kind *toks, u32 count) {
+//   Lexer tmp = c->lex;
+//   Tok tok = lex_peek(&tmp);
+//   for (u32 tc = 0; tc < MAX_RECOVER_SCAN && tok.t != T_EOF; tc++) {
+//     for (u32 i = 0; i < count; i++) {
+//       if (tok.t == toks[i]) {
+//         // safe to commit the scan as we found a recovery token
+//         c->lex = tmp;
+//         return true;
+//       }
+//     }
+//     lex_consume(&tmp);
+//     tok = lex_peek(&tmp);
+//   }
+//   return false;
+// }
+
+// typedef struct {
+//   Toks expected;
+//   Toks recovery;
+// } Expect_Args;
+
+// static bool expect(Parse_Context *c, Expect_Args args) {
+//   Tok tok = lex_peek(&c->lex);
+//   for (u32 i = 0; i < args.expected.len; i++) {
+//     if (tok.t == args.expected.items[i]) {
+//       return true;
+//     }
+//   }
+//   expected_one_of(c, args.expected.items, args.expected.len);
+//   if (recover_at(c, args.recovery.items, args.recovery.len)) {
+//     lex_consume(&c->lex);
+//   }
+//   return false;
+// }
 
 // I know this is smelly but C is very limited for variadic args and not storing
 // size with array is really limiting for building abstractions
@@ -125,12 +171,17 @@ static bool expect(Parse_Context *c, Expect_Args args) {
     .items = (Tok_Kind[]){__VA_ARGS__},                         \
     .len = sizeof((Tok_Kind[]){__VA_ARGS__}) / sizeof(Tok_Kind) \
   }
-#define EXPECT(c, ...) expect(c, (Expect_Args){__VA_ARGS__})
+// #define EXPECT(c, ...) expect(c, (Expect_Args){__VA_ARGS__})
+
+// FOLLOW sets (make sure to keep these up to date!)
+static const Toks FOLLOW_DECL = TOKS(T_FUN, T_MUT, T_LET, T_IF, T_FOR, T_IDENT);
+static const Toks FOLLOW_STMT = TOKS(T_FUN, T_MUT, T_LET, T_IF, T_FOR, T_IDENT);
+static const Toks FOLLOW_EXPR = TOKS(T_SCLN);
 
 Module *parse_module(Parse_Context *c) {
   Module *mod = NEW(&c->arena, Module);
   mod->id = new_node_id(c);
-  while (lex_peek(&c->lex).t != T_EOF) {
+  while (!looking_at(c, T_EOF)) {
     APPEND(mod, parse_decl(c));
   }
   arena_own(&c->arena, mod->items, mod->cap);
@@ -146,12 +197,12 @@ Type *parse_type(Parse_Context *c) {
   switch (tok.t) {
     case T_S32:
       type->builtin = BUILTIN_S32;
+      next(c);
       break;
     default: {
-      Tok_Kind toks[] = {T_S32};
-      expected_one_of(c, toks, LEN(toks));
-      add_node_flags(c, type->id, NFLAG_ERROR);
-      return type;
+      expected(c, type->id, "builtin type");
+      advance(c, TOKS(T_RPAR, T_EQ, T_COMMA));
+      break;
     }
   }
   return type;
@@ -164,52 +215,23 @@ static Argument_List *parse_fun_args(Parse_Context *c) {
   Tok tok = lex_peek(&c->lex);
   Argument_List *args = NEW(&c->arena, Argument_List);
   args->id = new_node_id(c);
-  if (tok.t == T_RPAR) {
-    goto out;
-  }
 
-  do {
-    tok = lex_peek(&c->lex);
-
-    // Skip comma if not the first element
-    if (args->len != 0 && tok.t == T_COMMA) {
-      lex_consume(&c->lex);
-      // Handle trailing comma
-      if (lex_peek(&c->lex).t == T_RPAR) {
-        goto out;
-      }
-      tok = lex_peek(&c->lex);
-    }
-
+  while (looking_at(c, T_IDENT)) {
     Argument arg = {0};
     arg.id = new_node_id(c);
-
-    if (tok.t != T_IDENT) {
-      Tok_Kind toks[] = {T_IDENT};
-      expected_one_of(c, toks, LEN(toks));
-      Tok_Kind recs[] = {T_COMMA, T_RPAR};
-      if (!recover_at(c, recs, LEN(recs))) {
-        // If we cannot locally recover from error, return to the caller
-        // maybe the token makes sense to them!
-        add_node_flags(c, args->id, NFLAG_ERROR);
-        goto out;
-      }
-      skip_if(c, T_COMMA);
-      add_node_flags(c, arg.id, NFLAG_ERROR);
-      APPEND(args, arg);
-      continue;
-    }
-
-    lex_consume(&c->lex);
     arg.name = tok;
+    next(c);
     arg.type = parse_type(c);
-    lex_consume(&c->lex);
+    if (looking_at(c, T_EOF)) {
+      break;
+    }
+    if (looking_at(c, T_COMMA)) {
+      tok = tnext(c);
+    }
+  }
 
-    APPEND(args, arg);
-  } while (lex_peek(&c->lex).t == T_COMMA);
-
-out:
   arena_own(&c->arena, args->items, args->cap);
+
   return args;
 }
 
@@ -218,9 +240,29 @@ If_Statement *parse_if_stmt(Parse_Context *c) {
   return NULL;
 }
 
+// assignment_statement : IDENT '=' NUM ';'
 Assign_Statement *parse_assign_stmt(Parse_Context *c) {
-  (void)c;
-  return NULL;
+  Assign_Statement *stmt = NEW(&c->arena, Assign_Statement);
+  stmt->id = new_node_id(c);
+  if (!expect(c, stmt->id, T_IDENT)) {
+    advance(c, FOLLOW_STMT);
+    return stmt;
+  }
+  stmt->lhs = lex_peek(&c->lex);
+  if (!expect(c, stmt->id, T_EQ)) {
+    advance(c, FOLLOW_STMT);
+    return stmt;
+  }
+  stmt->rhs = parse_expr(c);
+  if (looking_at(c, T_EOF)) {
+    add_node_flags(c, stmt->id, NFLAG_ERROR);
+    return stmt;
+  }
+  if (!expect(c, stmt->id, T_SCLN)) {
+    advance(c, FOLLOW_STMT);
+    return stmt;
+  }
+  return stmt;
 }
 
 // statement : declaration
@@ -255,27 +297,31 @@ Statement parse_stmt(Parse_Context *c) {
   return stmt;
 }
 
+//   while (lex_peek(&c->lex).t != T_RBRC) {  // follow set of <statement_list>
+//                                            // make sure to update if other legal
+//                                            // delimiters are added to grammar
+//     if (lex_peek(&c->lex).t == T_EOF) {
+//       // EOF is currently not legal follow token
+//       string eof = tok_to_string[T_EOF];
+//       reportf(c->lex.source, c->lex.cursor,
+//               "syntax error: unexpected %.*s while parsing statements", eof.len,
+//               eof.data);
+//       add_node_flags(c, list->id, NFLAG_ERROR);
+//       goto out;
+//     }
+//     APPEND(list, parse_stmt(c));
+//   }
+// out:
+
 // statement_list : statement statement_list
 //                |
 // 			          ;
 Statement_List *parse_stmt_list(Parse_Context *c) {
   Statement_List *list = NEW(&c->arena, Statement_List);
   list->id = new_node_id(c);
-  while (lex_peek(&c->lex).t != T_RBRC) {  // follow set of <statement_list>
-                                           // make sure to update if other legal
-                                           // delimiters are added to grammar
-    if (lex_peek(&c->lex).t == T_EOF) {
-      // EOF is currently not legal follow token
-      string eof = tok_to_string[T_EOF];
-      reportf(c->lex.source, c->lex.cursor,
-              "syntax error: unexpected %.*s while parsing statements", eof.len,
-              eof.data);
-      add_node_flags(c, list->id, NFLAG_ERROR);
-      goto out;
-    }
+  while (!looking_at(c, T_RBRC) && !looking_at(c, T_EOF)) {
     APPEND(list, parse_stmt(c));
   }
-out:
   arena_own(&c->arena, list->items, list->cap);
   return list;
 }
@@ -286,50 +332,51 @@ out:
 Compound_Statement *parse_compound_stmt(Parse_Context *c) {
   Compound_Statement *stmt = NEW(&c->arena, Compound_Statement);
   stmt->id = new_node_id(c);
-  skip(c, T_LBRC);
+  if (!expect(c, stmt->id, T_LBRC)) {
+    advance(c, FOLLOW_STMT);
+    return stmt;
+  }
   stmt->statements = parse_stmt_list(c);
-  skip(c, T_RBRC);
+  if (!expect(c, stmt->id, T_RBRC)) {
+    advance(c, FOLLOW_STMT);
+    return stmt;
+  }
   return stmt;
 }
 
 // function_declaration :
 //  'fun' IDENT '(' function_argument_list ') type? compound_statement ;
 Function_Declaration *parse_fun_decl(Parse_Context *c) {
-  skip(c, T_FUN);
-  Tok tok = lex_peek(&c->lex);
-
   Function_Declaration *decl = NEW(&c->arena, Function_Declaration);
   decl->id = new_node_id(c);
 
-  if (tok.t != T_IDENT) {
-    Tok_Kind toks[] = {T_IDENT};
-    expected_one_of(c, toks, LEN(toks));
-    Tok_Kind recs[] = {T_LPAR};
-    if (!recover_at(c, recs, LEN(recs))) {
-      return NULL;
-    }
-    add_node_flags(c, decl->id, NFLAG_ERROR);
+  if (!expect(c, decl->id, T_FUN)) {
+    advance(c, FOLLOW_DECL);
+    return decl;
   }
-  lex_consume(&c->lex);
-
+  Tok tok = lex_peek(&c->lex);
+  if (!expect(c, decl->id, T_IDENT)) {
+    advance(c, FOLLOW_DECL);
+    return decl;
+  }
   decl->name = tok;
-  skip(c, T_LPAR);
+  if (!expect(c, decl->id, T_LPAR)) {
+    advance(c, FOLLOW_DECL);
+    return decl;
+  }
   decl->args = parse_fun_args(c);
-  skip(c, T_RPAR);
+  if (!expect(c, decl->id, T_RPAR)) {
+    advance(c, FOLLOW_DECL);
+    return decl;
+  }
 
-  if (lex_peek(&c->lex).t != T_LBRC) {
+  if (!looking_at(c, T_LBRC)) {
     // if not '{', it must be a type
     decl->return_type = parse_type(c);
   }
-  // If we still don't have '{', we must be missing a body
-  if (lex_peek(&c->lex).t != T_LBRC) {
-    reportf(c->lex.source, c->lex.cursor, "missing function body");
-    add_node_flags(c, decl->id, NFLAG_ERROR);
-    Tok_Kind recover_body[] = {T_LBRC, T_RBRC, T_SCLN};
-    if (recover_at(c, recover_body, LEN(recover_body))) {
-      // consume recovery tokens if they were hit
-      lex_consume(&c->lex);
-    }
+  // if still not '{' early return
+  if (!looking_at(c, T_LBRC)) {
+    advance(c, FOLLOW_DECL);
     return decl;
   }
   decl->body = parse_compound_stmt(c);
@@ -341,49 +388,53 @@ Function_Declaration *parse_fun_decl(Parse_Context *c) {
 //                     | ('let' | 'mut') IDENT type? ';'
 //                     ;
 Variable_Declaration *parse_var_decl(Parse_Context *c) {
-  Toks recovery = TOKS(T_SCLN, T_LBRC);
-
   Variable_Declaration *decl = NEW(&c->arena, Variable_Declaration);
   decl->id = new_node_id(c);
 
-  if (!EXPECT(c, TOKS(T_MUT, T_LET), recovery)) {
-    add_node_flags(c, decl->id, NFLAG_ERROR);
-    return decl;
+  switch (lex_peek(&c->lex).t) {
+    case T_MUT:
+      decl->is_mut = true;
+      break;
+    case T_LET:
+      decl->is_mut = false;
+      break;
+    default:
+      expected(c, decl->id, "expected let or mut");
+      advance(c, FOLLOW_DECL);
+      return decl;
   }
-  decl->is_mut = lex_peek(&c->lex).t == T_MUT;
-  lex_consume(&c->lex);
 
-  Tok tok = lex_peek(&c->lex);
-  if (!EXPECT(c, TOKS(T_IDENT), recovery)) {
-    add_node_flags(c, decl->id, NFLAG_ERROR);
+  Tok tok = tnext(c);
+  if (!expect(c, decl->id, T_IDENT)) {
+    advance(c, FOLLOW_DECL);
     return decl;
   }
-  lex_consume(&c->lex);
   decl->name = tok;
 
-  tok = lex_peek(&c->lex);
-  switch (tok.t) {
+  switch (lex_peek(&c->lex).t) {
     case T_SCLN:
       return decl;
     case T_EQ:
       break;
     default:
       decl->type = parse_type(c);
-      tok = lex_peek(&c->lex);
+      if (looking_at(c, T_EOF)) {
+        add_node_flags(c, decl->id, NFLAG_ERROR);
+        return decl;
+      }
       break;
   }
 
-  if (tok.t != T_EQ) {
-    if (!EXPECT(c, TOKS(T_SCLN), recovery)) {
-      add_node_flags(c, decl->id, NFLAG_ERROR);
-    }
+  if (!expect(c, decl->id, T_EQ)) {
+    advance(c, FOLLOW_DECL);
     return decl;
   }
 
-  lex_consume(&c->lex);
   decl->init = parse_expr(c);
-  EXPECT(c, TOKS(T_SCLN), recovery);
-  lex_consume(&c->lex);
+  if (!expect(c, decl->id, T_SCLN)) {
+    advance(c, FOLLOW_DECL);
+    return decl;
+  }
 
   return decl;
 }
@@ -392,17 +443,11 @@ Variable_Declaration *parse_var_decl(Parse_Context *c) {
 // 	       | function_declaration
 // 	       ;
 Declaration *parse_decl(Parse_Context *c) {
-  Tok tok = lex_peek(&c->lex);
-
   Declaration *decl = NEW(&c->arena, Declaration);
 
   decl->id = new_node_id(c);
 
-  if (!EXPECT(c, TOKS(T_FUN, T_MUT, T_LET), TOKS(T_SCLN, T_LBRC))) {
-    add_node_flags(c, decl->id, NFLAG_ERROR);
-    return decl;
-  }
-
+  Tok tok = lex_peek(&c->lex);
   switch (tok.t) {
     case T_FUN: {
       decl->t = DECL_FUN;
@@ -414,6 +459,8 @@ Declaration *parse_decl(Parse_Context *c) {
       decl->var = parse_var_decl(c);
     } break;
     default:
+      expected(c, decl->id, "expected start of declaration");
+      advance(c, FOLLOW_DECL);
       break;
   }
 
@@ -425,15 +472,12 @@ Declaration *parse_decl(Parse_Context *c) {
 Expr *parse_expr(Parse_Context *c) {
   Expr *expr = NEW(&c->arena, Expr);
   expr->id = new_node_id(c);
-
-  if (!EXPECT(c, TOKS(T_NUM), TOKS(T_SCLN, T_RBRC))) {
-    add_node_flags(c, expr->id, NFLAG_ERROR);
+  expr->t = EXPR_LIT;
+  Tok tok = lex_peek(&c->lex);
+  if (!expect(c, expr->id, T_NUM)) {
+    advance(c, FOLLOW_EXPR);
     return expr;
   }
-
-  expr->t = EXPR_LIT;
-  expr->literal = lex_peek(&c->lex);
-  lex_consume(&c->lex);
-
+  expr->literal = tok;
   return expr;
 }

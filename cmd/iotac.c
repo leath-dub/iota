@@ -5,11 +5,10 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  Source_Code code =
-      new_source_code(ztos("<string>"), ztos(
-        "fun main() {\n"
-        "  x int = 10;\n"
-        "}"));
+  Source_Code code = new_source_code(ztos("<string>"), ztos("fun main(x s32) {\n"
+                                                            "  let y = 1;\n"
+                                                            "  let x = 10;\n"
+                                                            "}"));
   Parse_Context pc = new_parse_context(code);
   Module *mod = parse_module(&pc);
   Dump_Out out = new_dump_out();
