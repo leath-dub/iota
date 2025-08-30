@@ -4,174 +4,523 @@
 #include "../common/common.h"
 #include "../lex/lex.h"
 
-struct Type;
-struct Expr;
-struct Statement;
-struct If_Statement;
-struct Assign_Statement;
-struct Statement_List;
-struct Compound_Statement;
-struct Else_Branch;
-struct Argument;
-struct Argument_List;
-struct Function_Declaration;
-struct Variable_Declaration;
-struct Declaration;
-
-// For storing metadata like the resolved type or the location (span) of
-// ast nodes we store a handle.
 typedef u32 Node_ID;
 
-typedef enum {
-  BUILTIN_S32,
-} Builtin_Type;
+struct Imports;
+struct Declarations;
+struct Import;
+struct Declaration;
+struct Variable_Declaration;
+struct Function_Declaration;
+struct Struct_Declaration;
+struct Enum_Declaration;
+struct Error_Declaration;
+struct Union_Declaration;
+struct Alias_Declaration;
+struct Use_Declaration;
+struct Variable_List;
+struct Variable_Binding;
+struct Function_Parameter_List;
+struct Function_Parameter;
+struct Field_List;
+struct Field;
+struct Identifier_List;
+struct Error_List;
+struct Error;
+struct Statement;
+struct Declaration;
+struct If_Statement;
+struct Return_Statement;
+struct Defer_Statement;
+struct Compound_Statement;
+struct Else;
+struct Type;
+struct Builtin_Type;
+struct Collection_Type;
+struct Struct_Type;
+struct Union_Type;
+struct Enum_Type;
+struct Error_Type;
+struct Pointer_Type;
+struct Scoped_Identifier;
+struct Expression;
+struct Basic_Expression;
+struct Parenthesized_Expression;
+struct Composite_Literal_Expression;
+struct Postfix_Expression;
+struct Function_Call_Expression;
+struct Field_Access_Expression;
+struct Array_Access_Expression;
+struct Unary_Expression;
+struct Binary_Expression;
 
-typedef enum {
-  TYPE_BUILTIN,
-} Type_Kind;
+struct Index;
 
-typedef struct Type {
+typedef struct {
   Node_ID id;
-  Type_Kind t;
-  // TODO: add more types
-  union {
-    Builtin_Type builtin;
-  };
-} Type;
+  struct Imports *imports;
+  struct Declarations *declarations;
+} Source_File;
 
-typedef enum {
-  EXPR_ADD,
-  EXPR_MUL,
-  EXPR_SUB,
-  EXPR_NEG,
-  EXPR_POS,
-  EXPR_LIT,
-} Expr_Kind;
-
-typedef struct Expr {
+struct Imports {
   Node_ID id;
-  Expr_Kind t;
-  union {
-    struct {
-      Tok op;
-      struct Expr *operand;
-    } unary;
-    struct {
-      Tok op;
-      struct Expr *left;
-      struct Expr *right;
-    } binary;
-    Tok literal;
-    // TODO: add postfix expressions like array access and slicing + function
-    // calls
-  };
-} Expr;
-
-typedef struct Statement_List {
-  Node_ID id;
-  struct Statement *items;
-  u32 cap;
   u32 len;
-} Statement_List;
+  u32 cap;
+  struct Import **items;
+};
 
-typedef struct Compound_Statement {
+struct Import {
   Node_ID id;
-  Statement_List *statements;
-} Compound_Statement;
+  bool aliased;
+  struct {
+    Tok alias;
+  };
+  Tok import_name;
+};
+
+struct Declarations {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Declaration **items;
+};
+
+typedef enum {
+  DECLARATION_VARIABLE,
+  DECLARATION_FUNCTION,
+  DECLARATION_STRUCT,
+  DECLARATION_ENUM,
+  DECLARATION_ERROR,
+  DECLARATION_UNION,
+  DECLARATION_ALIAS,
+  DECLARATION_USE,
+} Declaration_Kind;
+
+struct Declaration {
+  Node_ID id;
+  Declaration_Kind t;
+  union {
+    struct Variable_Declaration *variable_declaration;
+    struct Function_Declaration *function_declaration;
+    struct Struct_Declaration *struct_declaration;
+    struct Enum_Declaration *enum_declaration;
+    struct Error_Declaration *error_declaration;
+    struct Union_Declaration *union_declaration;
+    struct Alias_Declaration *alias_declaration;
+    struct Use_Declaration *use_declaration;
+  };
+};
+
+struct Variable_Declaration {
+  Node_ID id;
+  Tok classifier; // let or mut
+  struct Variable_List *variable_list;
+  bool has_init;
+  struct {
+    Tok assign_token;
+    struct Expression *expression;
+  } init;
+};
+
+struct Variable_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Variable_Binding **items;
+};
+
+struct Variable_Binding {
+  Node_ID id;
+  Tok identifier;
+  struct Type *type; // nullable
+};
+
+struct Function_Declaration {
+  Node_ID id;
+  Tok identifier;
+  struct Function_Parameter_List *params;
+  struct Type *return_type; // nullable
+  struct Compound_Statement *body;
+};
+
+struct Function_Parameter_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Function_Parameter **items;
+};
+
+struct Function_Parameter {
+  Node_ID id;
+  Tok identifier;
+  bool is_variadic;
+  struct Type *type;
+};
+
+struct Struct_Declaration {
+  Node_ID id;
+  Tok identifier;
+  bool tuple_like;
+  struct Field_List *fields;
+};
+
+struct Field_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Field **items;
+};
+
+struct Field {
+  Node_ID id;
+  Tok identifier;
+  struct Type *type;
+};
+
+struct Enum_Declaration {
+  Node_ID id;
+  Tok identifier;
+  struct Identifier_List *enumerators;
+};
+
+struct Identifier_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  Tok **items;
+};
+
+struct Error_Declaration {
+  Node_ID id;
+  Tok identifier;
+  struct Error_List *errors;
+};
+
+struct Error_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Error *items;
+};
+
+struct Error {
+  Node_ID id;
+  bool embedded; // e.g. !Foo
+  Tok identifier;
+};
+
+struct Union_Declaration {
+  Node_ID id;
+  Tok identifier;
+  struct Field_List *fields;
+};
+
+struct Alias_Declaration {
+  Node_ID id;
+  Tok identifier;
+  struct Type *type;
+};
+
+struct Use_Declaration {
+  Node_ID id;
+  struct Scoped_Identifier *scoped_identifier;
+  struct Identifier_List *all; // nullable ( this stores the optional
+                               // {a, b, c} in <scoped_ident>.{a, b, c}
+};
+
+typedef enum {
+  STATMENT_DECLARATION,
+  STATEMENT_IF,
+  STATEMENT_RETURN,
+  STATEMENT_COMPOUND,
+  STATEMENT_EXPRESSION,
+} Statement_Kind;
+
+struct Statement {
+  Node_ID id;
+  Statement_Kind t;
+  union {
+    struct Declaration *declaration;
+    struct If_Statement *if_statement;
+    struct Return_Statement *return_statement;
+    struct Defer_Statement *defer_statement;
+    struct Compound_Statement *compound_statement;
+    struct Expression *expression;
+  };
+};
+
+struct If_Statement {
+  Node_ID id;
+  struct Expression *condition;
+  struct Compound_Statement *true_branch;
+  struct Else *else_branch; // nullable
+};
 
 typedef enum {
   ELSE_IF,
   ELSE_COMPOUND,
-} Else_Branch_Kind;
+} Else_Kind;
 
-typedef struct Else_Branch {
+struct Else {
   Node_ID id;
-  Else_Branch_Kind t;
+  Else_Kind t;
   union {
-    struct If_Statement *if_;
-    Compound_Statement *statements;
+    struct If_Statement *if_statement;
+    struct Compound_Statement *compound_statement;
   };
-} Else_Branch;
+};
 
-typedef struct If_Statement {
+struct Return_Statement {
   Node_ID id;
-  Expr *condition;
-  Compound_Statement *true_;
-  Else_Branch *false_;
-} If_Statement;
+  struct Expr *expression; // nullable
+};
 
-typedef struct Assign_Statement {
+struct Defer_Statement {
   Node_ID id;
-  Tok lhs;  // TODO: allow *x = 10 or x[0] = 10
-  Expr *rhs;
-} Assign_Statement;
+  struct Statement *statement;
+};
+
+struct Compound_Statement {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Statement *items;
+};
 
 typedef enum {
-  STMT_IF,
-  STMT_ASSIGN,
-  STMT_DECL,
-  STMT_COMP,
-} Statement_Kind;
+  TYPE_BUILTIN,
+  TYPE_COLLECTION,
+  TYPE_STRUCT,
+  TYPE_UNION,
+  TYPE_ENUM,
+  TYPE_ERROR,
+  TYPE_POINTER,
+  TYPE_SCOPED_IDENTIFIER,
+} Type_Kind;
 
-typedef struct Statement {
+struct Type {
   Node_ID id;
-  Statement_Kind t;
+  Type_Kind t;
   union {
-    If_Statement *if_;
-    Assign_Statement *assign;
-    struct Declaration *decl;
-    struct Compound_Statement *compound;
+    struct Builtin_Type *builtin_type;
+    struct Collection_Type *collection_type;
+    struct Struct_Type *struct_type;
+    struct Union_Type *union_type;
+    struct Enum_Type *enum_type;
+    struct Error_Type *error_type;
+    struct Pointer_Type *pointer_type;
+    struct Scoped_Identifier *scoped_identifier;
   };
-} Statement;
+};
 
-typedef struct Argument {
+struct Builtin_Type {
   Node_ID id;
-  Tok name;
-  Type *type;
-} Argument;
+  Tok token; // just stores the keyword token
+};
 
-typedef struct Argument_List {
+struct Collection_Type {
   Node_ID id;
-  Argument *items;
+  struct Expression *index_expression; // nullable
+  struct Type *element_type;
+};
+
+struct Struct_Type {
+  Node_ID id;
+  bool tuple_like;
+  struct Field_List *fields;
+};
+
+struct Union_Type {
+  Node_ID id;
+  struct Field_List *fields;
+};
+
+struct Enum_Type {
+  Node_ID id;
+  struct Identifier_List *enumerators;
+};
+
+struct Pointer_Type {
+  Node_ID id;
+  Tok classifier; // let or mut
+  struct Type *referenced_type;
+};
+
+struct Scoped_Identifier {
+  Node_ID id;
   u32 cap;
   u32 len;
-} Argument_List;
-
-typedef struct Variable_Declaration {
-  Node_ID id;
-  Tok name;
-  Type *type;  // nullable *
-  Expr *init;  // nullable *
-  bool is_mut;
-} Variable_Declaration;
-
-typedef struct Function_Declaration {
-  Node_ID id;
-  Tok name;
-  Argument_List *args;
-  Type *return_type;
-  Compound_Statement *body;
-} Function_Declaration;
+  Tok **items;
+};
 
 typedef enum {
-  DECL_VAR,
-  DECL_FUN,
-} Declaration_Kind;
+  EXPRESSION_BASIC,
+  EXPRESSION_PARENTHESIZED,
+  EXPRESSION_COMPOSITE_LITERAL,
+  EXPRESSION_POSTFIX,
+  EXPRESSION_FUNCTION_CALL,
+  EXPRESSION_FIELD_ACCESS,
+  EXPRESSION_ARRAY_ACCESS,
+  EXPRESSION_UNARY,
+  EXPRESSION_BINARY,
+} Expression_Kind;
 
-typedef struct Declaration {
+struct Expression {
   Node_ID id;
-  Declaration_Kind t;
+  Expression_Kind t;
   union {
-    Variable_Declaration *var;
-    Function_Declaration *fun;
+    struct Basic_Expression *basic_expression;
+    struct Parenthesized_Expression *parenthesized_expression;
+    struct Composite_Literal_Expression *composite_literal_expression;
+    struct Postfix_Expression *postfix_expression;
+    struct Function_Call_Expression *function_call_expression;
+    struct Field_Access_Expression *field_access_expression;
+    struct Array_Access_Expression *array_access_expression;
+    struct Unary_Expression *unary_expression;
+    struct Binary_Expression *binary_expression;
   };
-} Declaration;
+};
+
+struct Basic_Expression {
+  Node_ID id;
+  Tok token; // Stores: identifier, number, string, enum, nil
+};
+
+struct Parenthesized_Expression {
+  Node_ID id;
+  struct Expression *inner_expression;
+};
+
+struct Composite_Literal_Expression {
+  Node_ID id;
+  struct Type *explicit_type; // nullable
+  struct Expression *value;
+};
+
+struct Function_Call_Expression {
+  Node_ID id;
+  struct Expression *function;
+  struct Expression *arguments;
+  // arguments to the function are an expression
+  // as this allows you to have assignments and
+  // comma separted values e.g.:
+  //
+  // foo(x = 10, 10)
+  //
+  // gives a parse tree like so:
+  //
+  // (function_call
+  //   (comma
+  //     (assignment ...)
+  //     (basic ...)))
+};
+
+struct Postfix_Expression {
+  Node_ID id;
+  struct Expression *inner_expression;
+  Tok op;
+};
+
+struct Field_Access_Expression {
+  Node_ID id;
+  struct Expression *value;
+  Tok field;
+};
+
+struct Array_Access_Expression {
+  Node_ID id;
+  struct Expression *value;
+  struct Index *index;
+};
+
+struct Index {
+  Node_ID id;
+  struct Expression *start; // nullable
+  struct Expression *end; // nullable
+};
+
+struct Unary_Expression {
+  Node_ID id;
+  Tok op;
+  struct Expression *inner_expression;
+};
+
+struct Binary_Expression {
+  Node_ID id;
+  Tok op;
+  struct Expression *left;
+  struct Expression *right;
+};
+
+typedef struct Imports Imports;
+typedef struct Declarations Declarations;
+typedef struct Import Import;
+typedef struct Declaration Declaration;
+typedef struct Variable_Declaration Variable_Declaration;
+typedef struct Function_Declaration Function_Declaration;
+typedef struct Struct_Declaration Struct_Declaration;
+typedef struct Enum_Declaration Enum_Declaration;
+typedef struct Error_Declaration Error_Declaration;
+typedef struct Union_Declaration Union_Declaration;
+typedef struct Alias_Declaration Alias_Declaration;
+typedef struct Use_Declaration Use_Declaration;
+typedef struct Variable_List Variable_List;
+typedef struct Variable_Binding Variable_Binding;
+typedef struct Function_Parameter_List Function_Parameter_List;
+typedef struct Function_Parameter Function_Parameter;
+typedef struct Field_List Field_List;
+typedef struct Field Field;
+typedef struct Identifier_List Identifier_List;
+typedef struct Error_List Error_List;
+typedef struct Error Error;
+typedef struct Statement Statement;
+typedef struct Declaration Declaration;
+typedef struct If_Statement If_Statement;
+typedef struct Return_Statement Return_Statement;
+typedef struct Defer_Statement Defer_Statement;
+typedef struct Compound_Statement Compound_Statement;
+typedef struct Else Else;
+typedef struct Type Type;
+typedef struct Builtin_Type Builtin_Type;
+typedef struct Collection_Type Collection_Type;
+typedef struct Struct_Type Struct_Type;
+typedef struct Union_Type Union_Type;
+typedef struct Enum_Type Enum_Type;
+typedef struct Error_Type Error_Type;
+typedef struct Pointer_Type Pointer_Type;
+typedef struct Scoped_Identifier Scoped_Identifier;
+typedef struct Expression Expression;
+typedef struct Basic_Expression Basic_Expression;
+typedef struct Parenthesized_Expression Parenthesized_Expression;
+typedef struct Composite_Literal_Expression Composite_Literal_Expression;
+typedef struct Postfix_Expression Postfix_Expression;
+typedef struct Function_Call_Expression Function_Call_Expression;
+typedef struct Field_Access_Expression Field_Access_Expression;
+typedef struct Array_Access_Expression Array_Access_Expression;
+typedef struct Unary_Expression Unary_Expression;
+typedef struct Binary_Expression Binary_Expression;
+
+typedef enum {
+  NFLAG_NONE = 0,
+  NFLAG_ERROR = 1,
+} Node_Flags;
 
 typedef struct {
-  Node_ID id;
-  Declaration **items;
-  u32 len;
+  Node_Flags *items;
   u32 cap;
-} Module;
+  u32 len;
+} Node_Flags_Data;
+
+typedef struct {
+  Node_ID next_id;
+  Node_Flags_Data flags;
+} Node_Metadata;
+
+Node_Metadata new_node_metadata(void);
+void node_metadata_free(Node_Metadata *m);
+void *new_node(Node_Metadata *m, Arena *a, usize size, usize align);
+void add_node_flags(Node_Metadata *m, Node_ID id, Node_Flags flags);
+
+bool has_error(Node_Metadata *m, void *node);
 
 #endif

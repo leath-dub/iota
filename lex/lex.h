@@ -6,6 +6,12 @@
 #include "uc.h"
 
 typedef enum {
+  T_EMPTY = 0,  // sentinal token value (used for initial state of lexer)
+  T_EOF,    // EOF
+  T_CMNT,   // comment
+  T_SYNTHESIZED, // not a real token, used when synthesizing a AST (the ast is
+				 // more of a CST in the iota compiler
+  T_ILLEGAL,
   T_LBRK,   // [
   T_RBRK,   // ]
   T_LPAR,   // (
@@ -42,13 +48,23 @@ typedef enum {
   T_LET,     // keyword: let
   T_MUT,     // keyword: mut
   T_TYPE,    // keyword: type
+  T_IMPORT,  // keyword: import
+  T_ERROR,   // keyword: error
+  T_USE,     // keyword: use
+  T_S8,      // keyword: s8
+  T_U8,      // keyword: u8
+  T_S16,     // keyword: s16
+  T_U16,     // keyword: u16
   T_S32,     // keyword: s32
+  T_U32,     // keyword: u32
+  T_S64,     // keyword: s64
+  T_U64,     // keyword: u64
+  T_F32,     // keyword: f32
+  T_F64,     // keyword: f64
+  T_BOOL,    // keyword: bool
+  T_STRING,  // keyword: string
+  T_ANY,     // keyword: any
   T_IDENT,   // identifier
-
-  T_EOF,    // EOF
-  T_CMNT,   // comment
-  T_EMPTY,  // sentinal token value (used for initial state of lexer)
-  T_ILLEGAL,
 
   TOK_KIND_COUNT,
 } Tok_Kind;
