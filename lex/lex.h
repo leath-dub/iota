@@ -21,6 +21,8 @@ typedef enum {
   T_SCLN,   // ;
   T_CLN,    // :
   T_COMMA,  // ,
+  T_BANG,   // !
+  T_DOT,    // .
 
   T_PLUS,   // +
   T_MINUS,  // -

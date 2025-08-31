@@ -143,7 +143,8 @@ bool id_start(rune r) {
     case GC_Nl:
       return true;
     default:
-      return false;
+      // Fallback allow underscore at the start
+      return r == '_';
   }
 }
 

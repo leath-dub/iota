@@ -4,7 +4,18 @@
 #include "../ast/ast.h"
 #include "../lex/lex.h"
 
-// Uses as a mask
+typedef struct {
+  Tok_Kind *items;
+  u32 len;
+} Toks;
+
+// I know this is smelly but C is very limited for variadic args and not storing
+// size with array is really limiting for building abstractions
+#define TOKS(...)                                               \
+  (Toks) {                                                      \
+    .items = (Tok_Kind[]){__VA_ARGS__},                         \
+    .len = sizeof((Tok_Kind[]){__VA_ARGS__}) / sizeof(Tok_Kind) \
+  }
 
 typedef struct {
   Lexer lex;
@@ -21,9 +32,23 @@ Import *import(Parse_Context *c);
 Declarations *declarations(Parse_Context *c);
 Declaration *declaration(Parse_Context *c);
 Variable_Declaration *variable_declaration(Parse_Context *c);
+Function_Declaration *function_declaration(Parse_Context *c);
 Variable_List *variable_list(Parse_Context *c);
-Variable_Binding *variable_binding(Parse_Context *c, Tok_Kind delim);
+Variable_Binding *variable_binding(Parse_Context *c);
 Type *type(Parse_Context *c);
+Collection_Type *collection_type(Parse_Context *c);
+Struct_Type *struct_type(Parse_Context *c);
+Type_List *type_list(Parse_Context *c);
+Field_List *field_list(Parse_Context *c);
+Field *field(Parse_Context *c);
+Union_Type *union_type(Parse_Context *c);
+Enum_Type *enum_type(Parse_Context *c);
+Error_Type *error_type(Parse_Context *c);
+Pointer_Type *pointer_type(Parse_Context *c);
+Identifier_List *identifier_list(Parse_Context *c);
+Error_List *error_list(Parse_Context *c);
+Error *error(Parse_Context *c);
+Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow);
 Expression *expression(Parse_Context *c);
 
 // Declaration *parse_decl(Parse_Context *c);
@@ -83,7 +108,29 @@ void dump_enum_type(Dump_Out *d, Parse_Context *c, Enum_Type *n);
 void dump_error_type(Dump_Out *d, Parse_Context *c, Error_Type *n);
 void dump_pointer_type(Dump_Out *d, Parse_Context *c, Pointer_Type *n);
 void dump_scoped_identifier(Dump_Out *d, Parse_Context *c, Scoped_Identifier *n);
+void dump_compound_statement(Dump_Out *d, Parse_Context *c, Use_Declaration *n);
+void dump_identifier_list(Dump_Out *d, Parse_Context *c, Identifier_List *n);
+void dump_function_parameter_list(Dump_Out *d, Parse_Context *c, Function_Parameter_List *n);
+void dump_function_parameter(Dump_Out *d, Parse_Context *c, Function_Parameter *n);
+void dump_type_list(Dump_Out *d, Parse_Context *c, Type_List *n);
+void dump_field_list(Dump_Out *d, Parse_Context *c, Field_List *n);
+void dump_field(Dump_Out *d, Parse_Context *c, Field *n);
+void dump_error_list(Dump_Out *d, Parse_Context *c, Error_List *n);
+void dump_error(Dump_Out *d, Parse_Context *c, Error *n);
+void dump_expression(Dump_Out *d, Parse_Context *c, Expression *n);
+void dump_basic_expression(Dump_Out *d, Parse_Context *c, Basic_Expression *n);
+void dump_parenthesized_expression(Dump_Out *d, Parse_Context *c, Parenthesized_Expression *n);
+void dump_composite_literal_expression(Dump_Out *d, Parse_Context *c, Composite_Literal_Expression *n);
+void dump_postfix_expression(Dump_Out *d, Parse_Context *c, Postfix_Expression *n);
+void dump_function_call_expression(Dump_Out *d, Parse_Context *c, Function_Call_Expression *n);
+void dump_field_access_expression(Dump_Out *d, Parse_Context *c, Field_Access_Expression *n);
+void dump_array_access_expression(Dump_Out *d, Parse_Context *c, Array_Access_Expression *n);
+void dump_unary_expression(Dump_Out *d, Parse_Context *c, Unary_Expression *n);
+void dump_binary_expression(Dump_Out *d, Parse_Context *c, Binary_Expression *n);
+void dump_index(Dump_Out *d, Parse_Context *c, Index *n);
+void dump_type(Dump_Out *d, Parse_Context *c, Type *n);
 void dump_tok(Dump_Out *d, Parse_Context *c, Tok tok);
+void dump_field_tok(Dump_Out *d, Parse_Context *c, Tok tok);
 
 #define DUMP(d, c, node, name) dump_node(d, c, node, #name, (Dumper)dump_##name);
 

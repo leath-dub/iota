@@ -32,20 +32,20 @@ Dump_Out new_dump_out(void) {
 
 void dump_node(Dump_Out *d, Parse_Context *c, void *node, const char *name, Dumper dumper) {
   if (has_error(&c->meta, node)) {
-    dumpf(d, "(error)");
+    dumpf(d, "(ERROR %s)", name);
     return;
   }
   dumpf(d, "(%s\n", name);
   d->indent++;
   dumper(d, c, node);
-  dumpf(d, ")");
+  dump_rawf(d, ")");
   d->indent--;
 }
 
 void dump_source_file(Dump_Out *d, Parse_Context *c, Source_File *n) {
   D(imports, n->imports);
   dump_rawf(d, "\n");
-  D(declarations, n->imports);
+  D(declarations, n->declarations);
 }
 
 void dump_imports(Dump_Out *d, Parse_Context *c, Imports *n) {
@@ -60,9 +60,7 @@ void dump_imports(Dump_Out *d, Parse_Context *c, Imports *n) {
 void dump_import(Dump_Out *d, Parse_Context *c, Import *n) {
   if (n->aliased) {
     dumpf(d, "alias: ");
-    d->is_field = true;
-    dump_tok(d, c, n->alias);
-    d->is_field = false;
+    dump_field_tok(d, c, n->alias);
     dump_rawf(d, "\n");
   }
   dump_tok(d, c, n->import_name);
@@ -101,56 +99,136 @@ void dump_declaration(Dump_Out *d, Parse_Context *c, Declaration *n) {
       D(alias_declaration, n->alias_declaration);
       break;
     case DECLARATION_USE:
-      D(dump_use_declaration, n->use_declaration);
+      D(use_declaration, n->use_declaration);
       break;
   }
 }
 
 void dump_variable_declaration(Dump_Out *d, Parse_Context *c, Variable_Declaration *n) {
   D(variable_list, n->variable_list);
-  dump_rawf(d, ")");
 }
 
 void dump_function_declaration(Dump_Out *d, Parse_Context *c, Function_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(function_parameter_list, n->params);
+  D(type, n->return_type);
+  D(compound_statement, n->body);
 }
 
 void dump_struct_declaration(Dump_Out *d, Parse_Context *c, Struct_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  if (n->tuple_like) {
+    D(type_list, n->type_list);
+  } else {
+    D(field_list, n->field_list);
+  }
 }
 
 void dump_enum_declaration(Dump_Out *d, Parse_Context *c, Enum_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(identifier_list, n->enumerators);
 }
 
 void dump_error_declaration(Dump_Out *d, Parse_Context *c, Error_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(error_list, n->errors);
 }
 
 void dump_union_declaration(Dump_Out *d, Parse_Context *c, Union_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(field_list, n->fields);
 }
 
 void dump_alias_declaration(Dump_Out *d, Parse_Context *c, Alias_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(type, n->type);
 }
 
 void dump_use_declaration(Dump_Out *d, Parse_Context *c, Use_Declaration *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  D(scoped_identifier, n->scoped_identifier);
+  D(identifier_list, n->all);
+}
+
+void dump_error_list(Dump_Out *d, Parse_Context *c, Error_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    D(error, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
+}
+
+void dump_error(Dump_Out *d, Parse_Context *c, Error *n) {
+  dumpf(d, "embedded: %s\n", n->embedded ? "true" : "false");
+  D(scoped_identifier, n->scoped_identifier);
+}
+
+void dump_field_list(Dump_Out *d, Parse_Context *c, Field_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    D(field, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
+}
+
+void dump_type_list(Dump_Out *d, Parse_Context *c, Type_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    D(type, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
+}
+
+void dump_field(Dump_Out *d, Parse_Context *c, Field *n) {
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  D(type, n->type);
+}
+
+void dump_function_parameter_list(Dump_Out *d, Parse_Context *c, Function_Parameter_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    D(function_parameter, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
+}
+
+void dump_function_parameter(Dump_Out *d, Parse_Context *c, Function_Parameter *n) {
+  dumpf(d, "name: ");
+  dump_field_tok(d, c, n->identifier);
+  dump_rawf(d, "\n");
+  dumpf(d, "variadic: %s\n", n->variadic ? "true" : "false");
+  D(type, n->type);
+}
+
+void dump_compound_statement(Dump_Out *d, Parse_Context *c, Use_Declaration *n) {
+  D(scoped_identifier, n->scoped_identifier);
+  D(identifier_list, n->all);
+}
+
+void dump_identifier_list(Dump_Out *d, Parse_Context *c, Identifier_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    dump_tok(d, c, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
 }
 
 void dump_variable_list(Dump_Out *d, Parse_Context *c, Variable_List *n) {
@@ -167,7 +245,10 @@ void dump_variable_binding(Dump_Out *d, Parse_Context *c, Variable_Binding *n) {
   d->is_field = true;
   dump_tok(d, c, n->identifier);
   d->is_field = false;
-  D(type, n->type);
+  if (n->type) {
+    dump_rawf(d, "\n");
+    D(type, n->type);
+  }
 }
 
 void dump_type(Dump_Out *d, Parse_Context *c, Type *n) {
@@ -200,51 +281,161 @@ void dump_type(Dump_Out *d, Parse_Context *c, Type *n) {
 }
 
 void dump_builtin_type(Dump_Out *d, Parse_Context *c, Builtin_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dump_tok(d, c, n->token);
 }
 
 void dump_collection_type(Dump_Out *d, Parse_Context *c, Collection_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "index: ");
+  d->is_field = true;
+  D(expression, n->index_expression);
+  d->is_field = false;
+  dump_rawf(d, "\n");
+  D(type, n->element_type);
 }
 
 void dump_struct_type(Dump_Out *d, Parse_Context *c, Struct_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "tuple: %s\n", n->tuple_like ? "true" : "false");
+  if (n->tuple_like) {
+    D(type_list, n->type_list);
+  } else {
+    D(field_list, n->field_list);
+  }
 }
 
 void dump_union_type(Dump_Out *d, Parse_Context *c, Union_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  D(field_list, n->fields);
 }
 
 void dump_enum_type(Dump_Out *d, Parse_Context *c, Enum_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  D(identifier_list, n->enumerators);
 }
 
 void dump_error_type(Dump_Out *d, Parse_Context *c, Error_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  D(error_list, n->errors);
 }
 
 void dump_pointer_type(Dump_Out *d, Parse_Context *c, Pointer_Type *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  dumpf(d, "mut: %s\n", n->classifier.t == T_MUT ? "true" : "false");
+  D(type, n->referenced_type);
 }
 
 void dump_scoped_identifier(Dump_Out *d, Parse_Context *c, Scoped_Identifier *n) {
-  (void)d;
-  (void)c;
-  (void)n;
+  for (u32 i = 0; i < n->len; i++) {
+    dump_tok(d, c, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
+}
+
+void dump_expression(Dump_Out *d, Parse_Context *c, Expression *n) {
+  switch (n->t) {
+    case EXPRESSION_BASIC:
+      D(basic_expression, n->basic_expression);
+      break;
+    case EXPRESSION_PARENTHESIZED:
+      D(parenthesized_expression, n->parenthesized_expression);
+      break;
+    case EXPRESSION_COMPOSITE_LITERAL:
+      D(composite_literal_expression, n->composite_literal_expression);
+      break;
+    case EXPRESSION_POSTFIX:
+      D(postfix_expression, n->postfix_expression);
+      break;
+    case EXPRESSION_FUNCTION_CALL:
+      D(function_call_expression, n->function_call_expression);
+      break;
+    case EXPRESSION_FIELD_ACCESS:
+      D(field_access_expression, n->field_access_expression);
+      break;
+    case EXPRESSION_ARRAY_ACCESS:
+      D(array_access_expression, n->array_access_expression);
+      break;
+    case EXPRESSION_UNARY:
+      D(unary_expression, n->unary_expression);
+      break;
+    case EXPRESSION_BINARY:
+      D(binary_expression, n->binary_expression);
+      break;
+  }
+}
+
+void dump_basic_expression(Dump_Out *d, Parse_Context *c, Basic_Expression *n) {
+  dump_tok(d, c, n->token);
+}
+
+void dump_parenthesized_expression(Dump_Out *d, Parse_Context *c, Parenthesized_Expression *n) {
+  D(expression, n->inner_expression);
+}
+
+void dump_composite_literal_expression(Dump_Out *d, Parse_Context *c, Composite_Literal_Expression *n) {
+  D(expression, n->value);
+  dump_rawf(d, "\n");
+  D(type, n->explicit_type);
+}
+
+void dump_postfix_expression(Dump_Out *d, Parse_Context *c, Postfix_Expression *n) {
+  D(expression, n->inner_expression);
+  dump_rawf(d, "\nop: ");
+  dump_field_tok(d, c, n->op);
+}
+
+void dump_function_call_expression(Dump_Out *d, Parse_Context *c, Function_Call_Expression *n) {
+  D(expression, n->function);
+  dump_rawf(d, "\n");
+  D(expression, n->arguments);
+}
+
+void dump_field_access_expression(Dump_Out *d, Parse_Context *c, Field_Access_Expression *n) {
+  D(expression, n->value);
+  dump_rawf(d, "\nfield: ");
+  dump_field_tok(d, c, n->field);
+}
+
+void dump_array_access_expression(Dump_Out *d, Parse_Context *c, Array_Access_Expression *n) {
+  D(expression, n->value);
+  dump_rawf(d, "\n");
+  D(index, n->index);
+}
+
+void dump_unary_expression(Dump_Out *d, Parse_Context *c, Unary_Expression *n) {
+  dumpf(d, "op: ");
+  dump_field_tok(d, c, n->op);
+  dump_rawf(d, "\n");
+  D(expression, n->inner_expression);
+}
+
+void dump_binary_expression(Dump_Out *d, Parse_Context *c, Binary_Expression *n) {
+  D(expression, n->left);
+  dump_rawf(d, "\n");
+  dumpf(d, "op: ");
+  dump_field_tok(d, c, n->op);
+  dump_rawf(d, "\n");
+  D(expression, n->right);
+}
+
+void dump_index(Dump_Out *d, Parse_Context *c, Index *n) {
+  if (n->start) {
+    dumpf(d, "start: ");
+    d->is_field = true;
+    D(expression, n->start);
+    d->is_field = false;
+    if (n->end) {
+      dump_rawf(d, "\n");
+    }
+  }
+  if (n->end) {
+    dumpf(d, "end: ");
+    d->is_field = true;
+    D(expression, n->end);
+    d->is_field = false;
+  }
+}
+
+void dump_field_tok(Dump_Out *d, Parse_Context *c, Tok tok) {
+  d->is_field = true;
+  dump_tok(d, c, tok);
+  d->is_field = false;
 }
 
 void dump_tok(Dump_Out *d, Parse_Context *c, Tok tok) {

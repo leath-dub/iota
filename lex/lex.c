@@ -20,6 +20,8 @@ string tok_to_string[TOK_KIND_COUNT] = {
     [T_SCLN] = ZTOS("';'"),
     [T_CLN] = ZTOS("':'"),
     [T_COMMA] = ZTOS("','"),
+    [T_BANG] = ZTOS("'!'"),
+    [T_DOT] = ZTOS("'.'"),
 
     [T_PLUS] = ZTOS("'+'"),
     [T_MINUS] = ZTOS("'-'"),
@@ -180,6 +182,15 @@ Tok lex_peek(Lexer *l) {
     }
     case '*':
       return new_tok(l, T_STAR, 1);
+    case '.':
+      return new_tok(l, T_DOT, 1);
+    case '!': {
+      if (l->cursor + 1 < l->source.text.len &&
+          l->source.text.data[l->cursor + 1] == '=') {
+        return new_tok(l, T_NEQ, 2);
+      }
+      return new_tok(l, T_BANG, 1);
+    }
     case '/': {
       if (l->cursor + 1 < l->source.text.len &&
           l->source.text.data[l->cursor + 1] == '/') {

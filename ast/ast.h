@@ -22,6 +22,7 @@ struct Variable_List;
 struct Variable_Binding;
 struct Function_Parameter_List;
 struct Function_Parameter;
+struct Type_List;
 struct Field_List;
 struct Field;
 struct Identifier_List;
@@ -153,7 +154,7 @@ struct Function_Parameter_List {
 struct Function_Parameter {
   Node_ID id;
   Tok identifier;
-  bool is_variadic;
+  bool variadic;
   struct Type *type;
 };
 
@@ -161,7 +162,10 @@ struct Struct_Declaration {
   Node_ID id;
   Tok identifier;
   bool tuple_like;
-  struct Field_List *fields;
+  union {
+    struct Type_List *type_list;
+    struct Field_List *field_list;
+  };
 };
 
 struct Field_List {
@@ -187,7 +191,7 @@ struct Identifier_List {
   Node_ID id;
   u32 len;
   u32 cap;
-  Tok **items;
+  Tok *items;
 };
 
 struct Error_Declaration {
@@ -200,13 +204,13 @@ struct Error_List {
   Node_ID id;
   u32 len;
   u32 cap;
-  struct Error *items;
+  struct Error **items;
 };
 
 struct Error {
   Node_ID id;
   bool embedded; // e.g. !Foo
-  Tok identifier;
+  struct Scoped_Identifier *scoped_identifier;
 };
 
 struct Union_Declaration {
@@ -327,7 +331,17 @@ struct Collection_Type {
 struct Struct_Type {
   Node_ID id;
   bool tuple_like;
-  struct Field_List *fields;
+  union {
+    struct Type_List *type_list;
+    struct Field_List *field_list;
+  };
+};
+
+struct Type_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Type **items;
 };
 
 struct Union_Type {
@@ -340,6 +354,11 @@ struct Enum_Type {
   struct Identifier_List *enumerators;
 };
 
+struct Error_Type {
+  Node_ID id;
+  struct Error_List *errors;
+};
+
 struct Pointer_Type {
   Node_ID id;
   Tok classifier; // let or mut
@@ -350,7 +369,7 @@ struct Scoped_Identifier {
   Node_ID id;
   u32 cap;
   u32 len;
-  Tok **items;
+  Tok *items;
 };
 
 typedef enum {
@@ -393,7 +412,7 @@ struct Parenthesized_Expression {
 
 struct Composite_Literal_Expression {
   Node_ID id;
-  struct Type *explicit_type; // nullable
+  struct Type *explicit_type;
   struct Expression *value;
 };
 
@@ -468,6 +487,7 @@ typedef struct Variable_List Variable_List;
 typedef struct Variable_Binding Variable_Binding;
 typedef struct Function_Parameter_List Function_Parameter_List;
 typedef struct Function_Parameter Function_Parameter;
+typedef struct Type_List Type_List;
 typedef struct Field_List Field_List;
 typedef struct Field Field;
 typedef struct Identifier_List Identifier_List;
@@ -496,6 +516,7 @@ typedef struct Composite_Literal_Expression Composite_Literal_Expression;
 typedef struct Postfix_Expression Postfix_Expression;
 typedef struct Function_Call_Expression Function_Call_Expression;
 typedef struct Field_Access_Expression Field_Access_Expression;
+typedef struct Index Index;
 typedef struct Array_Access_Expression Array_Access_Expression;
 typedef struct Unary_Expression Unary_Expression;
 typedef struct Binary_Expression Binary_Expression;

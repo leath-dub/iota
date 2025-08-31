@@ -6,9 +6,17 @@
 
 int main(void) {
   string source = ztos(
-    "import im \"foo/xxx\"\n"
-    "import im' \"bar/xxx\";\n"
-    "let x;"
+    "let foo' struct {\n"
+    "  x int;\n"
+    "  y float;\n"
+    "}, foo *string;"
+    // "import im \"foo/xxx\";\n"
+    // "import im' \"bar/xxx\";\n"
+    // "let x any, y foo.bar.baz;\n"
+    // "let x struct{ _ s32; _ string; };\n"
+    // "let x *mut struct(s32, string);\n"
+    // "let x enum { foo, bar };\n"
+    // "let x error { !foo, bar };\n"
   );
   Source_Code code = new_source_code(ztos("<string>"), source);
 
