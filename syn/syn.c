@@ -161,7 +161,7 @@ Variable_Declaration *variable_declaration(Parse_Context *c) {
   assert(classifier.t == T_MUT || classifier.t == T_LET);
   n->classifier = consume(c);
   n->binding = variable_binding(c);
-  if (n->binding->t == VARIABLE_BINDING_BASIC && !looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
+  if (!looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
     // Must have a type
     n->type = type(c);
   }

@@ -6,7 +6,8 @@
 
 int main(void) {
   string source = ztos(
-    "let foo(*x);"
+    "let (*x);\n"
+    "let foo *mut s32;\n"
   );
   Source_Code code = new_source_code(ztos("<string>"), source);
 
