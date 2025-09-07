@@ -82,7 +82,9 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
 // I really fucking hope it was worth the effort.
 static const Toks FOLLOW_IMPORT = TOKS(T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
 static const Toks FOLLOW_DECLARATION = TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
-static const Toks FOLLOW_VARIABLE_BINDING = TOKS(T_COMMA);
+static const Toks FOLLOW_VARIABLE_BINDING = TOKS(T_SCLN, T_EQ);
+static const Toks FOLLOW_BINDING = TOKS(T_COMMA, T_RPAR);
+static const Toks FOLLOW_ALIASED_BINDING = TOKS(T_COMMA, T_RBRC);
 static const Toks FOLLOW_TYPE = TOKS(T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ);
 static const Toks FOLLOW_FIELD_LIST = TOKS(T_RBRC);
 static const Toks FOLLOW_IDENTIFIER_LIST = TOKS(T_RBRC);
@@ -157,11 +159,15 @@ Variable_Declaration *variable_declaration(Parse_Context *c) {
   Variable_Declaration *n = NODE(c, Variable_Declaration);
   Tok classifier = at(c);
   assert(classifier.t == T_MUT || classifier.t == T_LET);
-  n->classifier = classifier;
-  next(c);
-  n->variable_list = variable_list(c);
+  n->classifier = consume(c);
+  n->binding = variable_binding(c);
+  if (n->binding->t == VARIABLE_BINDING_BASIC && !looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
+    // Must have a type
+    n->type = type(c);
+  }
   if (looking_at(c, T_EQ)) {
-    n->init.assign_token = at(c);
+    n->init.ok = true;
+    n->init.assign_token = consume(c);
     n->init.expression = expression(c);
   }
   if (!expect(c, n->id, T_SCLN)) {
@@ -171,32 +177,131 @@ Variable_Declaration *variable_declaration(Parse_Context *c) {
   return n;
 }
 
-Variable_List *variable_list(Parse_Context *c) {
-  Variable_List *n = NODE(c, Variable_List);
-  Variable_Binding *binding = variable_binding(c);
-  APPEND(n, binding);
+Variable_Binding *variable_binding(Parse_Context *c) {
+  Variable_Binding *n = NODE(c, Variable_Binding);
+  switch (at(c).t) {
+    case T_LPAR:
+      n->t = VARIABLE_BINDING_DESTRUCTURE_TUPLE;
+      n->destructure_tuple = destructure_tuple(c, FOLLOW_VARIABLE_BINDING);
+      break;
+    case T_LBRC:
+      n->t = VARIABLE_BINDING_DESTRUCTURE_STRUCT;
+      n->destructure_struct = destructure_struct(c, FOLLOW_VARIABLE_BINDING);
+      break;
+    case T_IDENT: {
+      Tok name = consume(c);
+      if (looking_at(c, T_LPAR)) {
+        next(c);
+        n->t = VARIABLE_BINDING_DESTRUCTURE_UNION;
+        n->destructure_union = NODE(c, Destructure_Union);
+        n->destructure_union->tag = name;
+        n->destructure_union->binding = binding(c);
+        if (!expect(c, n->id, T_RPAR)) {
+          advance(c, FOLLOW_VARIABLE_BINDING);
+          return n;
+        }
+        return n;
+      }
+      n->t = VARIABLE_BINDING_BASIC;
+      n->basic = name;
+      break;
+    }
+    default:
+      expected(c, n->id, "expected a variable binding");
+      advance(c, FOLLOW_VARIABLE_BINDING);
+      break;
+  }
+  return n;
+}
+
+Binding *binding(Parse_Context *c) {
+  Binding *n = NODE(c, Binding);
+  if (looking_at(c, T_STAR)) {
+    n->reference = consume(c);
+  }
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_BINDING);
+    return n;
+  }
+  n->identifier = name;
+  return n;
+}
+
+Aliased_Binding *aliased_binding(Parse_Context *c) {
+  Aliased_Binding *n = NODE(c, Aliased_Binding);
+  n->binding = binding(c);
+  if (looking_at(c, T_EQ)) {
+    next(c);
+    Tok name = at(c);
+    if (!expect(c, n->id, T_IDENT)) {
+      advance(c, FOLLOW_ALIASED_BINDING);
+      return n;
+    }
+    n->alias.ok = true;
+    n->alias.value = name;
+  }
+  return n;
+}
+
+Destructure_Struct *destructure_struct(Parse_Context *c, Toks follow) {
+  Destructure_Struct *n = NODE(c, Destructure_Struct);
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, follow);
+    return n;
+  }
+  n->bindings = aliased_binding_list(c, T_RBRC);
+  if (!expect(c, n->id, T_RBRC)) {
+    advance(c, follow);
+    return n;
+  }
+  return n;
+}
+
+Destructure_Tuple *destructure_tuple(Parse_Context *c, Toks follow) {
+  Destructure_Tuple *n = NODE(c, Destructure_Tuple);
+  if (!expect(c, n->id, T_LPAR)) {
+    advance(c, follow);
+    return n;
+  }
+  n->bindings = binding_list(c, T_RPAR);
+  if (!expect(c, n->id, T_RPAR)) {
+    advance(c, follow);
+    return n;
+  }
+  return n;
+}
+
+Aliased_Binding_List *aliased_binding_list(Parse_Context *c, Tok_Kind end) {
+  Aliased_Binding_List *n = NODE(c, Aliased_Binding_List);
+  APPEND(n, aliased_binding(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
-    binding = variable_binding(c);
-    APPEND(n, binding);
+    // Ignore trailing comma
+    if (looking_at(c, end)) {
+      break;
+    }
+    APPEND(n, aliased_binding(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return n;
 }
 
-Variable_Binding *variable_binding(Parse_Context *c) {
-  Variable_Binding *n = NODE(c, Variable_Binding);
-  Tok name = at(c);
-  if (!expect(c, n->id, T_IDENT)) {
-      advance(c, FOLLOW_VARIABLE_BINDING);
-      return n;
+Binding_List *binding_list(Parse_Context *c, Tok_Kind end) {
+  Binding_List *n = NODE(c, Binding_List);
+  APPEND(n, binding(c));
+  while (looking_at(c, T_COMMA)) {
+    next(c);
+    // Ignore trailing comma
+    if (looking_at(c, end)) {
+      break;
+    }
+    APPEND(n, binding(c));
   }
-  n->identifier = name;
-  if (!looking_at(c, T_COMMA) && !looking_at(c, T_SCLN)) {
-    n->type = type(c);
-  }
+  arena_own(&c->arena, n->items, n->cap);
   return n;
 }
+
 
 Function_Declaration *function_declaration(Parse_Context *c) {
   Function_Declaration *n = NODE(c, Function_Declaration);

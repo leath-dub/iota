@@ -12,14 +12,19 @@ struct Import;
 struct Declaration;
 struct Variable_Declaration;
 struct Function_Declaration;
+struct Type_Parameter_List;
 struct Struct_Declaration;
 struct Enum_Declaration;
 struct Error_Declaration;
 struct Union_Declaration;
-struct Alias_Declaration;
-struct Use_Declaration;
-struct Variable_List;
 struct Variable_Binding;
+struct Destructure_Tuple;
+struct Destructure_Struct;
+struct Destructure_Union;
+struct Binding;
+struct Binding_List;
+struct Aliased_Binding;
+struct Aliased_Binding_List;
 struct Function_Parameter_List;
 struct Function_Parameter;
 struct Type_List;
@@ -93,8 +98,6 @@ typedef enum {
   DECLARATION_ENUM,
   DECLARATION_ERROR,
   DECLARATION_UNION,
-  DECLARATION_ALIAS,
-  DECLARATION_USE,
 } Declaration_Kind;
 
 struct Declaration {
@@ -107,38 +110,85 @@ struct Declaration {
     struct Enum_Declaration *enum_declaration;
     struct Error_Declaration *error_declaration;
     struct Union_Declaration *union_declaration;
-    struct Alias_Declaration *alias_declaration;
-    struct Use_Declaration *use_declaration;
   };
 };
 
 struct Variable_Declaration {
   Node_ID id;
   Tok classifier; // let or mut
-  struct Variable_List *variable_list;
-  bool has_init;
+  struct Variable_Binding *binding;
+  struct Type *type; // nullable
   struct {
     Tok assign_token;
     struct Expression *expression;
+    bool ok;
   } init;
 };
 
-struct Variable_List {
-  Node_ID id;
-  u32 len;
-  u32 cap;
-  struct Variable_Binding **items;
-};
+typedef enum {
+  VARIABLE_BINDING_BASIC,
+  VARIABLE_BINDING_DESTRUCTURE_TUPLE,
+  VARIABLE_BINDING_DESTRUCTURE_STRUCT,
+  VARIABLE_BINDING_DESTRUCTURE_UNION,
+} Variable_Binding_Kind;
 
 struct Variable_Binding {
   Node_ID id;
+  Variable_Binding_Kind t;
+  union {
+    Tok basic;
+    struct Destructure_Tuple *destructure_tuple;
+    struct Destructure_Struct *destructure_struct;
+    struct Destructure_Union *destructure_union;
+  };
+};
+
+struct Aliased_Binding {
+  Node_ID id;
+  struct Binding *binding;
+  struct { Tok value; bool ok; } alias;
+};
+
+struct Aliased_Binding_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Aliased_Binding **items;
+};
+
+struct Binding {
+  Node_ID id;
   Tok identifier;
-  struct Type *type; // nullable
+  Tok reference; // could be a '*' meaning the binding is a reference
+};
+
+struct Binding_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Binding **items;
+};
+
+struct Destructure_Tuple {
+  Node_ID id;
+  struct Binding_List *bindings;
+};
+
+struct Destructure_Struct {
+  Node_ID id;
+  struct Aliased_Binding_List *bindings;
+};
+
+struct Destructure_Union {
+  Node_ID id;
+  Tok tag;
+  struct Binding *binding;
 };
 
 struct Function_Declaration {
   Node_ID id;
   Tok identifier;
+  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
   struct Function_Parameter_List *params;
   struct Type *return_type; // nullable
   struct Compound_Statement *body;
@@ -158,9 +208,15 @@ struct Function_Parameter {
   struct Type *type;
 };
 
+struct Type_Parameter_List {
+  Node_ID id;
+  struct Type_List *types;
+};
+
 struct Struct_Declaration {
   Node_ID id;
   Tok identifier;
+  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
   bool tuple_like;
   union {
     struct Type_List *type_list;
@@ -216,20 +272,8 @@ struct Error {
 struct Union_Declaration {
   Node_ID id;
   Tok identifier;
+  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
   struct Field_List *fields;
-};
-
-struct Alias_Declaration {
-  Node_ID id;
-  Tok identifier;
-  struct Type *type;
-};
-
-struct Use_Declaration {
-  Node_ID id;
-  struct Scoped_Identifier *scoped_identifier;
-  struct Identifier_List *all; // nullable ( this stores the optional
-                               // {a, b, c} in <scoped_ident>.{a, b, c}
 };
 
 typedef enum {
@@ -331,6 +375,7 @@ struct Collection_Type {
 struct Struct_Type {
   Node_ID id;
   bool tuple_like;
+  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
   union {
     struct Type_List *type_list;
     struct Field_List *field_list;
@@ -346,6 +391,7 @@ struct Type_List {
 
 struct Union_Type {
   Node_ID id;
+  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
   struct Field_List *fields;
 };
 
@@ -412,7 +458,7 @@ struct Parenthesized_Expression {
 
 struct Composite_Literal_Expression {
   Node_ID id;
-  struct Type *explicit_type;
+  struct { struct Type *value; bool ok; } explicit_type;
   struct Expression *value;
 };
 
@@ -477,13 +523,18 @@ typedef struct Import Import;
 typedef struct Declaration Declaration;
 typedef struct Variable_Declaration Variable_Declaration;
 typedef struct Function_Declaration Function_Declaration;
+typedef struct Type_Parameter_List Type_Parameter_List;
 typedef struct Struct_Declaration Struct_Declaration;
 typedef struct Enum_Declaration Enum_Declaration;
 typedef struct Error_Declaration Error_Declaration;
 typedef struct Union_Declaration Union_Declaration;
-typedef struct Alias_Declaration Alias_Declaration;
-typedef struct Use_Declaration Use_Declaration;
-typedef struct Variable_List Variable_List;
+typedef struct Destructure_Tuple Destructure_Tuple;
+typedef struct Destructure_Struct Destructure_Struct;
+typedef struct Destructure_Union Destructure_Union;
+typedef struct Binding Binding;
+typedef struct Binding_List Binding_List;
+typedef struct Aliased_Binding Aliased_Binding;
+typedef struct Aliased_Binding_List Aliased_Binding_List;
 typedef struct Variable_Binding Variable_Binding;
 typedef struct Function_Parameter_List Function_Parameter_List;
 typedef struct Function_Parameter Function_Parameter;
