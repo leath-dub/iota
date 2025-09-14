@@ -1,0 +1,25 @@
+import "foo";
+
+enum Baz { foo, bar }
+
+type Boo Baz;
+type X (int, float);
+
+error OS_Error { oom, unknown_file }
+error My_Error { parse_failed, internal_error }
+error Combine { !OS_Error, !My_Error, other_field }
+
+fun divmod(a f32, b f32) struct { div s32; rem u32; } {
+  let a s32, b s32 = (a, b);
+  let div = a / b;
+  let rem = a % b;
+  return { div, rem };
+}
+
+mut res = divmod(13, 2);
+use res.{div, rem};
+
+fun _() {
+  div = 10;
+  rem = 13;
+}

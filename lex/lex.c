@@ -22,6 +22,7 @@ string tok_to_string[TOK_KIND_COUNT] = {
     [T_COMMA] = ZTOS("','"),
     [T_BANG] = ZTOS("'!'"),
     [T_DOT] = ZTOS("'.'"),
+    [T_DOTDOT] = ZTOS("'..'"),
 
     [T_PLUS] = ZTOS("'+'"),
     [T_MINUS] = ZTOS("'-'"),
@@ -42,6 +43,7 @@ string tok_to_string[TOK_KIND_COUNT] = {
     [T_IF] = ZTOS("if"),
     [T_ELSE] = ZTOS("else"),
     [T_FOR] = ZTOS("for"),
+    [T_WHILE] = ZTOS("while"),
     [T_DEFER] = ZTOS("defer"),
     [T_STRUCT] = ZTOS("struct"),
     [T_UNION] = ZTOS("union"),
@@ -75,27 +77,21 @@ string tok_to_string[TOK_KIND_COUNT] = {
 };
 
 static const Keyword_Binding keyword_to_kind[] = {
-    {ZTOS("not"), T_NOT},       {ZTOS("and"), T_AND},
-    {ZTOS("or"), T_OR},         {ZTOS("fun"), T_FUN},
-    {ZTOS("if"), T_IF},         {ZTOS("else"), T_ELSE},
-    {ZTOS("for"), T_FOR},       {ZTOS("defer"), T_DEFER},
-    {ZTOS("struct"), T_STRUCT}, {ZTOS("union"), T_UNION},
-    {ZTOS("enum"), T_ENUM},     {ZTOS("let"), T_LET},
-    {ZTOS("mut"), T_MUT},       {ZTOS("type"), T_TYPE},
-    {ZTOS("import"), T_IMPORT},
-    {ZTOS("error"), T_ERROR},   {ZTOS("use"), T_USE},
-    {ZTOS("s8"), T_S8},
-    {ZTOS("u8"), T_U8},
-    {ZTOS("s16"), T_S16},
-    {ZTOS("u16"), T_U16},
-    {ZTOS("s32"), T_S32},
-    {ZTOS("u32"), T_U32},
-    {ZTOS("s64"), T_S64},
-    {ZTOS("u64"), T_U64},
-    {ZTOS("f32"), T_F32},
-    {ZTOS("f64"), T_F64},
-    {ZTOS("bool"), T_BOOL},
-    {ZTOS("string"), T_STRING},
+    {ZTOS("not"), T_NOT},     {ZTOS("and"), T_AND},
+    {ZTOS("or"), T_OR},       {ZTOS("fun"), T_FUN},
+    {ZTOS("if"), T_IF},       {ZTOS("else"), T_ELSE},
+    {ZTOS("for"), T_FOR},     {ZTOS("while"), T_WHILE},
+    {ZTOS("defer"), T_DEFER}, {ZTOS("struct"), T_STRUCT},
+    {ZTOS("union"), T_UNION}, {ZTOS("enum"), T_ENUM},
+    {ZTOS("let"), T_LET},     {ZTOS("mut"), T_MUT},
+    {ZTOS("type"), T_TYPE},   {ZTOS("import"), T_IMPORT},
+    {ZTOS("error"), T_ERROR}, {ZTOS("use"), T_USE},
+    {ZTOS("s8"), T_S8},       {ZTOS("u8"), T_U8},
+    {ZTOS("s16"), T_S16},     {ZTOS("u16"), T_U16},
+    {ZTOS("s32"), T_S32},     {ZTOS("u32"), T_U32},
+    {ZTOS("s64"), T_S64},     {ZTOS("u64"), T_U64},
+    {ZTOS("f32"), T_F32},     {ZTOS("f64"), T_F64},
+    {ZTOS("bool"), T_BOOL},   {ZTOS("string"), T_STRING},
     {ZTOS("any"), T_ANY},
 };
 static const u32 keyword_to_kind_count =
@@ -180,9 +176,17 @@ Tok lex_peek(Lexer *l) {
       }
       return new_tok(l, T_EQ, 1);
     }
+    case '+':
+      return new_tok(l, T_PLUS, 1);
+    case '-':
+      return new_tok(l, T_MINUS, 1);
     case '*':
       return new_tok(l, T_STAR, 1);
     case '.':
+      if (l->cursor + 1 < l->source.text.len &&
+          l->source.text.data[l->cursor + 1] == '.') {
+        return new_tok(l, T_DOTDOT, 2);
+      }
       return new_tok(l, T_DOT, 1);
     case '!': {
       if (l->cursor + 1 < l->source.text.len &&

@@ -3,13 +3,14 @@
 #include <assert.h>
 
 Node_Metadata new_node_metadata(void) {
-  return (Node_Metadata) {
-    .flags = {
-      .len = 0,
-      .cap = 0,
-      .items = NULL,
-    },
-    .next_id = 0,
+  return (Node_Metadata){
+      .flags =
+          {
+              .len = 0,
+              .cap = 0,
+              .items = NULL,
+          },
+      .next_id = 0,
   };
 }
 

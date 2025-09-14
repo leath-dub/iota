@@ -1,0 +1,45 @@
+struct Point {
+	x s32;
+  y s32;
+}
+
+fun goto(point ..Point) {
+  ...
+}
+
+// Calling...
+
+goto(x = 10, 12); // syntax sugar for goto(Point { x = 10, 10 })
+
+fun other(ints ..(int, int, int)) {
+  ...
+}
+
+// Calling...
+
+other(10, 13, 30, 40);
+                  ^ type error
+
+// static checking can be done by a metaprogram in build.ta
+fun printf(fmt string, args ..any) {
+  let info = type_info(args);
+  assert(info.type == .tuple, "expected tuple to printf");
+  let tup = info.tuple;
+  for item in tup.elements {
+    // Handle each item in the variadic arg
+    case item {
+      .int -> ...
+      ...
+    }
+  }
+}
+
+// Another cool thing
+fun foo({ x, y } ..Point) {
+}
+
+// `any` is a wrapper:
+// struct {
+//   type_id u32;
+//   ptr *struct{};
+// }

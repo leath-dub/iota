@@ -36,6 +36,8 @@ struct Error;
 struct Statement;
 struct Declaration;
 struct If_Statement;
+struct Condition;
+struct Union_Tag_Condition;
 struct Return_Statement;
 struct Defer_Statement;
 struct Compound_Statement;
@@ -48,6 +50,7 @@ struct Union_Type;
 struct Enum_Type;
 struct Error_Type;
 struct Pointer_Type;
+struct Function_Type;
 struct Scoped_Identifier;
 struct Expression;
 struct Basic_Expression;
@@ -115,9 +118,9 @@ struct Declaration {
 
 struct Variable_Declaration {
   Node_ID id;
-  Tok classifier; // let or mut
+  Tok classifier;  // let or mut
   struct Variable_Binding *binding;
-  struct Type *type; // nullable
+  struct Type *type;  // nullable
   struct {
     Tok assign_token;
     struct Expression *expression;
@@ -146,7 +149,10 @@ struct Variable_Binding {
 struct Aliased_Binding {
   Node_ID id;
   struct Binding *binding;
-  struct { Tok value; bool ok; } alias;
+  struct {
+    Tok value;
+    bool ok;
+  } alias;
 };
 
 struct Aliased_Binding_List {
@@ -159,7 +165,7 @@ struct Aliased_Binding_List {
 struct Binding {
   Node_ID id;
   Tok identifier;
-  Tok reference; // could be a '*' meaning the binding is a reference
+  Tok reference;  // could be a '*' meaning the binding is a reference
 };
 
 struct Binding_List {
@@ -188,9 +194,15 @@ struct Destructure_Union {
 struct Function_Declaration {
   Node_ID id;
   Tok identifier;
-  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
-  struct Function_Parameter_List *params;
-  struct Type *return_type; // nullable
+  struct {
+    struct Type_Parameter_List *value;
+    bool ok;
+  } type_params_opt;
+  struct Function_Parameter_List *parameters;
+  struct {
+    struct Type *value;
+    bool ok;
+  } return_type_opt;
   struct Compound_Statement *body;
 };
 
@@ -203,9 +215,9 @@ struct Function_Parameter_List {
 
 struct Function_Parameter {
   Node_ID id;
-  Tok identifier;
-  bool variadic;
+  struct Variable_Binding *binding;
   struct Type *type;
+  bool variadic;
 };
 
 struct Type_Parameter_List {
@@ -216,7 +228,10 @@ struct Type_Parameter_List {
 struct Struct_Declaration {
   Node_ID id;
   Tok identifier;
-  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
+  struct {
+    struct Type_Parameter_List *value;
+    bool ok;
+  } type_params_opt;
   bool tuple_like;
   union {
     struct Type_List *type_list;
@@ -265,19 +280,22 @@ struct Error_List {
 
 struct Error {
   Node_ID id;
-  bool embedded; // e.g. !Foo
+  bool embedded;  // e.g. !Foo
   struct Scoped_Identifier *scoped_identifier;
 };
 
 struct Union_Declaration {
   Node_ID id;
   Tok identifier;
-  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
+  struct {
+    struct Type_Parameter_List *value;
+    bool ok;
+  } type_params_opt;
   struct Field_List *fields;
 };
 
 typedef enum {
-  STATMENT_DECLARATION,
+  STATEMENT_DECLARATION,
   STATEMENT_IF,
   STATEMENT_RETURN,
   STATEMENT_COMPOUND,
@@ -299,9 +317,34 @@ struct Statement {
 
 struct If_Statement {
   Node_ID id;
-  struct Expression *condition;
+  struct Condition *condition;
   struct Compound_Statement *true_branch;
-  struct Else *else_branch; // nullable
+  struct {
+    struct Else *value;
+    bool ok;
+  } else_branch_opt;
+};
+
+typedef enum {
+  CONDITION_UNION_TAG,
+  CONDITION_EXPRESSION,
+} Condition_Kind;
+
+struct Condition {
+  Node_ID id;
+  Condition_Kind t;
+  union {
+    struct Union_Tag_Condition *union_tag;
+    struct Expression *expression;
+  };
+};
+
+struct Union_Tag_Condition {
+  Node_ID id;
+  Tok classifier;  // let or mut
+  struct Destructure_Union *trigger;
+  Tok assign_token;
+  struct Expression *expression;
 };
 
 typedef enum {
@@ -320,7 +363,7 @@ struct Else {
 
 struct Return_Statement {
   Node_ID id;
-  struct Expr *expression; // nullable
+  struct Expr *expression;  // nullable
 };
 
 struct Defer_Statement {
@@ -332,7 +375,7 @@ struct Compound_Statement {
   Node_ID id;
   u32 len;
   u32 cap;
-  struct Statement *items;
+  struct Statement **items;
 };
 
 typedef enum {
@@ -343,6 +386,7 @@ typedef enum {
   TYPE_ENUM,
   TYPE_ERROR,
   TYPE_POINTER,
+  TYPE_FUNCTION,
   TYPE_SCOPED_IDENTIFIER,
 } Type_Kind;
 
@@ -357,25 +401,29 @@ struct Type {
     struct Enum_Type *enum_type;
     struct Error_Type *error_type;
     struct Pointer_Type *pointer_type;
+    struct Function_Type *function_type;
     struct Scoped_Identifier *scoped_identifier;
   };
 };
 
 struct Builtin_Type {
   Node_ID id;
-  Tok token; // just stores the keyword token
+  Tok token;  // just stores the keyword token
 };
 
 struct Collection_Type {
   Node_ID id;
-  struct Expression *index_expression; // nullable
+  struct Expression *index_expression;  // nullable
   struct Type *element_type;
 };
 
 struct Struct_Type {
   Node_ID id;
   bool tuple_like;
-  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
+  struct {
+    struct Type_Parameter_List *value;
+    bool ok;
+  } type_params_opt;
   union {
     struct Type_List *type_list;
     struct Field_List *field_list;
@@ -391,7 +439,10 @@ struct Type_List {
 
 struct Union_Type {
   Node_ID id;
-  struct { struct Type_Parameter_List *value; bool ok; } type_params_opt;
+  struct {
+    struct Type_Parameter_List *value;
+    bool ok;
+  } type_params_opt;
   struct Field_List *fields;
 };
 
@@ -407,8 +458,17 @@ struct Error_Type {
 
 struct Pointer_Type {
   Node_ID id;
-  Tok classifier; // let or mut
+  Tok classifier;  // let or mut
   struct Type *referenced_type;
+};
+
+struct Function_Type {
+  Node_ID id;
+  struct Type_List *parameters;
+  struct {
+    struct Type *value;
+    bool ok;
+  } return_type_opt;
 };
 
 struct Scoped_Identifier {
@@ -448,7 +508,7 @@ struct Expression {
 
 struct Basic_Expression {
   Node_ID id;
-  Tok token; // Stores: identifier, number, string, enum, nil
+  Tok token;  // Stores: identifier, number, string, enum, nil
 };
 
 struct Parenthesized_Expression {
@@ -458,7 +518,10 @@ struct Parenthesized_Expression {
 
 struct Composite_Literal_Expression {
   Node_ID id;
-  struct { struct Type *value; bool ok; } explicit_type;
+  struct {
+    struct Type *value;
+    bool ok;
+  } explicit_type;
   struct Expression *value;
 };
 
@@ -500,8 +563,8 @@ struct Array_Access_Expression {
 
 struct Index {
   Node_ID id;
-  struct Expression *start; // nullable
-  struct Expression *end; // nullable
+  struct Expression *start;  // nullable
+  struct Expression *end;    // nullable
 };
 
 struct Unary_Expression {
@@ -547,6 +610,8 @@ typedef struct Error Error;
 typedef struct Statement Statement;
 typedef struct Declaration Declaration;
 typedef struct If_Statement If_Statement;
+typedef struct Condition Condition;
+typedef struct Union_Tag_Condition Union_Tag_Condition;
 typedef struct Return_Statement Return_Statement;
 typedef struct Defer_Statement Defer_Statement;
 typedef struct Compound_Statement Compound_Statement;
@@ -559,6 +624,7 @@ typedef struct Union_Type Union_Type;
 typedef struct Enum_Type Enum_Type;
 typedef struct Error_Type Error_Type;
 typedef struct Pointer_Type Pointer_Type;
+typedef struct Function_Type Function_Type;
 typedef struct Scoped_Identifier Scoped_Identifier;
 typedef struct Expression Expression;
 typedef struct Basic_Expression Basic_Expression;

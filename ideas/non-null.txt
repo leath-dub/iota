@@ -1,0 +1,12 @@
+- the idea of having two different pointer types is unecessary in my opinion
+
+in zig for example, if you want a nullable pointer you can have `*nullable ...` or a `?* ...`.
+The problem is that a lot of the time you want to have a "guarenteed" pointer that needs to
+be computed in a side channel to the initialization of a struct. In these cases in zig you
+basically mark the pointer as `undefined` and then initialize it when you can.
+
+I think this is an anti-pattern! and what we really want is for normal pointers to have the semantics
+of zig pointers, but with the added feature of allowing you to explicitly set it to null.
+
+(in my langauge the stdlib also provides a `bad_addr` pointer for initializing pointers, it is a special
+ sequence 0xdeadbeef, which if found in a debugger indicates that the address was uninitialized).

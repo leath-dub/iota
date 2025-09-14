@@ -1,0 +1,9 @@
+* finish pratt parser for expressions following: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
+
+* new else statement for error handling
+
+switch structs, unions and errors to use commas
+
+--- We will use `while` instead of `for`!
+[ ] finish new dumper
+[ ] finish new parser based on tree-sitter grammar

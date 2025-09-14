@@ -1,0 +1,33 @@
+union[E, T] Could {
+  ok T,
+  err E,
+}
+
+error Integral_Error { overflow };
+
+fun add(a s32, b s32) Could[Integral_Error, s32] {
+  let x = s32 { 10 } + 12;
+  return .err { .overflow };
+}
+
+fun some_f() Could[Integral_Error] {
+  let ok(res) = add(10, 30) else e {
+    return .err { e };
+  }
+}
+
+union[T] Maybe {
+  just T,
+  nothing struct{},
+}
+
+
+let just(num) = other() else {
+  return .nothing{};
+}
+
+case other {
+  let just(num) -> handle(num);
+  let nothing -> {}
+  .just -> assert_in_arg(other.just);
+}

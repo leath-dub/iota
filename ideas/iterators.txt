@@ -1,0 +1,22 @@
+struct Lines {
+  text string,
+}
+
+fun read_line(it *Lines) union { next string, end struct{} } {
+  let i u32 = 0;
+  while i < len(it.text) {
+    if it.text[i] == '\n' {
+      let line = it.text[0:i];
+      it.text = it.text[i:];
+      return .next { line };
+    }
+    i++;
+  }
+}
+
+...
+
+let it = iter_lines(file_text);
+while let next(line) = read_line(&it) {
+  io.println(line);
+}

@@ -28,9 +28,7 @@ static Tok tnext(Parse_Context *c) {
   return tok;
 }
 
-static void next(Parse_Context *c) {
-  (void)tnext(c);
-}
+static void next(Parse_Context *c) { (void)tnext(c); }
 
 static Tok consume(Parse_Context *c) {
   Tok tok = lex_peek(&c->lex);
@@ -38,22 +36,25 @@ static Tok consume(Parse_Context *c) {
   return tok;
 }
 
-Tok at(Parse_Context *c) {
-  return lex_peek(&c->lex);
-}
+Tok at(Parse_Context *c) { return lex_peek(&c->lex); }
 
 /*static*/
-bool looking_at(Parse_Context *c, Tok_Kind t) {
-  return at(c).t == t;
+bool looking_at(Parse_Context *c, Tok_Kind t) { return at(c).t == t; }
+
+bool one_of(Tok_Kind t, Toks toks) {
+  for (u32 i = 0; i < toks.len; i++) {
+    if (t == toks.items[i]) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /*static*/
 void advance(Parse_Context *c, Toks toks) {
   for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
-    for (u32 i = 0; i < toks.len; i++) {
-      if (tok.t == toks.items[i]) {
-        return;
-      }
+    if (one_of(tok.t, toks)) {
+      return;
     }
   }
 }
@@ -80,17 +81,25 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
 
 // These were manually calculated by looking at the tree-sitter grammar.
 // I really fucking hope it was worth the effort.
-static const Toks FOLLOW_IMPORT = TOKS(T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
-static const Toks FOLLOW_DECLARATION = TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
+static const Toks FOLLOW_IMPORT = TOKS(T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT,
+                                       T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
+static const Toks FOLLOW_DECLARATION =
+    TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION);
 static const Toks FOLLOW_VARIABLE_BINDING = TOKS(T_SCLN, T_EQ);
 static const Toks FOLLOW_BINDING = TOKS(T_COMMA, T_RPAR);
 static const Toks FOLLOW_ALIASED_BINDING = TOKS(T_COMMA, T_RBRC);
-static const Toks FOLLOW_TYPE = TOKS(T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ);
-static const Toks FOLLOW_FIELD_LIST = TOKS(T_RBRC);
+static const Toks FOLLOW_TYPE =
+    TOKS(T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ);
 static const Toks FOLLOW_IDENTIFIER_LIST = TOKS(T_RBRC);
 static const Toks FOLLOW_ERROR_LIST = TOKS(T_RBRC);
 static const Toks FOLLOW_ERROR = TOKS(T_COMMA, T_RBRC);
 static const Toks FOLLOW_FIELD = TOKS(T_IDENT, T_RBRC);
+static const Toks FOLLOW_STATEMENT_LIST = TOKS(T_LBRC);
+static const Toks FOLLOW_STATEMENT =
+    TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
+         T_LBRC /*, TODO FIRST(expression) */);
+static const Toks FOLLOW_BASIC_EXPRESSION =
+    TOKS(T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ, T_AND, T_OR);
 // TODO: once we have an automated tool
 // static const Toks FOLLOW_EXPRESSION = TOKS();
 
@@ -147,8 +156,9 @@ Declaration *declaration(Parse_Context *c) {
     case T_FUN:
       n->t = DECLARATION_FUNCTION;
       n->function_declaration = function_declaration(c);
+      break;
     default:
-      expected(c, n->id, "expected start of declaration");
+      expected(c, n->id, "start of declaration");
       advance(c, FOLLOW_DECLARATION);
       break;
   }
@@ -168,7 +178,7 @@ Variable_Declaration *variable_declaration(Parse_Context *c) {
   if (looking_at(c, T_EQ)) {
     n->init.ok = true;
     n->init.assign_token = consume(c);
-    n->init.expression = expression(c);
+    n->init.expression = expression(c, TOKS(T_SCLN));
   }
   if (!expect(c, n->id, T_SCLN)) {
     advance(c, FOLLOW_DECLARATION);
@@ -207,7 +217,7 @@ Variable_Binding *variable_binding(Parse_Context *c) {
       break;
     }
     default:
-      expected(c, n->id, "expected a variable binding");
+      expected(c, n->id, "a variable binding");
       advance(c, FOLLOW_VARIABLE_BINDING);
       break;
   }
@@ -302,10 +312,108 @@ Binding_List *binding_list(Parse_Context *c, Tok_Kind end) {
   return n;
 }
 
-
 Function_Declaration *function_declaration(Parse_Context *c) {
   Function_Declaration *n = NODE(c, Function_Declaration);
-  assert(false && "TODO");
+  assert(consume(c).t == T_FUN);
+  // TODO type parameters
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->identifier = name;
+  if (!expect(c, n->id, T_LPAR)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->parameters = function_parameter_list(c);
+  if (!expect(c, n->id, T_RPAR)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  if (!looking_at(c, T_LBRC)) {
+    n->return_type_opt.ok = true;
+    n->return_type_opt.value = type(c);
+  }
+  n->body = compound_statement(c);
+  return n;
+}
+
+Function_Parameter_List *function_parameter_list(Parse_Context *c) {
+  Function_Parameter_List *n = NODE(c, Function_Parameter_List);
+  if (looking_at(c, T_RPAR)) {
+    return n;
+  }
+  APPEND(n, function_parameter(c));
+  while (looking_at(c, T_COMMA)) {
+    next(c);
+    // Ignore trailing comma
+    if (looking_at(c, T_RPAR)) {
+      break;
+    }
+    APPEND(n, function_parameter(c));
+  }
+  arena_own(&c->arena, n->items, n->cap);
+  return n;
+}
+
+Function_Parameter *function_parameter(Parse_Context *c) {
+  Function_Parameter *n = NODE(c, Function_Parameter);
+  n->binding = variable_binding(c);
+  if (looking_at(c, T_DOTDOT)) {
+    next(c);
+    n->variadic = true;
+  }
+  n->type = type(c);
+  return n;
+}
+
+Statement *statement(Parse_Context *c) {
+  Statement *n = NODE(c, Statement);
+  switch (at(c).t) {
+    case T_FUN:
+    case T_LET:
+    case T_MUT:
+    case T_STRUCT:
+    case T_ENUM:
+    case T_ERROR:
+    case T_UNION:
+      n->t = STATEMENT_DECLARATION;
+      n->declaration = declaration(c);
+      break;
+    case T_LBRC:
+      n->t = STATEMENT_COMPOUND;
+      n->compound_statement = compound_statement(c);
+      break;
+    // case T_IF:
+    //   n->t = STATEMENT_IF;
+    //   n->if_statement = if
+    //   break;
+    // case T_WHILE:
+    //   break;
+    default:
+      expected(c, n->id, "a statement");
+      advance(c, FOLLOW_STATEMENT);
+      break;
+  }
+  return n;
+}
+
+Compound_Statement *compound_statement(Parse_Context *c) {
+  Compound_Statement *n = NODE(c, Compound_Statement);
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, FOLLOW_STATEMENT_LIST);
+    return n;
+  }
+  while (!looking_at(c, T_RBRC)) {
+    if (looking_at(c, T_EOF)) {
+      expected(c, n->id, "a statement");
+      advance(c, FOLLOW_STATEMENT);
+      break;
+    }
+    APPEND(n, statement(c));
+  }
+  next(c);
   return n;
 }
 
@@ -359,8 +467,12 @@ Type *type(Parse_Context *c) {
       n->t = TYPE_SCOPED_IDENTIFIER;
       n->scoped_identifier = scoped_identifier(c, FOLLOW_TYPE);
       break;
+    case T_FUN:
+      n->t = TYPE_FUNCTION;
+      n->function_type = function_type(c);
+      break;
     default:
-      expected(c, n->id, "expected a type");
+      expected(c, n->id, "a type");
       advance(c, FOLLOW_TYPE);
       break;
   }
@@ -370,7 +482,7 @@ Type *type(Parse_Context *c) {
 Collection_Type *collection_type(Parse_Context *c) {
   Collection_Type *n = NODE(c, Collection_Type);
   assert(consume(c).t == T_LBRK);
-  n->index_expression = expression(c);
+  n->index_expression = expression(c, TOKS(T_RBRK));
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return n;
@@ -402,7 +514,7 @@ Struct_Type *struct_type(Parse_Context *c) {
       }
       break;
     default:
-      expected(c, n->id, "expected a struct or tuple body");
+      expected(c, n->id, "a struct or tuple body");
       advance(c, FOLLOW_TYPE);
       break;
   }
@@ -411,12 +523,17 @@ Struct_Type *struct_type(Parse_Context *c) {
 
 Field_List *field_list(Parse_Context *c) {
   Field_List *n = NODE(c, Field_List);
-  while (!looking_at(c, T_RBRC)) {
-    APPEND(n, field(c));
-    if (!expect(c, n->id, T_SCLN)) {
-      advance(c, FOLLOW_FIELD_LIST);
-      return n;
+  if (looking_at(c, T_RBRC)) {
+    return n;
+  }
+  APPEND(n, field(c));
+  while (looking_at(c, T_COMMA)) {
+    next(c);
+    // Ignore trailing comma
+    if (looking_at(c, T_RBRC)) {
+      break;
     }
+    APPEND(n, field(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return n;
@@ -436,6 +553,9 @@ Field *field(Parse_Context *c) {
 
 Type_List *type_list(Parse_Context *c) {
   Type_List *n = NODE(c, Type_List);
+  if (looking_at(c, T_RPAR)) {
+    return n;
+  }
   APPEND(n, type(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
@@ -549,6 +669,25 @@ Pointer_Type *pointer_type(Parse_Context *c) {
   return n;
 }
 
+Function_Type *function_type(Parse_Context *c) {
+  Function_Type *n = NODE(c, Function_Type);
+  assert(consume(c).t == T_FUN);
+  if (!expect(c, n->id, T_LPAR)) {
+    advance(c, FOLLOW_TYPE);
+    return n;
+  }
+  n->parameters = type_list(c);
+  if (!expect(c, n->id, T_RPAR)) {
+    advance(c, FOLLOW_TYPE);
+    return n;
+  }
+  if (!one_of(at(c).t, FOLLOW_TYPE)) {
+    n->return_type_opt.ok = true;
+    n->return_type_opt.value = type(c);
+  }
+  return n;
+}
+
 // Some rules that are used in many contexts take a follow set from the
 // caller. This improves the error recovery as it has more context of what
 // it should be syncing on than just "whatever can follow is really common rule"
@@ -573,15 +712,123 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
   return n;
 }
 
-// TODO
-Expression *expression(Parse_Context *c) {
-  Expression *n = NODE(c, Expression);
-  switch (at(c).t) {
+// Helpful resource for pratt parser:
+// https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
+
+bool is_operator(Tok_Kind t) {
+  switch (t) {
+    case T_PLUS:
+    case T_MINUS:
+    case T_STAR:
+    case T_SLASH:
+    case T_EQ:
+    case T_EQEQ:
+    case T_NEQ:
+    case T_AND:
+    case T_OR:
+      return true;
     default:
-      expected(c, n->id, "expected an expression");
-      // TODO: follow set
-      next(c);
       break;
   }
+  return false;
+}
+
+typedef struct {
+  u32 left;
+  u32 right;
+} Power;
+
+static Power infix_binding_power(Tok_Kind op) {
+  switch (op) {
+    case T_PLUS:
+    case T_MINUS:
+      return (Power){1, 2};
+    case T_STAR:
+    case T_SLASH:
+      return (Power){3, 4};
+    default:
+      assert(false && "TODO");
+      // case T_EQ:
+      // case T_EQEQ:
+      // case T_NEQ:
+      // case T_AND:
+      // case T_OR:
+  }
+}
+
+static Power prefix_binding_power(Tok_Kind op) {
+  switch (op) {
+    case T_MINUS:
+      return (Power){6, 5};
+    default:
+      assert(false && "TODO");
+  }
+}
+
+static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
+  Expression *lhs = NODE(c, Expression);
+
+  Tok tok = at(c);
+  if (is_operator(tok.t)) {
+    Power pow = prefix_binding_power(tok.t);
+    lhs->t = EXPRESSION_UNARY;
+    lhs->unary_expression = NODE(c, Unary_Expression);
+    lhs->unary_expression->op = consume(c);
+    Expression *rhs = expression_power(c, pow.right, delim);
+    lhs->unary_expression->inner_expression = rhs;
+  } else {
+    lhs->t = EXPRESSION_BASIC;
+    lhs->basic_expression = basic_expression(c);
+  }
+
+  while (true) {
+    Tok tok = at(c);
+    if (one_of(tok.t, delim)) {
+      break;
+    }
+    if (!is_operator(tok.t)) {
+      expected(c, lhs->id, "an operator");
+      advance(c, FOLLOW_BASIC_EXPRESSION);
+    }
+
+    Tok op = at(c);
+    Power pow = infix_binding_power(op.t);
+    if (pow.left < min_pow) {
+      break;
+    }
+
+    next(c);
+    Expression *rhs = expression_power(c, pow.right, delim);
+
+    Expression *old_lhs = lhs;
+    lhs = NODE(c, Expression);
+    lhs->t = EXPRESSION_BINARY;
+    lhs->binary_expression = NODE(c, Binary_Expression);
+    lhs->binary_expression->op = op;
+    lhs->binary_expression->left = old_lhs;
+    lhs->binary_expression->right = rhs;
+  }
+
+  return lhs;
+}
+
+Expression *expression(Parse_Context *c, Toks delim) {
+  return expression_power(c, 0, delim);
+}
+
+Basic_Expression *basic_expression(Parse_Context *c) {
+  Basic_Expression *n = NODE(c, Basic_Expression);
+  switch (at(c).t) {
+    case T_NUM:
+    case T_IDENT:
+    case T_CHAR:
+    case T_STR:
+      break;
+    default:
+      expected(c, n->id, "a basic expression");
+      advance(c, FOLLOW_BASIC_EXPRESSION);
+      break;
+  }
+  n->token = consume(c);
   return n;
 }

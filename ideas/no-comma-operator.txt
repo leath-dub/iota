@@ -1,0 +1,53 @@
+The comma operator makes parsing very weird and I am not satisfied by it.
+
+I want to unify tuples and structs
+
+![u32, error]
+?u32
+
+u32!error
+
+fun foo() union { ok u32, err Out_Of_Memory } {
+}
+
+fun foo() Result<u32, Out_Of_Memory> {
+}
+
+fun foo() union { just u32, nothing struct{} } {
+  if something {
+    return .just { 10 };
+  }
+  return .nothing{};
+}
+
+fun foo() Result[u32, Out_Of_Memory] {
+}
+
+
+let foo = bar();
+if let err(e) = foo {
+  return .err { e };
+}
+
+let foo = bar() if ok;
+
+let foo = bar() if err(e) {
+  return e;
+};
+
+let ok(foo) = bar() else e {
+  return e;
+}
+
+let just(x) = foo() else {
+  return nothing;
+}
+
+let foo = bar() return if err;
+
+bar()!ok
+
+let x = bar() is err;
+
+Out_Of_Memory!u32
+!(Out_Of_Memory, )u32

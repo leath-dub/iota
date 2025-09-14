@@ -6,23 +6,24 @@
 #include "uc.h"
 
 typedef enum {
-  T_EMPTY = 0,  // sentinal token value (used for initial state of lexer)
-  T_EOF,    // EOF
-  T_CMNT,   // comment
-  T_SYNTHESIZED, // not a real token, used when synthesizing a AST (the ast is
-				 // more of a CST in the iota compiler
+  T_EMPTY = 0,    // sentinal token value (used for initial state of lexer)
+  T_EOF,          // EOF
+  T_CMNT,         // comment
+  T_SYNTHESIZED,  // not a real token, used when synthesizing a AST (the ast is
+                  // more of a CST in the iota compiler
   T_ILLEGAL,
-  T_LBRK,   // [
-  T_RBRK,   // ]
-  T_LPAR,   // (
-  T_RPAR,   // )
-  T_LBRC,   // {
-  T_RBRC,   // }
-  T_SCLN,   // ;
-  T_CLN,    // :
-  T_COMMA,  // ,
-  T_BANG,   // !
-  T_DOT,    // .
+  T_LBRK,    // [
+  T_RBRK,    // ]
+  T_LPAR,    // (
+  T_RPAR,    // )
+  T_LBRC,    // {
+  T_RBRC,    // }
+  T_SCLN,    // ;
+  T_CLN,     // :
+  T_COMMA,   // ,
+  T_BANG,    // !
+  T_DOT,     // .
+  T_DOTDOT,  // ..
 
   T_PLUS,   // +
   T_MINUS,  // -
@@ -43,6 +44,7 @@ typedef enum {
   T_IF,      // keyword: if
   T_ELSE,    // keyword: else
   T_FOR,     // keyword: for
+  T_WHILE,   // keyword: while
   T_DEFER,   // keyword: defer
   T_STRUCT,  // keyword: struct
   T_UNION,   // keyword: union

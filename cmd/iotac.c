@@ -6,8 +6,12 @@
 
 int main(void) {
   string source = ztos(
-    "let (*x);\n"
-    "let foo *mut s32;\n"
+      "fun add(ok(*y) ..Foo) s32 {\n"
+      "    let x = 10 + -11 * 10;\n"
+      "}\n"
+      // "let (*x);\n"
+      // "let foo *mut s32;\n"
+      // "let add fun(f32, f32) struct { value s32, ok bool };\n"
   );
   Source_Code code = new_source_code(ztos("<string>"), source);
 

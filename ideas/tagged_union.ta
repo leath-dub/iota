@@ -1,0 +1,27 @@
+union Maybe_Point {
+  point struct(u32, u32);
+  none struct{};
+}
+
+let mp = Maybe_Point.point { 10, 10 };
+case mp {
+  let point(p) -> handle(p);
+  .none -> {
+    handle_none();
+  }
+}
+
+if let point = mp {
+}
+
+// If let also works with regular let or mut declarations
+if let f, ok = some_fun(); ok {
+}
+// ... in this case `let f, ok = some_fun()` evalulates to true as there
+// is no constraints introduced via `<ident>(*?<ident>)` syntax on the left
+// hand side. the `;` just indicates that a post condition must also hold.
+
+// This is very expression:
+
+if mut point(*p) = mp; p.0 == 10 {
+}
