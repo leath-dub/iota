@@ -1,4 +1,6 @@
 * finish pratt parser for expressions following: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
+  - add array access and field access. Mostly postfix operators left to do.
+  - improve error messages (remove asserts)
 
 * new else statement for error handling
 

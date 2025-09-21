@@ -1,6 +1,7 @@
 #include "syn.h"
 
 #include <assert.h>
+#include <string.h>
 
 #include "../ast/ast.h"
 #include "../lex/lex.h"
@@ -392,8 +393,12 @@ Statement *statement(Parse_Context *c) {
     // case T_WHILE:
     //   break;
     default:
-      expected(c, n->id, "a statement");
-      advance(c, FOLLOW_STATEMENT);
+      n->t = STATEMENT_EXPRESSION;
+      n->expression = expression(c, TOKS(T_SCLN));
+      if (!expect(c, n->id, T_SCLN)) {
+        advance(c, FOLLOW_STATEMENT);
+        return n;
+      }
       break;
   }
   return n;
@@ -726,6 +731,11 @@ bool is_operator(Tok_Kind t) {
     case T_NEQ:
     case T_AND:
     case T_OR:
+    case T_PERC:
+    case T_PIPE:
+    case T_AMP:
+    case T_INC:
+    case T_DEC:
       return true;
     default:
       break;
@@ -738,37 +748,123 @@ typedef struct {
   u32 right;
 } Power;
 
+typedef enum {
+  PREC_POSTFIX,
+  PREC_UNARY,
+  PREC_MULTIPLICATIVE,
+  PREC_ADDITIVE,
+  PREC_SHIFT,
+  PREC_RELATIONAL,
+  PREC_EQUALITY,
+  PREC_BAND,
+  PREC_BXOR,
+  PREC_BOR,
+  PREC_AND,
+  PREC_OR,
+  PREC_ASSIGNMENT,
+  PREC_COUNT,
+} Precendence_Group;
+
+static const Power binding_power_of[PREC_COUNT] = {
+    [PREC_POSTFIX] = {23, 24},
+    [PREC_UNARY] = {22, 21},
+    [PREC_MULTIPLICATIVE] = {19, 20},
+    [PREC_ADDITIVE] = {17, 18},
+    [PREC_SHIFT] = {15, 16},
+    [PREC_RELATIONAL] = {13, 14},
+    [PREC_EQUALITY] = {11, 12},
+    [PREC_BAND] = {9, 10},
+    [PREC_BOR] = {7, 8},
+    [PREC_AND] = {5, 6},
+    [PREC_OR] = {3, 4},
+    [PREC_ASSIGNMENT] = {2, 1},
+};
+
 static Power infix_binding_power(Tok_Kind op) {
   switch (op) {
     case T_PLUS:
     case T_MINUS:
-      return (Power){1, 2};
+      return binding_power_of[PREC_ADDITIVE];
+    case T_PERC:
     case T_STAR:
     case T_SLASH:
-      return (Power){3, 4};
+      return binding_power_of[PREC_MULTIPLICATIVE];
+    case T_EQ:
+      return binding_power_of[PREC_ASSIGNMENT];
+    case T_AND:
+      return binding_power_of[PREC_AND];
+    case T_OR:
+      return binding_power_of[PREC_OR];
+    case T_AMP:
+      return binding_power_of[PREC_BAND];
+    case T_PIPE:
+      return binding_power_of[PREC_BOR];
+    case T_NEQ:
+    case T_EQEQ:
+      return binding_power_of[PREC_EQUALITY];
     default:
       assert(false && "TODO");
-      // case T_EQ:
-      // case T_EQEQ:
-      // case T_NEQ:
-      // case T_AND:
-      // case T_OR:
   }
 }
 
 static Power prefix_binding_power(Tok_Kind op) {
   switch (op) {
+    case T_INC:
+    case T_DEC:
+    case T_STAR:
     case T_MINUS:
-      return (Power){6, 5};
+      return binding_power_of[PREC_UNARY];
     default:
       assert(false && "TODO");
   }
 }
 
+typedef struct {
+  Power pow;
+  bool ok;
+} Maybe_Power;
+
+static Maybe_Power postfix_binding_power(Tok_Kind op) {
+  switch (op) {
+    case T_INC:
+    case T_DEC:
+      return (Maybe_Power){binding_power_of[PREC_POSTFIX], true};
+    default:
+      return (Maybe_Power){.ok = false};
+      assert(false && "TODO");
+  }
+}
+
 static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
-  Expression *lhs = NODE(c, Expression);
+  Expression *lhs = NULL;
 
   Tok tok = at(c);
+  if (tok.t == T_LPAR) {
+    next(c);
+    Toks new_delim;
+    new_delim.len = delim.len;
+    new_delim.items = malloc(delim.len * sizeof(Tok_Kind));
+    memcpy(new_delim.items, delim.items, delim.len * sizeof(Tok_Kind));
+    if (!one_of(T_RPAR, delim)) {
+      new_delim.len = delim.len + 1;
+      new_delim.items[delim.len] = T_RPAR;
+    }
+    lhs = expression_power(c, 0, new_delim);
+    free(new_delim.items);
+    if (!expect(c, lhs->id, T_RPAR)) {
+      advance(c, delim);
+      return lhs;
+    }
+    if (one_of(at(c).t, delim)) {
+      return lhs;
+    }
+  }
+  tok = at(c);
+
+  if (lhs == NULL) {
+    lhs = NODE(c, Expression);
+  }
+
   if (is_operator(tok.t)) {
     Power pow = prefix_binding_power(tok.t);
     lhs->t = EXPRESSION_UNARY;
@@ -792,6 +888,23 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
     }
 
     Tok op = at(c);
+
+    Maybe_Power maybe_pow = postfix_binding_power(op.t);
+    if (maybe_pow.ok) {
+      Power pow = maybe_pow.pow;
+      if (pow.left < min_pow) {
+        break;
+      }
+      next(c);
+      Expression *old_lhs = lhs;
+      lhs = NODE(c, Expression);
+      lhs->t = EXPRESSION_POSTFIX;
+      lhs->postfix_expression = NODE(c, Postfix_Expression);
+      lhs->postfix_expression->op = op;
+      lhs->postfix_expression->inner_expression = old_lhs;
+      continue;
+    }
+
     Power pow = infix_binding_power(op.t);
     if (pow.left < min_pow) {
       break;

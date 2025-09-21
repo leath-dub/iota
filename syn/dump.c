@@ -516,9 +516,10 @@ void dump_composite_literal_expression(Dump_Out *d, Parse_Context *c,
 
 void dump_postfix_expression(Dump_Out *d, Parse_Context *c,
                              Postfix_Expression *n) {
-  D(expression, n->inner_expression);
-  dump_rawf(d, "\nop: ");
+  dumpf(d, "op: ");
   dump_field_tok(d, c, n->op);
+  dump_rawf(d, "\n");
+  D(expression, n->inner_expression);
 }
 
 void dump_function_call_expression(Dump_Out *d, Parse_Context *c,

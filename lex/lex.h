@@ -32,6 +32,11 @@ typedef enum {
   T_EQ,     // =
   T_EQEQ,   // ==
   T_NEQ,    // !=
+  T_PIPE,   // |
+  T_AMP,    // &
+  T_PERC,   // %
+  T_INC,    // ++
+  T_DEC,    // --
 
   T_CHAR,  // character
   T_STR,   // string

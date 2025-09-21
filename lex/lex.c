@@ -31,6 +31,11 @@ string tok_to_string[TOK_KIND_COUNT] = {
     [T_EQ] = ZTOS("'='"),
     [T_EQEQ] = ZTOS("'=='"),
     [T_NEQ] = ZTOS("'!='"),
+    [T_PIPE] = ZTOS("'|'"),
+    [T_AMP] = ZTOS("'&'"),
+    [T_PERC] = ZTOS("'%'"),
+    [T_INC] = ZTOS("'++'"),
+    [T_DEC] = ZTOS("'--'"),
 
     [T_CHAR] = ZTOS("character"),
     [T_STR] = ZTOS("string"),
@@ -140,6 +145,7 @@ Lexer new_lexer(Source_Code source) {
 static size_t scan_id(const char *txt);
 static size_t scan_num(Lexer *l);
 static Tok eval_num(Lexer *l, string num_text);
+static bool ahead(Lexer *l, char c);
 
 Tok lex_peek(Lexer *l) {
   // Cursor is at the same position as cached token just return that token.
@@ -170,34 +176,42 @@ Tok lex_peek(Lexer *l) {
     case ',':
       return new_tok(l, T_COMMA, 1);
     case '=': {
-      if (l->cursor + 1 < l->source.text.len &&
-          l->source.text.data[l->cursor + 1] == '=') {
+      if (ahead(l, '=')) {
         return new_tok(l, T_EQEQ, 2);
       }
       return new_tok(l, T_EQ, 1);
     }
     case '+':
+      if (ahead(l, '+')) {
+        return new_tok(l, T_INC, 2);
+      }
       return new_tok(l, T_PLUS, 1);
     case '-':
+      if (ahead(l, '-')) {
+        return new_tok(l, T_DEC, 2);
+      }
       return new_tok(l, T_MINUS, 1);
     case '*':
       return new_tok(l, T_STAR, 1);
+    case '|':
+      return new_tok(l, T_PIPE, 1);
+    case '&':
+      return new_tok(l, T_AMP, 1);
+    case '%':
+      return new_tok(l, T_PERC, 1);
     case '.':
-      if (l->cursor + 1 < l->source.text.len &&
-          l->source.text.data[l->cursor + 1] == '.') {
+      if (ahead(l, '.')) {
         return new_tok(l, T_DOTDOT, 2);
       }
       return new_tok(l, T_DOT, 1);
     case '!': {
-      if (l->cursor + 1 < l->source.text.len &&
-          l->source.text.data[l->cursor + 1] == '=') {
+      if (ahead(l, '=')) {
         return new_tok(l, T_NEQ, 2);
       }
       return new_tok(l, T_BANG, 1);
     }
     case '/': {
-      if (l->cursor + 1 < l->source.text.len &&
-          l->source.text.data[l->cursor + 1] == '/') {
+      if (ahead(l, '/')) {
         // Its a comment look for '\n' or eof
         u32 peek = l->cursor;
         char c = l->source.text.data[peek];
@@ -265,6 +279,11 @@ Tok lex_peek(Lexer *l) {
     }
   }
   panic("unreachable state");
+}
+
+static bool ahead(Lexer *l, char c) {
+  return l->cursor + 1 < l->source.text.len &&
+         l->source.text.data[l->cursor + 1] == c;
 }
 
 void lex_consume(Lexer *l) {

@@ -1,6 +1,6 @@
 #include "../../ast/ast.h"
-#include "../../syn/syn.h"
 #include "../../common/common.h"
+#include "../../syn/syn.h"
 
 string read_all(FILE *fs) {
   struct {
@@ -14,9 +14,9 @@ string read_all(FILE *fs) {
     APPEND(&data, c);
   }
 
-  return (string) {
-    .data = data.items,
-    .len = data.len,
+  return (string){
+      .data = data.items,
+      .len = data.len,
   };
 }
 
