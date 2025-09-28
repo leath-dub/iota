@@ -80,29 +80,34 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
   return match;
 }
 
+#define DECLARE_FOLLOW_SET(name, ...)                             \
+  static const Tok_Kind _FOLLOW_##name##_ITEMS[] = {__VA_ARGS__}; \
+  static const Toks FOLLOW_##name = {                             \
+      .items = (Tok_Kind *)&_FOLLOW_##name##_ITEMS,               \
+      .len = sizeof(_FOLLOW_##name##_ITEMS) / sizeof(Tok_Kind),   \
+  };
+
 // These were manually calculated by looking at the tree-sitter grammar.
 // I really fucking hope it was worth the effort.
-static const Toks FOLLOW_IMPORT = TOKS(T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT,
-                                       T_ENUM, T_ERROR, T_UNION, T_TYPE, T_USE);
-static const Toks FOLLOW_DECLARATION =
-    TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION);
-static const Toks FOLLOW_VARIABLE_BINDING = TOKS(T_SCLN, T_EQ);
-static const Toks FOLLOW_BINDING = TOKS(T_COMMA, T_RPAR);
-static const Toks FOLLOW_ALIASED_BINDING = TOKS(T_COMMA, T_RBRC);
-static const Toks FOLLOW_TYPE =
-    TOKS(T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ);
-static const Toks FOLLOW_IDENTIFIER_LIST = TOKS(T_RBRC);
-static const Toks FOLLOW_ERROR_LIST = TOKS(T_RBRC);
-static const Toks FOLLOW_ERROR = TOKS(T_COMMA, T_RBRC);
-static const Toks FOLLOW_FIELD = TOKS(T_IDENT, T_RBRC);
-static const Toks FOLLOW_STATEMENT_LIST = TOKS(T_LBRC);
-static const Toks FOLLOW_STATEMENT =
-    TOKS(T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
-         T_LBRC /*, TODO FIRST(expression) */);
-static const Toks FOLLOW_BASIC_EXPRESSION =
-    TOKS(T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ, T_AND, T_OR);
+DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM,
+                   T_ERROR, T_UNION, T_TYPE, T_USE)
+DECLARE_FOLLOW_SET(DECLARATION, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
+                   T_UNION)
+DECLARE_FOLLOW_SET(VARIABLE_BINDING, T_SCLN, T_EQ)
+DECLARE_FOLLOW_SET(BINDING, T_COMMA, T_RPAR)
+DECLARE_FOLLOW_SET(ALIASED_BINDING, T_COMMA, T_RBRC)
+DECLARE_FOLLOW_SET(TYPE, T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ)
+DECLARE_FOLLOW_SET(IDENTIFIER_LIST, T_RBRC)
+DECLARE_FOLLOW_SET(ERROR_LIST, T_RBRC)
+DECLARE_FOLLOW_SET(ERROR, T_COMMA, T_RBRC)
+DECLARE_FOLLOW_SET(FIELD, T_IDENT, T_RBRC)
+DECLARE_FOLLOW_SET(STATEMENT_LIST, T_LBRC)
+DECLARE_FOLLOW_SET(STATEMENT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
+                   T_UNION, T_LBRC /*, TODO FIRST(expression) */)
+DECLARE_FOLLOW_SET(BASIC_EXPRESSION, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ,
+                   T_EQEQ, T_NEQ, T_AND, T_OR)
 // TODO: once we have an automated tool
-// static const Toks FOLLOW_EXPRESSION = TOKS();
+// DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
 Source_File *source_file(Parse_Context *c) {
   Source_File *n = NODE(c, Source_File);
