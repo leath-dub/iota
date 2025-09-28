@@ -5,6 +5,7 @@
 *.did.tmp
 *.o
 *.d
+.direnv/
 cmd/iotac
 lex/ucgen
 lex/uc_data.c
