@@ -48,7 +48,7 @@ void panic(const char *msg) {
   abort();
 }
 
-Arena new_arena() {
+Arena new_arena(void) {
   return (Arena){
       .block_size = sysconf(_SC_PAGESIZE),
       .blocks = (Blocks){.cap = 0, .len = 0, .items = NULL},
