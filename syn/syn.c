@@ -1,5 +1,7 @@
 #include "syn.h"
 
+// TODO: add IR that populates child parent node metadata.
+
 #include <assert.h>
 #include <string.h>
 
@@ -105,7 +107,7 @@ DECLARE_FOLLOW_SET(STATEMENT_LIST, T_LBRC)
 DECLARE_FOLLOW_SET(STATEMENT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION, T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(BASIC_EXPRESSION, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ,
-                   T_EQEQ, T_NEQ, T_AND, T_OR)
+                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK)
 // TODO: once we have an automated tool
 // DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
@@ -727,6 +729,7 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
 
 bool is_operator(Tok_Kind t) {
   switch (t) {
+    case T_LBRK:
     case T_PLUS:
     case T_MINUS:
     case T_STAR:
@@ -785,42 +788,67 @@ static const Power binding_power_of[PREC_COUNT] = {
     [PREC_ASSIGNMENT] = {2, 1},
 };
 
-static Power infix_binding_power(Tok_Kind op) {
-  switch (op) {
-    case T_PLUS:
-    case T_MINUS:
-      return binding_power_of[PREC_ADDITIVE];
-    case T_PERC:
-    case T_STAR:
-    case T_SLASH:
-      return binding_power_of[PREC_MULTIPLICATIVE];
-    case T_EQ:
-      return binding_power_of[PREC_ASSIGNMENT];
-    case T_AND:
-      return binding_power_of[PREC_AND];
-    case T_OR:
-      return binding_power_of[PREC_OR];
-    case T_AMP:
-      return binding_power_of[PREC_BAND];
-    case T_PIPE:
-      return binding_power_of[PREC_BOR];
-    case T_NEQ:
-    case T_EQEQ:
-      return binding_power_of[PREC_EQUALITY];
-    default:
-      assert(false && "TODO");
+static Index *index(Parse_Context *c) {
+  Index *n = NODE(c, Index);
+  assert(consume(c).t == T_LBRK);
+
+  n->t = INDEX_SINGLE;
+
+  // e.g. [:10]
+  if (looking_at(c, T_CLN)) {
+    n->t = INDEX_RANGE;
+    next(c);
+    if (!looking_at(c, T_RBRK)) {
+      // Although it is not technically correct to have
+      // ';' as a "valid" delimiter, it is used here to prevent
+      // spurious errors caused by unmatched '['
+      n->end.value = expression(c, TOKS(T_RBRK, T_SCLN));
+      n->end.ok = true;
+    }
+    goto delim;
   }
+
+  n->start.value = expression(c, TOKS(T_RBRK, T_CLN, T_SCLN));
+  n->start.ok = true;
+
+  if (looking_at(c, T_CLN)) {
+    n->t = INDEX_RANGE;
+    next(c);
+    if (!looking_at(c, T_RBRK)) {
+      n->end.value = expression(c, TOKS(T_RBRK, T_SCLN));
+      n->end.ok = true;
+    }
+    goto delim;
+  }
+
+delim:
+  if (!expect(c, n->id, T_RBRK)) {
+    // TODO: change to FOLLOW_EXPRESSION
+    advance(c, FOLLOW_BASIC_EXPRESSION);
+  }
+
+  return n;
 }
 
-static Power prefix_binding_power(Tok_Kind op) {
-  switch (op) {
-    case T_INC:
-    case T_DEC:
-    case T_STAR:
-    case T_MINUS:
-      return binding_power_of[PREC_UNARY];
-    default:
-      assert(false && "TODO");
+static Expression *parse_postfix(Parse_Context *c, Expression *lhs) {
+  switch (at(c).t) {
+    case T_LBRK: {
+      Array_Access_Expression *access = NODE(c, Array_Access_Expression);
+      access->lvalue = lhs;
+      access->index = index(c);
+      Expression *expr = NODE(c, Expression);
+      expr->t = EXPRESSION_ARRAY_ACCESS;
+      expr->array_access_expression = access;
+      return expr;
+    }
+    default: {
+      Expression *expr = NODE(c, Expression);
+      expr->t = EXPRESSION_POSTFIX;
+      expr->postfix_expression = NODE(c, Postfix_Expression);
+      expr->postfix_expression->op = at(c);
+      expr->postfix_expression->inner_expression = lhs;
+      return expr;
+    }
   }
 }
 
@@ -829,8 +857,48 @@ typedef struct {
   bool ok;
 } Maybe_Power;
 
+static Maybe_Power infix_binding_power(Tok_Kind op) {
+  switch (op) {
+    case T_PLUS:
+    case T_MINUS:
+      return (Maybe_Power){binding_power_of[PREC_ADDITIVE], true};
+    case T_PERC:
+    case T_STAR:
+    case T_SLASH:
+      return (Maybe_Power){binding_power_of[PREC_MULTIPLICATIVE], true};
+    case T_EQ:
+      return (Maybe_Power){binding_power_of[PREC_ASSIGNMENT], true};
+    case T_AND:
+      return (Maybe_Power){binding_power_of[PREC_AND], true};
+    case T_OR:
+      return (Maybe_Power){binding_power_of[PREC_OR], true};
+    case T_AMP:
+      return (Maybe_Power){binding_power_of[PREC_BAND], true};
+    case T_PIPE:
+      return (Maybe_Power){binding_power_of[PREC_BOR], true};
+    case T_NEQ:
+    case T_EQEQ:
+      return (Maybe_Power){binding_power_of[PREC_EQUALITY], true};
+    default:
+      return (Maybe_Power){.ok = false};
+  }
+}
+
+static Maybe_Power prefix_binding_power(Tok_Kind op) {
+  switch (op) {
+    case T_INC:
+    case T_DEC:
+    case T_STAR:
+    case T_MINUS:
+      return (Maybe_Power){binding_power_of[PREC_UNARY], true};
+    default:
+      return (Maybe_Power){.ok = false};
+  }
+}
+
 static Maybe_Power postfix_binding_power(Tok_Kind op) {
   switch (op) {
+    case T_LBRK:
     case T_INC:
     case T_DEC:
       return (Maybe_Power){binding_power_of[PREC_POSTFIX], true};
@@ -871,12 +939,20 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
   }
 
   if (is_operator(tok.t)) {
-    Power pow = prefix_binding_power(tok.t);
+    Maybe_Power maybe_pow = prefix_binding_power(tok.t);
+    Power pow;
+    Unary_Expression *n = NODE(c, Unary_Expression);
+    if (!maybe_pow.ok) {
+      expected(c, n->id, "valid prefix operator");
+      pow = (Power){0, 0};
+    } else {
+      pow = maybe_pow.pow;
+    }
     lhs->t = EXPRESSION_UNARY;
-    lhs->unary_expression = NODE(c, Unary_Expression);
-    lhs->unary_expression->op = consume(c);
+    n->op = consume(c);
     Expression *rhs = expression_power(c, pow.right, delim);
-    lhs->unary_expression->inner_expression = rhs;
+    n->inner_expression = rhs;
+    lhs->unary_expression = n;
   } else {
     lhs->t = EXPRESSION_BASIC;
     lhs->basic_expression = basic_expression(c);
@@ -900,17 +976,15 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
       if (pow.left < min_pow) {
         break;
       }
-      next(c);
-      Expression *old_lhs = lhs;
-      lhs = NODE(c, Expression);
-      lhs->t = EXPRESSION_POSTFIX;
-      lhs->postfix_expression = NODE(c, Postfix_Expression);
-      lhs->postfix_expression->op = op;
-      lhs->postfix_expression->inner_expression = old_lhs;
+      lhs = parse_postfix(c, lhs);
       continue;
     }
 
-    Power pow = infix_binding_power(op.t);
+    maybe_pow = infix_binding_power(op.t);
+    if (!maybe_pow.ok) {
+      break;
+    }
+    Power pow = maybe_pow.pow;
     if (pow.left < min_pow) {
       break;
     }

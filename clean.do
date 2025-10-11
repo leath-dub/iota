@@ -9,3 +9,4 @@ rm -f cmd/iotac
 rm -f t/runecat_test
 rm -f t/lex_test
 rm -f t/ast_test
+rm -f t/syn/dump_ast

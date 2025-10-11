@@ -87,6 +87,7 @@ typedef struct {
   u32 indent;
   FILE *fs;
   bool is_field;
+  bool delimit;
 } Dump_Out;
 
 void dumpf(Dump_Out *dmp, const char *fmt, ...) PRINTF_CHECK(2, 3);

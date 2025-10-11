@@ -9,7 +9,7 @@ int main(void) {
   FILE *fs = fopen("../lex/UnicodeData.txt", "r");
   ASSERT(fs != NULL);
 
-  u32 ec = 0, lno = 0;
+  u32 ec = 0;
   static char ln[BUFSIZ] = {0};
   size_t sz = BUFSIZ;
 
@@ -27,8 +27,6 @@ int main(void) {
     ASSERT(strtok(NULL, ";") != NULL && (gcn = strtok(NULL, ";")) != NULL);
 
     ASSERT(strcmp(gcn, gctoa(runecat(cp))) == 0);
-
-    lno++;
   }
 
   fclose(fs);

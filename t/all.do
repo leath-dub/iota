@@ -1,1 +1,1 @@
-redo-ifchange runecat_test lex_test common_test
+redo-ifchange runecat_test lex_test common_test python_tests

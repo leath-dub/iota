@@ -24,9 +24,11 @@ int main(void) {
   string text = read_all(stdin);
   Source_Code code = new_source_code(ztos("<stdin>"), text);
   Parse_Context pc = new_parse_context(code);
-  Module *mod = parse_module(&pc);
+  Source_File *file = source_file(&pc);
   Dump_Out out = new_dump_out();
-  DUMP(&out, &pc, mod);
+  dump_source_file(&out, &pc, file);
+  parse_context_free(&pc);
+  source_code_free(&code);
   printf("\n");
   fflush(out.fs);
   free(text.data);

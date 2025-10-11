@@ -551,20 +551,32 @@ struct Postfix_Expression {
 
 struct Field_Access_Expression {
   Node_ID id;
-  struct Expression *value;
+  struct Expression *lvalue;
   Tok field;
 };
 
 struct Array_Access_Expression {
   Node_ID id;
-  struct Expression *value;
+  struct Expression *lvalue;
   struct Index *index;
 };
 
+typedef enum {
+  INDEX_SINGLE,
+  INDEX_RANGE,
+} Index_Kind;
+
 struct Index {
   Node_ID id;
-  struct Expression *start;  // nullable
-  struct Expression *end;    // nullable
+  Index_Kind t;
+  struct {
+    struct Expression *value;
+    bool ok;
+  } start;  // nullable
+  struct {
+    struct Expression *value;
+    bool ok;
+  } end;  // nullable
 };
 
 struct Unary_Expression {

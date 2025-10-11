@@ -6,6 +6,10 @@
 void dumpf(Dump_Out *d, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
+  if (d->delimit) {
+    fputc('\n', d->fs);
+    d->delimit = false;
+  }
   if (!d->is_field) {
     fprintf(d->fs, "%*s", d->indent * 2, "");
   } else {
@@ -27,6 +31,7 @@ Dump_Out new_dump_out(void) {
       .fs = stdout,
       .indent = 0,
       .is_field = false,
+      .delimit = false,
   };
 }
 
@@ -38,9 +43,11 @@ void dump_node(Dump_Out *d, Parse_Context *c, void *node, const char *name,
     dumpf(d, "(ERROR %s)", name);
     return;
   }
-  dumpf(d, "(%s\n", name);
+  dumpf(d, "(%s", name);
   d->indent++;
+  d->delimit = true;
   dumper(d, c, node);
+  d->delimit = false;
   dump_rawf(d, ")");
   d->indent--;
 }
@@ -531,14 +538,14 @@ void dump_function_call_expression(Dump_Out *d, Parse_Context *c,
 
 void dump_field_access_expression(Dump_Out *d, Parse_Context *c,
                                   Field_Access_Expression *n) {
-  D(expression, n->value);
+  D(expression, n->lvalue);
   dump_rawf(d, "\nfield: ");
   dump_field_tok(d, c, n->field);
 }
 
 void dump_array_access_expression(Dump_Out *d, Parse_Context *c,
                                   Array_Access_Expression *n) {
-  D(expression, n->value);
+  D(expression, n->lvalue);
   dump_rawf(d, "\n");
   D(index, n->index);
 }
@@ -561,18 +568,22 @@ void dump_binary_expression(Dump_Out *d, Parse_Context *c,
 }
 
 void dump_index(Dump_Out *d, Parse_Context *c, Index *n) {
-  if (n->start) {
+  if (n->t == INDEX_SINGLE) {
+    D(expression, n->start.value);
+    return;
+  }
+  if (n->start.ok) {
     dumpf(d, "start: ");
     d->is_field = true;
-    D(expression, n->start);
-    if (n->end) {
+    D(expression, n->start.value);
+    if (n->end.ok) {
       dump_rawf(d, "\n");
     }
   }
-  if (n->end) {
+  if (n->end.ok) {
     dumpf(d, "end: ");
     d->is_field = true;
-    D(expression, n->end);
+    D(expression, n->end.value);
   }
 }
 

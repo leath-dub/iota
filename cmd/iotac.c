@@ -7,8 +7,9 @@
 int main(void) {
   string source = ztos(
       "fun add(ok(*y) ..Foo) s32 {\n"
-      "    let x = 10 + -11 * 10;\n"
+      "    let x = 10[10 + 12:] + -11 * 10;\n"
       "    x = 1 * 10;\n"
+      "    foo[10] = 30;\n"
       "}\n"
       // "let (*x);\n"
       // "let foo *mut s32;\n"
