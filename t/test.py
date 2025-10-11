@@ -32,8 +32,13 @@ def load_test(path):
         code = f.read()
     exec(compile(code, str(path), 'exec'), globals())
 
-load_test("syn/empty.py")
-load_test("syn/function.py")
+def load_testdir(path):
+    testdir = pathlib.Path("syn")
+    for entr in testdir.iterdir():
+        if entr.is_file() and entr.name.startswith("test_") and entr.suffix == ".py":
+            load_test(str(entr))
+
+load_testdir("syn")
 
 if __name__ == "__main__":
     unittest.main()
