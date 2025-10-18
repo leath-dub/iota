@@ -475,13 +475,13 @@ Type *type(Parse_Context *c) {
       n->t = TYPE_POINTER;
       n->pointer_type = pointer_type(c);
       break;
-    case T_IDENT:
-      n->t = TYPE_SCOPED_IDENTIFIER;
-      n->scoped_identifier = scoped_identifier(c, FOLLOW_TYPE);
-      break;
     case T_FUN:
       n->t = TYPE_FUNCTION;
       n->function_type = function_type(c);
+      break;
+    case T_IDENT:
+      n->t = TYPE_SCOPED_IDENTIFIER;
+      n->scoped_identifier = scoped_identifier(c, FOLLOW_TYPE);
       break;
     default:
       expected(c, n->id, "a type");

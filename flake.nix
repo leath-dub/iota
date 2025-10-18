@@ -34,7 +34,7 @@
       });
       devShells = forAllSystems ({ pkgs, ... }: {
         default = pkgs.mkShell {
-          packages = with pkgs; [ redo-apenwarr clang python3 ];
+          packages = with pkgs; [ redo-apenwarr clang peg python3 ];
           hardeningDisable = [ "fortify" ];
         };
       });

@@ -1,0 +1,198 @@
+SourceFile <- Spacing Imports Declarations EOF
+
+Imports <- Import*
+Import <- IMPORT Identifier? StrLit SCLN
+
+Declarations <- Declaration*
+Declaration <- VariableDeclaration
+             / FunctionDeclaration
+             / StructDeclaration
+             / EnumDeclaration
+             / ErrorDeclaration
+             / UnionDeclaration
+
+VariableDeclaration <- (LET / MUT) VariableBinding Type? (EQ Expression)? SCLN
+VariableBinding <- DestructureTuple
+                 / DestructureStruct
+                 / DestructureUnion
+                 / BasicVariableBinding
+
+BindingList <- Binding (COMMA Binding)* COMMA?
+Binding <- STAR? IDENT
+AliasedBindingList <- AliasedBinding (COMMA AliasedBinding)* COMMA?
+AliasedBinding <- Binding (EQ Identifier)?
+
+DestructureTuple <- LPAR BindingList RPAR
+DestructureStruct <- LBRC AliasedBindingList RBRC
+DestructureUnion <- Identifier LPAR Binding RPAR
+BasicVariableBinding <- Identifier
+
+FunctionDeclaration <- FUN Identifier LPAR FunctionParameterList RPAR Type? CompoundStatement
+FunctionParameterList <- (FunctionParameter (COMMA FunctionParameter)* COMMA?)?
+FunctionParameter <- VariableBinding DOTDOT? Type
+
+StructDeclaration <- STRUCT Identifier ((LPAR TypeList RPAR) / (LBRC FieldList RBRC))
+TypeList <- (Type (COMMA Type)* COMMA?)?
+FieldList <- (Field (COMMA Field)* COMMA?)?
+Field <- Identifier Type
+
+EnumDeclaration <- ENUM Identifier LBRC IdentifierList RBRC
+IdentifierList <- Identifier (COMMA Identifier)* COMMA?
+
+ErrorDeclaration <- ERROR Identifier LBRC ErrorList RBRC
+ErrorList <- Error (COMMA Error)* COMMA?
+Error <- BANG? ScopedIdentifier
+ScopedIdentifier <- Identifier (DOT Identifier)*
+
+UnionDeclaration <- UNION Identifier LBRC FieldList RBRC
+
+Statement <- Declaration
+           / IfStatement
+           / ReturnStatement
+           / DeferStatement
+           / CompoundStatement
+           / Expression SCLN
+
+IfStatement <- IF Condition CompoundStatement Else?
+Condition <- UnionTagCondition
+           / Expression
+UnionTagCondition <- (LET / MUT) DestructureUnion EQ Expression
+Else <- ELSE (IfStatement / CompoundStatement)
+
+ReturnStatement <- RETURN Expression SCLN
+DeferStatement <- DEFER Statement
+CompoundStatement <- LBRC Statement* RBRC
+
+Type <- BuiltinType
+      / CollectionType
+      / StructType
+      / UnionType
+      / EnumType
+      / ErrorType
+      / PointerType
+      / FunctionType
+      / ScopedIdentifier
+
+BuiltinType <- S8 / U8 / S16 / U16 / S32 / U32 / S64 / U64 / F32 / F64 / BOOL / STRING / ANY
+CollectionType <- LBRK Expression RBRK Type
+StructType <- STRUCT ((LPAR TypeList RPAR) / (LBRC FieldList RBRC))
+UnionType <- UNION LBRC FieldList RBRC
+EnumType <- ENUM LBRC IdentifierList RBRC
+ErrorType <- ENUM LBRC ErrorList RBRC
+PointerType <- STAR MUT? Type
+FunctionType <- FUN LPAR TypeList RPAR Type?
+
+BasicExpression <- Identifier / NumLit / StrLit / CharLit / LPAR BasicExpression RPAR
+
+Expression <- Assignment
+Assignment <- Or (EQ Assignment)?
+Or <- And (OR And)*
+And <- Bor (AND Bor)*
+Bor <- Band (PIPE Band)*
+Band <- Equality (AMP Equality)*
+Equality <- Relational (EqualityOp Relational)*
+Relational <- Shift (RelationalOp Shift)*
+Shift <- Additive (ShiftOp Additive)*
+Additive <- Multiplicative (AdditiveOp Multiplicative)*
+Multiplicative <- Unary (MultiplicativeOp Unary)*
+Unary <- UnaryOp Unary / Postfix
+Postfix <- BasicExpression (PostfixOp / Index / FieldName)*
+
+Index <- LBRK Expression? CLN? Expression? RBRK
+FieldName <- DOT Identifier
+
+EqualityOp <- EQEQ / NEQ
+RelationalOp <- LT / LTEQ / GT / GTEQ
+ShiftOp <- SHL / SHR
+AdditiveOp <- PLUS / MINUS
+MultiplicativeOp <- STAR / SLASH
+UnaryOp <- INC / DEC / MINUS / STAR
+PostfixOp <- INC / DEC
+
+EOF <- !.
+
+CHAR <- 'character' Spacing
+NumLit <- [1-9][0-9]* Spacing
+StrLit <- '"' ( !'"' Char )* '"' Spacing
+CharLit <- "'" !"'" Char "'" Spacing
+Char <- '\\' [abefnrtv'"\[\]\\]
+      / '\\' [0-3][0-7][0-7]
+      / '\\' [0-7][0-7]?
+      / '\\' '-'
+      / !'\\' .
+
+Identifier <- IdentStart IdentCont* "'"? Spacing
+IdentStart <- [a-zA-Z_]
+IdentCont  <- IdentStart / [0-9]
+
+LBRK <- '[' Spacing
+RBRK <- ']' Spacing
+LPAR <- '(' Spacing
+RPAR <- ')' Spacing
+LBRC <- '{' Spacing
+RBRC <- '}' Spacing
+SCLN <- ';' Spacing
+CLN <- ':' Spacing
+COMMA <- ',' Spacing
+BANG <- '!' Spacing
+DOT <- '.' Spacing
+DOTDOT <- '..' Spacing
+
+PLUS <- '+' Spacing
+MINUS <- '-' Spacing
+STAR <- '*' Spacing
+SLASH <- '/' Spacing
+EQ <- '=' Spacing
+EQEQ <- '==' Spacing
+NEQ <- '!=' Spacing
+LT <- '<' Spacing
+GT <- '>' Spacing
+LTEQ <- '<=' Spacing
+GTEQ <- '>=' Spacing
+SHL <- '<<' Spacing
+SHR <- '>>' Spacing
+PIPE <- '|' Spacing
+AMP <- '&' Spacing
+PERC <- '%' Spacing
+INC <- '++' Spacing
+DEC <- '--' Spacing
+
+NOT <- 'not' Spacing
+AND <- 'and' Spacing
+OR <- 'or' Spacing
+FUN <- 'fun' Spacing
+IF <- 'if' Spacing
+ELSE <- 'else' Spacing
+FOR <- 'for' Spacing
+WHILE <- 'while' Spacing
+DEFER <- 'defer' Spacing
+STRUCT <- 'struct' Spacing
+UNION <- 'union' Spacing
+ENUM <- 'enum' Spacing
+LET <- 'let' Spacing
+MUT <- 'mut' Spacing
+TYPE <- 'type' Spacing
+IMPORT <- 'import' Spacing
+ERROR <- 'error' Spacing
+RETURN <- 'return' Spacing
+USE <- 'use' Spacing
+S8 <- 's8' Spacing
+U8 <- 'u8' Spacing
+S16 <- 's16' Spacing
+U16 <- 'u16' Spacing
+S32 <- 's32' Spacing
+U32 <- 'u32' Spacing
+S64 <- 's64' Spacing
+U64 <- 'u64' Spacing
+F32 <- 'f32' Spacing
+F64 <- 'f64' Spacing
+BOOL <- 'bool' Spacing
+STRING <- 'string' Spacing
+ANY <- 'any' Spacing
+
+IDENT <- [a-z][a-z0-9]* "'"? Spacing
+
+Spacing <- ( Space / Comment )*
+Comment <- '//' ( !EndOfLine . )* EndOfLine
+Space <- ' ' / '\t' / EndOfLine
+EndOfLine <- '\r\n' / '\n' / '\r'
