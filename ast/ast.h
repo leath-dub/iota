@@ -58,6 +58,8 @@ struct Parenthesized_Expression;
 struct Composite_Literal_Expression;
 struct Postfix_Expression;
 struct Function_Call_Expression;
+struct Initializer_List;
+struct Initializer_Item;
 struct Field_Access_Expression;
 struct Array_Access_Expression;
 struct Unary_Expression;
@@ -527,20 +529,24 @@ struct Composite_Literal_Expression {
 
 struct Function_Call_Expression {
   Node_ID id;
-  struct Expression *function;
-  struct Expression *arguments;
-  // arguments to the function are an expression
-  // as this allows you to have assignments and
-  // comma separted values e.g.:
-  //
-  // foo(x = 10, 10)
-  //
-  // gives a parse tree like so:
-  //
-  // (function_call
-  //   (comma
-  //     (assignment ...)
-  //     (basic ...)))
+  struct Expression *lvalue;
+  struct Initializer_List *arguments;
+};
+
+struct Initializer_List {
+  Node_ID id;
+  u32 len;
+  u32 cap;
+  struct Expression **items;
+};
+
+struct Initializer_Item {
+  Node_ID id;
+  Tok name;
+  struct {
+    bool ok;
+    struct Expression *data;
+  } value;
 };
 
 struct Postfix_Expression {
@@ -649,6 +655,8 @@ typedef struct Index Index;
 typedef struct Array_Access_Expression Array_Access_Expression;
 typedef struct Unary_Expression Unary_Expression;
 typedef struct Binary_Expression Binary_Expression;
+typedef struct Initializer_List Initializer_List;
+typedef struct Initializer_Item Initializer_Item;
 
 typedef enum {
   NFLAG_NONE = 0,

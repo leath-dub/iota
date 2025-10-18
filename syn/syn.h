@@ -61,6 +61,7 @@ Error *error(Parse_Context *c);
 Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow);
 Expression *expression(Parse_Context *c, Toks delim);
 Basic_Expression *basic_expression(Parse_Context *c);
+Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim);
 
 // Declaration *parse_decl(Parse_Context *c);
 // Compound_Statement *parse_compound_stmt(Parse_Context *c);
@@ -165,6 +166,7 @@ void dump_postfix_expression(Dump_Out *d, Parse_Context *c,
                              Postfix_Expression *n);
 void dump_function_call_expression(Dump_Out *d, Parse_Context *c,
                                    Function_Call_Expression *n);
+void dump_initializer_list(Dump_Out *d, Parse_Context *c, Initializer_List *n);
 void dump_field_access_expression(Dump_Out *d, Parse_Context *c,
                                   Field_Access_Expression *n);
 void dump_array_access_expression(Dump_Out *d, Parse_Context *c,

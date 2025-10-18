@@ -531,9 +531,18 @@ void dump_postfix_expression(Dump_Out *d, Parse_Context *c,
 
 void dump_function_call_expression(Dump_Out *d, Parse_Context *c,
                                    Function_Call_Expression *n) {
-  D(expression, n->function);
+  D(expression, n->lvalue);
   dump_rawf(d, "\n");
-  D(expression, n->arguments);
+  D(initializer_list, n->arguments);
+}
+
+void dump_initializer_list(Dump_Out *d, Parse_Context *c, Initializer_List *n) {
+  for (u32 i = 0; i < n->len; i++) {
+    D(expression, n->items[i]);
+    if (i != n->len - 1) {
+      dump_rawf(d, "\n");
+    }
+  }
 }
 
 void dump_field_access_expression(Dump_Out *d, Parse_Context *c,

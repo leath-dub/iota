@@ -1,6 +1,7 @@
 #include "syn.h"
 
 // TODO: add IR that populates child parent node metadata.
+// TODO: add delimiter tokens as part of the parsing context
 
 #include <assert.h>
 #include <string.h>
@@ -89,6 +90,8 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
       .len = sizeof(_FOLLOW_##name##_ITEMS) / sizeof(Tok_Kind),   \
   };
 
+// TODO: maybe we need to be more dynamic with sync tokens
+
 // These were manually calculated by looking at the tree-sitter grammar.
 // I really fucking hope it was worth the effort.
 DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM,
@@ -107,7 +110,7 @@ DECLARE_FOLLOW_SET(STATEMENT_LIST, T_LBRC)
 DECLARE_FOLLOW_SET(STATEMENT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION, T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(BASIC_EXPRESSION, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ,
-                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK)
+                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK, T_SCLN)
 // TODO: once we have an automated tool
 // DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
@@ -724,11 +727,32 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
   return n;
 }
 
+Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim) {
+  Initializer_List *n = NODE(c, Initializer_List);
+  // No items in list, just return
+  if (looking_at(c, delim)) {
+    return n;
+  }
+  Toks follow_item = TOKS(T_COMMA, delim);
+  APPEND(n, expression(c, follow_item));
+  while (looking_at(c, T_COMMA)) {
+    next(c);
+    // Ignore trailing comma
+    if (looking_at(c, delim)) {
+      break;
+    }
+    APPEND(n, expression(c, follow_item));
+  }
+  arena_own(&c->arena, n->items, n->cap);
+  return n;
+}
+
 // Helpful resource for pratt parser:
 // https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
 
 bool is_operator(Tok_Kind t) {
   switch (t) {
+    case T_LPAR:
     case T_LBRK:
     case T_PLUS:
     case T_MINUS:
@@ -841,6 +865,18 @@ static Expression *parse_postfix(Parse_Context *c, Expression *lhs) {
       expr->array_access_expression = access;
       return expr;
     }
+    case T_LPAR: {
+      Function_Call_Expression *call = NODE(c, Function_Call_Expression);
+      call->lvalue = lhs;
+      if (expect(c, call->id, T_LPAR)) {
+        call->arguments = initializer_list(c, T_RPAR);
+        (void)expect(c, call->id, T_RPAR);
+      }
+      Expression *expr = NODE(c, Expression);
+      expr->t = EXPRESSION_FUNCTION_CALL;
+      expr->function_call_expression = call;
+      return expr;
+    }
     default: {
       Expression *expr = NODE(c, Expression);
       expr->t = EXPRESSION_POSTFIX;
@@ -898,6 +934,7 @@ static Maybe_Power prefix_binding_power(Tok_Kind op) {
 
 static Maybe_Power postfix_binding_power(Tok_Kind op) {
   switch (op) {
+    case T_LPAR:
     case T_LBRK:
     case T_INC:
     case T_DEC:
@@ -912,20 +949,18 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
   Expression *lhs = NULL;
 
   Tok tok = at(c);
-  if (is_operator(tok.t)) {
+
+  // We do not expect '(' to be an operator at the top level so we exclude it.
+  // TODO: maybe we should separate this function into:
+  //   - is_infix_op
+  //   - is_prefix_op
+  //   - is_postfix_op
+  if (tok.t != T_LPAR && is_operator(tok.t)) {
     lhs = NODE(c, Expression);
 
     Maybe_Power maybe_pow = prefix_binding_power(tok.t);
     Power pow;
     Unary_Expression *n = NODE(c, Unary_Expression);
-    // if (maybe_pow.ok) {
-    //   pow = maybe_pow.pow;
-    //   lhs->t = EXPRESSION_UNARY;
-    //   n->op = consume(c);
-    //   Expression *rhs = expression_power(c, pow.right, delim);
-    //   n->inner_expression = rhs;
-    //   lhs->unary_expression = n;
-    // }
     if (!maybe_pow.ok) {
       expected(c, n->id, "valid prefix operator");
       pow = (Power){0, 0};
@@ -962,12 +997,6 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
       lhs->t = EXPRESSION_BASIC;
       lhs->basic_expression = basic_expression(c);
     }
-  }
-
-  tok = at(c);
-
-  if (lhs == NULL) {
-    lhs = NODE(c, Expression);
   }
 
   while (true) {

@@ -5,16 +5,7 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos(
-      "fun add(foo s32, ok(*y) ..Foo) s32 {\n"
-      "    let x = 10[10 + 12:] + -11 * 10;\n"
-      "    x = 1 * 10;\n"
-      "    foo[10] = 30;\n"
-      "}\n"
-      // "let (*x);\n"
-      // "let foo *mut s32;\n"
-      // "let add fun(f32, f32) struct { value s32, ok bool };\n"
-  );
+  string source = ztos("let _ = foo(x, y = 10, (y));");
   Source_Code code = new_source_code(ztos("<string>"), source);
 
   Parse_Context pc = new_parse_context(code);
