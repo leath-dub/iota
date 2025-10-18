@@ -18,3 +18,4 @@ t/test.o
 t/runecat_test
 t/lex_test
 t/common_test
+t/syn/dump_ast
