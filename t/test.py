@@ -23,6 +23,7 @@ def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "")
         expected = expected[1:]
     def test(self):
         ast = dump_ast(source)
+        self.maxDiff = None
         self.assertEqual(ast, expected)
     setattr(SyntaxTests, f"test_{name}", test)
 

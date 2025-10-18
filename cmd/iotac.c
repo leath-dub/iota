@@ -6,7 +6,7 @@
 
 int main(void) {
   string source = ztos(
-      "fun add(ok(*y) ..Foo) s32 {\n"
+      "fun add(foo s32, ok(*y) ..Foo) s32 {\n"
       "    let x = 10[10 + 12:] + -11 * 10;\n"
       "    x = 1 * 10;\n"
       "    foo[10] = 30;\n"
