@@ -12,7 +12,7 @@ void errorf(Source_Code code, const char *fmt, ...) {
   va_end(args);
 }
 
-void report(Source_Code code, u32 at) {
+void reportf(Source_Code code, u32 at, const char *fmt, ...) {
   Position pos = line_and_column(code.lines, at);
   string path = code.file_path;
   string line = line_of(code, at);
@@ -20,24 +20,20 @@ void report(Source_Code code, u32 at) {
   if (line.data[line.len - 1] == '\n') {
     line.len -= 1;
   }
-  static char fbuf[1024];
-  snprintf(fbuf, sizeof(fbuf), " %d |", pos.line);
-  u32 flen = strlen(fbuf);
-  fprintf(code.errors.fs, "%s %.*s\n", fbuf, line.len, line.data);
-  snprintf(fbuf, sizeof(fbuf), "%*s|", flen - 1, " ");
-  fprintf(code.errors.fs, "%s %*s^\n", fbuf, pos.column - 1, "");
   fprintf(code.errors.fs, "%.*s:%d:%d:", path.len, path.data, pos.line,
           pos.column);
-}
-
-void reportf(Source_Code code, u32 at, const char *fmt, ...) {
-  report(code, at);
   va_list args;
   va_start(args, fmt);
   fprintf(code.errors.fs, " ");
   vfprintf(code.errors.fs, fmt, args);
   fprintf(code.errors.fs, "\n");
   va_end(args);
+  static char fbuf[1024];
+  snprintf(fbuf, sizeof(fbuf), " %d |", pos.line);
+  u32 flen = strlen(fbuf);
+  fprintf(code.errors.fs, "%s %.*s\n", fbuf, line.len, line.data);
+  snprintf(fbuf, sizeof(fbuf), "%*s|", flen - 1, " ");
+  fprintf(code.errors.fs, "%s %*s^\n", fbuf, pos.column - 1, "");
 }
 
 static Lines new_lines(string text) {

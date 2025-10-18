@@ -202,12 +202,12 @@ void test_error(void) {
 
   string output = ztos(buf);
   string expected_output = ztos(
+      "<string>:1:1: unmatched quote in character literal\n"
       " 1 | 'x\n"
       "   | ^\n"
-      "<string>:1:1: unmatched quote in character literal\n"
+      "<string>:1:10: invalid character '$'\n"
       " 1 | fun main($)\n"
-      "   |          ^\n"
-      "<string>:1:10: invalid character '$'\n");
+      "   |          ^\n");
   ASSERT_STREQL(output, expected_output);
 
   fclose(es);

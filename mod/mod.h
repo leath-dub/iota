@@ -35,7 +35,6 @@ string line_of(Source_Code code, u32 offset);
 // TODO: add some way to restrict the number of errors on the same line - this
 // is good to reduce spurious errors
 void errorf(Source_Code code, const char *fmt, ...) PRINTF_CHECK(2, 3);
-void report(Source_Code code, u32 at);
 void reportf(Source_Code code, u32 at, const char *fmt, ...) PRINTF_CHECK(3, 4);
 
 #endif

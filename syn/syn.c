@@ -912,36 +912,20 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
   Expression *lhs = NULL;
 
   Tok tok = at(c);
-  if (tok.t == T_LPAR) {
-    next(c);
-    Toks new_delim;
-    new_delim.len = delim.len;
-    new_delim.items = malloc(delim.len * sizeof(Tok_Kind));
-    memcpy(new_delim.items, delim.items, delim.len * sizeof(Tok_Kind));
-    if (!one_of(T_RPAR, delim)) {
-      new_delim.len = delim.len + 1;
-      new_delim.items[delim.len] = T_RPAR;
-    }
-    lhs = expression_power(c, 0, new_delim);
-    free(new_delim.items);
-    if (!expect(c, lhs->id, T_RPAR)) {
-      advance(c, delim);
-      return lhs;
-    }
-    if (one_of(at(c).t, delim)) {
-      return lhs;
-    }
-  }
-  tok = at(c);
-
-  if (lhs == NULL) {
-    lhs = NODE(c, Expression);
-  }
-
   if (is_operator(tok.t)) {
+    lhs = NODE(c, Expression);
+
     Maybe_Power maybe_pow = prefix_binding_power(tok.t);
     Power pow;
     Unary_Expression *n = NODE(c, Unary_Expression);
+    // if (maybe_pow.ok) {
+    //   pow = maybe_pow.pow;
+    //   lhs->t = EXPRESSION_UNARY;
+    //   n->op = consume(c);
+    //   Expression *rhs = expression_power(c, pow.right, delim);
+    //   n->inner_expression = rhs;
+    //   lhs->unary_expression = n;
+    // }
     if (!maybe_pow.ok) {
       expected(c, n->id, "valid prefix operator");
       pow = (Power){0, 0};
@@ -954,8 +938,36 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
     n->inner_expression = rhs;
     lhs->unary_expression = n;
   } else {
-    lhs->t = EXPRESSION_BASIC;
-    lhs->basic_expression = basic_expression(c);
+    if (tok.t == T_LPAR) {
+      next(c);
+      Toks new_delim;
+      new_delim.len = delim.len;
+      new_delim.items = malloc(delim.len * sizeof(Tok_Kind));
+      memcpy(new_delim.items, delim.items, delim.len * sizeof(Tok_Kind));
+      if (!one_of(T_RPAR, delim)) {
+        new_delim.len = delim.len + 1;
+        new_delim.items[delim.len] = T_RPAR;
+      }
+      lhs = expression_power(c, 0, new_delim);
+      free(new_delim.items);
+      if (!expect(c, lhs->id, T_RPAR)) {
+        advance(c, delim);
+        return lhs;
+      }
+      if (one_of(at(c).t, delim)) {
+        return lhs;
+      }
+    } else {
+      lhs = NODE(c, Expression);
+      lhs->t = EXPRESSION_BASIC;
+      lhs->basic_expression = basic_expression(c);
+    }
+  }
+
+  tok = at(c);
+
+  if (lhs == NULL) {
+    lhs = NODE(c, Expression);
   }
 
   while (true) {

@@ -27,6 +27,11 @@ def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "")
         self.assertEqual(ast, expected)
     setattr(SyntaxTests, f"test_{name}", test)
 
+# Function to test if given input sources share the same AST
+def syntax_test_equal(name: str = "unamed_test", lhs: str = "", rhs: str = "") -> None:
+    lhs_ast = dump_ast(lhs)
+    syntax_test(name, rhs, lhs_ast)
+
 def load_test(path):
     path = pathlib.Path(path)
     with path.open() as f:
