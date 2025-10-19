@@ -1,1 +1,5 @@
 * Only emit the first error at a given location
+* (LOW PRIORITY) Add hook into `syntax_test` function to test that PEG parser can parse
+  without error all inputs to test cases (it's probably overkill to actually
+  check the syntax tree outputs are equivalent). This is just to catch
+  divergance between actual compiler parser and PEG grammar.
