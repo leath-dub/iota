@@ -1,4 +1,4 @@
-redo-ifchange syn/dump_ast runner.sh
+redo-ifchange runner.sh
 
 TESTS=""
 for test in syn/*; do
@@ -8,4 +8,4 @@ for test in syn/*; do
   esac
 done
 
-redo-ifchange syn/dump_ast runner.sh $TESTS
+redo-ifchange runner.sh $TESTS

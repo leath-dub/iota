@@ -794,29 +794,48 @@ Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim) {
 // Helpful resource for pratt parser:
 // https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
 
-bool is_operator(Tok_Kind t) {
+static bool is_prefix_op(Tok_Kind t) {
   switch (t) {
-    case T_LPAR:
-    case T_LBRK:
+    case T_INC:
+    case T_DEC:
+    case T_STAR:
+    case T_MINUS:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static bool is_infix_op(Tok_Kind t) {
+  switch (t) {
     case T_PLUS:
     case T_MINUS:
+    case T_PERC:
     case T_STAR:
     case T_SLASH:
     case T_EQ:
-    case T_EQEQ:
-    case T_NEQ:
     case T_AND:
     case T_OR:
-    case T_PERC:
-    case T_PIPE:
     case T_AMP:
+    case T_PIPE:
+    case T_NEQ:
+    case T_EQEQ:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static bool is_postfix_op(Tok_Kind t) {
+  switch (t) {
+    case T_LPAR:
+    case T_LBRK:
     case T_INC:
     case T_DEC:
       return true;
     default:
-      break;
+      return false;
   }
-  return false;
 }
 
 typedef struct {
@@ -994,12 +1013,7 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
 
   Tok tok = at(c);
 
-  // We do not expect '(' to be an operator at the top level so we exclude it.
-  // TODO: maybe we should separate this function into:
-  //   - is_infix_op
-  //   - is_prefix_op
-  //   - is_postfix_op
-  if (tok.t != T_LPAR && is_operator(tok.t)) {
+  if (is_prefix_op(tok.t)) {
     lhs = NODE(c, Expression);
 
     Maybe_Power maybe_pow = prefix_binding_power(tok.t);
@@ -1044,16 +1058,14 @@ static Expression *expression_power(Parse_Context *c, u32 min_pow, Toks delim) {
   }
 
   while (true) {
-    Tok tok = at(c);
-    if (one_of(tok.t, delim)) {
+    Tok op = at(c);
+    if (one_of(op.t, delim)) {
       break;
     }
-    if (!is_operator(tok.t)) {
-      expected(c, lhs->id, "an operator");
+    if (!is_infix_op(op.t) && !is_postfix_op(op.t)) {
+      expected(c, lhs->id, "an infix or postfix operator");
       advance(c, FOLLOW_BASIC_EXPRESSION);
     }
-
-    Tok op = at(c);
 
     Maybe_Power maybe_pow = postfix_binding_power(op.t);
     if (maybe_pow.ok) {

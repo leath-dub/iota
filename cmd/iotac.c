@@ -5,7 +5,8 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("let _ = cons([]*u32) {10};");
+  // string source = ztos("let _ = cons([]*u32) {10};");
+  string source = ztos("let _ = foo(x, y = 10, (y));");
   Source_Code code = new_source_code(ztos("<string>"), source);
 
   Parse_Context pc = new_parse_context(code);
