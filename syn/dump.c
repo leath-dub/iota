@@ -565,7 +565,8 @@ void dump_initializer_list(Dump_Out *d, Parse_Context *c, Initializer_List *n) {
 void dump_field_access_expression(Dump_Out *d, Parse_Context *c,
                                   Field_Access_Expression *n) {
   D(expression, n->lvalue);
-  dump_rawf(d, "\nfield: ");
+  dump_rawf(d, "\n");
+  dumpf(d, "field: ");
   dump_field_tok(d, c, n->field);
 }
 

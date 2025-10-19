@@ -829,6 +829,7 @@ static bool is_infix_op(Tok_Kind t) {
 
 static bool is_postfix_op(Tok_Kind t) {
   switch (t) {
+    case T_DOT:
     case T_LPAR:
     case T_LBRK:
     case T_INC:
@@ -919,27 +920,46 @@ delim:
 }
 
 static Expression *parse_postfix(Parse_Context *c, Expression *lhs) {
+  Expression *expr = NODE(c, Expression);
   switch (at(c).t) {
     case T_LBRK: {
       Array_Access_Expression *access = NODE(c, Array_Access_Expression);
       access->lvalue = lhs;
       access->index = index(c);
-      Expression *expr = NODE(c, Expression);
       expr->t = EXPRESSION_ARRAY_ACCESS;
       expr->array_access_expression = access;
-      return expr;
+      break;
     }
     case T_LPAR: {
       Function_Call_Expression *call = NODE(c, Function_Call_Expression);
-      call->lvalue = lhs;
-      if (expect(c, call->id, T_LPAR)) {
-        call->arguments = initializer_list(c, T_RPAR);
-        (void)expect(c, call->id, T_RPAR);
-      }
-      Expression *expr = NODE(c, Expression);
       expr->t = EXPRESSION_FUNCTION_CALL;
       expr->function_call_expression = call;
-      return expr;
+
+      call->lvalue = lhs;
+      if (!expect(c, call->id, T_LPAR)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        break;
+      }
+      call->arguments = initializer_list(c, T_RPAR);
+      if (!expect(c, call->id, T_RPAR)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+      }
+      break;
+    }
+    case T_DOT: {
+      Field_Access_Expression *access = NODE(c, Field_Access_Expression);
+      expr->t = EXPRESSION_FIELD_ACCESS;
+      expr->field_access_expression = access;
+
+      access->lvalue = lhs;
+      next(c);
+      Tok field = at(c);
+      if (!expect(c, access->id, T_IDENT)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        break;
+      }
+      access->field = field;
+      break;
     }
     default: {
       Expression *expr = NODE(c, Expression);
@@ -947,9 +967,9 @@ static Expression *parse_postfix(Parse_Context *c, Expression *lhs) {
       expr->postfix_expression = NODE(c, Postfix_Expression);
       expr->postfix_expression->op = at(c);
       expr->postfix_expression->inner_expression = lhs;
-      return expr;
     }
   }
+  return expr;
 }
 
 typedef struct {
@@ -999,6 +1019,7 @@ static Maybe_Power prefix_binding_power(Tok_Kind op) {
 
 static Maybe_Power postfix_binding_power(Tok_Kind op) {
   switch (op) {
+    case T_DOT:
     case T_LPAR:
     case T_LBRK:
     case T_INC:

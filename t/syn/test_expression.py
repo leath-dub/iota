@@ -674,7 +674,7 @@ syntax_test(
                       (expression
                         (basic_expression
                           10)))))))))))
-    """
+    """,
 )
 
 syntax_test(
@@ -700,7 +700,7 @@ syntax_test(
                       (expression
                         (basic_expression
                           10)))))))))))
-    """
+    """,
 )
 
 syntax_test(
@@ -750,5 +750,27 @@ syntax_test(
                           (expression
                             (basic_expression
                               10)))))))))))))
-    """
+    """,
+)
+
+syntax_test(
+    name="field_access",
+    source = "let _ = foo.bar.baz;",
+    expected = """
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (field_access_expression
+              (expression
+                (field_access_expression
+                  (expression
+                    (basic_expression
+                      foo))
+                  field: bar))
+              field: baz)))))
+    """,
 )
