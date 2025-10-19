@@ -1,9 +1,11 @@
-redo-ifchange syn/dump_ast runner.sh test.py
-. ./runner.sh
+redo-ifchange syn/dump_ast runner.sh
 
+TESTS=""
 for test in syn/*; do
   case $test in
     *.py)
-      redo-ifchange ${test%.py}
+      TESTS="$TESTS ${test%.py}"
   esac
 done
+
+redo-ifchange syn/dump_ast runner.sh $TESTS
