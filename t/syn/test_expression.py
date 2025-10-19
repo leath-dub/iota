@@ -2,7 +2,8 @@
 # that has all implicit precedence (not parenthesis) against an expression with
 # explicit precedence encoded by using parenthesis
 
-syntax_test_equal( name="precedence_addmul",
+syntax_test_equal(
+    name="precedence_addmul",
     lhs="let _ = 10 + (11 * 12) + 10;",
     rhs="let _ = 10 + 11 * 12 + 10;",
 )
