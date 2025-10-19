@@ -23,6 +23,14 @@ void parse_context_free(Parse_Context *c) {
   arena_free(&c->arena);
 }
 
+static Parse_State set_marker(Parse_Context *c) {
+  return (Parse_State){c->lex};
+}
+
+static void backtrack(Parse_Context *c, Parse_State marker) {
+  c->lex = marker.lex;
+}
+
 static Tok tnext(Parse_Context *c) {
   Tok tok;
   do {
@@ -343,8 +351,8 @@ Function_Declaration *function_declaration(Parse_Context *c) {
     return n;
   }
   if (!looking_at(c, T_LBRC)) {
-    n->return_type_opt.ok = true;
-    n->return_type_opt.value = type(c);
+    n->return_type.ok = true;
+    n->return_type.value = type(c);
   }
   n->body = compound_statement(c);
   return n;
@@ -430,6 +438,35 @@ Compound_Statement *compound_statement(Parse_Context *c) {
   }
   next(c);
   return n;
+}
+
+static bool starts_type(Tok_Kind t) {
+  switch (t) {
+    case T_S8:
+    case T_U8:
+    case T_S16:
+    case T_U16:
+    case T_S32:
+    case T_U32:
+    case T_S64:
+    case T_U64:
+    case T_F32:
+    case T_F64:
+    case T_BOOL:
+    case T_STRING:
+    case T_ANY:
+    case T_LBRK:
+    case T_STRUCT:
+    case T_UNION:
+    case T_ENUM:
+    case T_ERROR:
+    case T_STAR:
+    case T_FUN:
+    case T_IDENT:
+      return true;
+    default:
+      return false;
+  }
 }
 
 Type *type(Parse_Context *c) {
@@ -697,8 +734,8 @@ Function_Type *function_type(Parse_Context *c) {
     return n;
   }
   if (!one_of(at(c).t, FOLLOW_TYPE)) {
-    n->return_type_opt.ok = true;
-    n->return_type_opt.value = type(c);
+    n->return_type.ok = true;
+    n->return_type.value = type(c);
   }
   return n;
 }
@@ -1051,9 +1088,48 @@ Expression *expression(Parse_Context *c, Toks delim) {
 
 Basic_Expression *basic_expression(Parse_Context *c) {
   Basic_Expression *n = NODE(c, Basic_Expression);
+  Tok first = at(c);
+  if (starts_type(at(c).t)) {
+    n->t = BASIC_EXPRESSION_BRACED_LIT;
+    n->braced_lit = NODE(c, Braced_Literal);
+    n->braced_lit->type.ok = true;
+    Parse_State marker = set_marker(c);
+    n->braced_lit->type.value = type(c);
+    if (first.t == T_IDENT && !looking_at(c, T_LBRC)) {
+      // The first token was an identifier and we don't have
+      // a '{'. This means that the identifier should be just
+      // the token itself as the basic expression
+      backtrack(c, marker);
+      n->t = BASIC_EXPRESSION_TOKEN;
+      n->token = consume(c);
+      return n;
+    }
+    if (!expect(c, n->id, T_LBRC)) {
+      advance(c, FOLLOW_BASIC_EXPRESSION);
+      return n;
+    }
+    n->braced_lit->initializer = initializer_list(c, T_RBRC);
+    if (!expect(c, n->id, T_RBRC)) {
+      advance(c, FOLLOW_BASIC_EXPRESSION);
+    }
+    return n;
+  }
   switch (at(c).t) {
+    case T_LBRC: {
+      n->t = BASIC_EXPRESSION_BRACED_LIT;
+      n->braced_lit = NODE(c, Braced_Literal);
+      if (!expect(c, n->id, T_LBRC)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      n->braced_lit->initializer = initializer_list(c, T_RBRC);
+      if (!expect(c, n->id, T_RBRC)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      return n;
+    }
     case T_NUM:
-    case T_IDENT:
     case T_CHAR:
     case T_STR:
       break;
@@ -1062,6 +1138,7 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       advance(c, FOLLOW_BASIC_EXPRESSION);
       break;
   }
+  n->t = BASIC_EXPRESSION_TOKEN;
   n->token = consume(c);
   return n;
 }

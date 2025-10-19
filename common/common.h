@@ -117,4 +117,10 @@ void arena_own(Arena *a, void *alloc, u32 size);
 #define PRINTF_CHECK(fmti, arg0) __attribute__((format(printf, fmti, arg0)))
 #endif
 
+#define MAYBE(T) \
+  struct {       \
+    bool ok;     \
+    T value;     \
+  }
+
 #endif

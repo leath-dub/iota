@@ -127,9 +127,9 @@ void dump_function_declaration(Dump_Out *d, Parse_Context *c,
   dump_field_tok(d, c, n->identifier);
   dump_rawf(d, "\n");
   D(function_parameter_list, n->parameters);
-  if (n->return_type_opt.ok) {
+  if (n->return_type.ok) {
     dump_rawf(d, "\n");
-    D(type, n->return_type_opt.value);
+    D(type, n->return_type.value);
   }
   dump_rawf(d, "\n");
   D(compound_statement, n->body);
@@ -263,9 +263,9 @@ void dump_if_statement(Dump_Out *d, Parse_Context *c, If_Statement *n) {
   D(condition, n->condition);
   dump_rawf(d, "\n");
   D(compound_statement, n->true_branch);
-  if (n->else_branch_opt.ok) {
+  if (n->else_branch.ok) {
     dump_rawf(d, "\n");
-    D(else, n->else_branch_opt.value);
+    D(else, n->else_branch.value);
   }
 }
 
@@ -455,9 +455,9 @@ void dump_pointer_type(Dump_Out *d, Parse_Context *c, Pointer_Type *n) {
 
 void dump_function_type(Dump_Out *d, Parse_Context *c, Function_Type *n) {
   D(type_list, n->parameters);
-  if (n->return_type_opt.ok) {
+  if (n->return_type.ok) {
     dump_rawf(d, "\n");
-    D(type, n->return_type_opt.value);
+    D(type, n->return_type.value);
   }
 }
 
@@ -504,7 +504,22 @@ void dump_expression(Dump_Out *d, Parse_Context *c, Expression *n) {
 }
 
 void dump_basic_expression(Dump_Out *d, Parse_Context *c, Basic_Expression *n) {
-  dump_tok(d, c, n->token);
+  switch (n->t) {
+    case BASIC_EXPRESSION_BRACED_LIT:
+      D(braced_literal, n->braced_lit);
+      break;
+    case BASIC_EXPRESSION_TOKEN:
+      dump_tok(d, c, n->token);
+      break;
+  }
+}
+
+void dump_braced_literal(Dump_Out *d, Parse_Context *c, Braced_Literal *n) {
+  if (n->type.ok) {
+    D(type, n->type.value);
+    dump_rawf(d, "\n");
+  }
+  D(initializer_list, n->initializer);
 }
 
 void dump_parenthesized_expression(Dump_Out *d, Parse_Context *c,

@@ -4,6 +4,8 @@ import textwrap
 import unittest
 import pathlib
 import subprocess
+import argparse
+import sys
 
 class SyntaxTests(unittest.TestCase):
     pass
@@ -38,13 +40,12 @@ def load_test(path):
         code = f.read()
     exec(compile(code, str(path), 'exec'), globals())
 
-def load_testdir(path):
-    testdir = pathlib.Path("syn")
-    for entr in testdir.iterdir():
-        if entr.is_file() and entr.name.startswith("test_") and entr.suffix == ".py":
-            load_test(str(entr))
-
-load_testdir("syn")
+def main():
+    parser = argparse.ArgumentParser(description="Program to run Python based Iota tests")
+    parser.add_argument("test_file", help="The file to test.")
+    args = parser.parse_args()
+    load_test(args.test_file)
+    unittest.main(argv=[sys.argv[0]])
 
 if __name__ == "__main__":
-    unittest.main()
+    main()

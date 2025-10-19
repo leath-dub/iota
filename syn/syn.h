@@ -23,6 +23,10 @@ typedef struct {
   Node_Metadata meta;
 } Parse_Context;
 
+typedef struct {
+  Lexer lex;
+} Parse_State;
+
 Parse_Context new_parse_context(Source_Code code);
 void parse_context_free(Parse_Context *c);
 
@@ -158,6 +162,7 @@ void dump_error_list(Dump_Out *d, Parse_Context *c, Error_List *n);
 void dump_error(Dump_Out *d, Parse_Context *c, Error *n);
 void dump_expression(Dump_Out *d, Parse_Context *c, Expression *n);
 void dump_basic_expression(Dump_Out *d, Parse_Context *c, Basic_Expression *n);
+void dump_braced_literal(Dump_Out *d, Parse_Context *c, Braced_Literal *n);
 void dump_parenthesized_expression(Dump_Out *d, Parse_Context *c,
                                    Parenthesized_Expression *n);
 void dump_composite_literal_expression(Dump_Out *d, Parse_Context *c,

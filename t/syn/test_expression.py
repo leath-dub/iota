@@ -45,6 +45,8 @@ syntax_test_equal(
     """,
 )
 
+# Index expression
+
 syntax_test(
     name="index_expression_basic",
     source="let _ = foo[10];",
@@ -220,6 +222,8 @@ syntax_test(
                     20))))))))
     """,
 )
+
+# Function call expression
 
 syntax_test(
     name="function_call_noargs",
@@ -416,5 +420,55 @@ syntax_test(
                       (basic_expression
                         foo))
                     (initializer_list)))))))))
-    """
+    """,
+)
+
+# Atoms
+
+syntax_test(
+    name="atom_number",
+    source="let _ = 10;",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              10)))))
+    """,
+)
+
+syntax_test(
+    name="atom_string",
+    source='let _ = "this is a string";',
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              "this is a string")))))
+    """,
+)
+
+syntax_test(
+    name="atom_char",
+    source="let _ = 'x';",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              'x')))))
+    """,
 )

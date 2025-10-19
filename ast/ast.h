@@ -59,11 +59,11 @@ struct Composite_Literal_Expression;
 struct Postfix_Expression;
 struct Function_Call_Expression;
 struct Initializer_List;
-struct Initializer_Item;
 struct Field_Access_Expression;
 struct Array_Access_Expression;
 struct Unary_Expression;
 struct Binary_Expression;
+struct Braced_Literal;
 
 struct Index;
 
@@ -151,10 +151,7 @@ struct Variable_Binding {
 struct Aliased_Binding {
   Node_ID id;
   struct Binding *binding;
-  struct {
-    Tok value;
-    bool ok;
-  } alias;
+  MAYBE(Tok) alias;
 };
 
 struct Aliased_Binding_List {
@@ -196,15 +193,9 @@ struct Destructure_Union {
 struct Function_Declaration {
   Node_ID id;
   Tok identifier;
-  struct {
-    struct Type_Parameter_List *value;
-    bool ok;
-  } type_params_opt;
+  MAYBE(struct Type_Parameter_List *) type_params;
   struct Function_Parameter_List *parameters;
-  struct {
-    struct Type *value;
-    bool ok;
-  } return_type_opt;
+  MAYBE(struct Type *) return_type;
   struct Compound_Statement *body;
 };
 
@@ -230,10 +221,7 @@ struct Type_Parameter_List {
 struct Struct_Declaration {
   Node_ID id;
   Tok identifier;
-  struct {
-    struct Type_Parameter_List *value;
-    bool ok;
-  } type_params_opt;
+  MAYBE(struct Type_Parameter_List *) type_params;
   bool tuple_like;
   union {
     struct Type_List *type_list;
@@ -289,10 +277,7 @@ struct Error {
 struct Union_Declaration {
   Node_ID id;
   Tok identifier;
-  struct {
-    struct Type_Parameter_List *value;
-    bool ok;
-  } type_params_opt;
+  MAYBE(struct Type_Parameter_List *) type_params;
   struct Field_List *fields;
 };
 
@@ -321,10 +306,7 @@ struct If_Statement {
   Node_ID id;
   struct Condition *condition;
   struct Compound_Statement *true_branch;
-  struct {
-    struct Else *value;
-    bool ok;
-  } else_branch_opt;
+  MAYBE(struct Else *) else_branch;
 };
 
 typedef enum {
@@ -422,10 +404,7 @@ struct Collection_Type {
 struct Struct_Type {
   Node_ID id;
   bool tuple_like;
-  struct {
-    struct Type_Parameter_List *value;
-    bool ok;
-  } type_params_opt;
+  MAYBE(struct Type_Parameter_List *) type_params;
   union {
     struct Type_List *type_list;
     struct Field_List *field_list;
@@ -441,10 +420,7 @@ struct Type_List {
 
 struct Union_Type {
   Node_ID id;
-  struct {
-    struct Type_Parameter_List *value;
-    bool ok;
-  } type_params_opt;
+  MAYBE(struct Type_Parameter_List *) type_params;
   struct Field_List *fields;
 };
 
@@ -467,10 +443,7 @@ struct Pointer_Type {
 struct Function_Type {
   Node_ID id;
   struct Type_List *parameters;
-  struct {
-    struct Type *value;
-    bool ok;
-  } return_type_opt;
+  MAYBE(struct Type *) return_type;
 };
 
 struct Scoped_Identifier {
@@ -508,9 +481,24 @@ struct Expression {
   };
 };
 
+typedef enum {
+  BASIC_EXPRESSION_TOKEN,
+  BASIC_EXPRESSION_BRACED_LIT,
+} Basic_Expression_Kind;
+
 struct Basic_Expression {
   Node_ID id;
-  Tok token;  // Stores: identifier, number, string, enum, nil
+  Basic_Expression_Kind t;
+  union {
+    Tok token;  // Stores: identifier, number, string, enum, nil
+    struct Braced_Literal *braced_lit;
+  };
+};
+
+struct Braced_Literal {
+  Node_ID id;
+  MAYBE(struct Type *) type;
+  struct Initializer_List *initializer;
 };
 
 struct Parenthesized_Expression {
@@ -520,10 +508,7 @@ struct Parenthesized_Expression {
 
 struct Composite_Literal_Expression {
   Node_ID id;
-  struct {
-    struct Type *value;
-    bool ok;
-  } explicit_type;
+  MAYBE(struct Type *) explicit_type;
   struct Expression *value;
 };
 
@@ -538,15 +523,6 @@ struct Initializer_List {
   u32 len;
   u32 cap;
   struct Expression **items;
-};
-
-struct Initializer_Item {
-  Node_ID id;
-  Tok name;
-  struct {
-    bool ok;
-    struct Expression *data;
-  } value;
 };
 
 struct Postfix_Expression {
@@ -575,14 +551,8 @@ typedef enum {
 struct Index {
   Node_ID id;
   Index_Kind t;
-  struct {
-    struct Expression *value;
-    bool ok;
-  } start;  // nullable
-  struct {
-    struct Expression *value;
-    bool ok;
-  } end;  // nullable
+  MAYBE(struct Expression *) start;
+  MAYBE(struct Expression *) end;
 };
 
 struct Unary_Expression {
@@ -656,7 +626,7 @@ typedef struct Array_Access_Expression Array_Access_Expression;
 typedef struct Unary_Expression Unary_Expression;
 typedef struct Binary_Expression Binary_Expression;
 typedef struct Initializer_List Initializer_List;
-typedef struct Initializer_Item Initializer_Item;
+typedef struct Braced_Literal Braced_Literal;
 
 typedef enum {
   NFLAG_NONE = 0,
