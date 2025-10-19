@@ -19,3 +19,4 @@ t/runecat_test
 t/lex_test
 t/common_test
 t/syn/dump_ast
+__pycache__/
