@@ -796,6 +796,7 @@ Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim) {
 
 static bool is_prefix_op(Tok_Kind t) {
   switch (t) {
+    case T_AMP:
     case T_INC:
     case T_DEC:
     case T_STAR:
@@ -985,6 +986,7 @@ static Maybe_Power infix_binding_power(Tok_Kind op) {
 
 static Maybe_Power prefix_binding_power(Tok_Kind op) {
   switch (op) {
+    case T_AMP:
     case T_INC:
     case T_DEC:
     case T_STAR:

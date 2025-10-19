@@ -575,6 +575,38 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity2",
+    source="let _ = x * cons(*u32) { 10 };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (binary_expression
+              (expression
+                (basic_expression
+                  x))
+              op: *
+              (expression
+                (basic_expression
+                  (braced_literal
+                    (type
+                      (pointer_type
+                        mut: false
+                        (type
+                          (builtin_type
+                            u32))))
+                    (initializer_list
+                      (expression
+                        (basic_expression
+                          10)))))))))))
+    """,
+)
+
+syntax_test(
+    name="atom_braced_literal_pointer_ambiguity3",
     source="let _ = *{ 10 };",
     expected="""
     (imports)
@@ -593,5 +625,81 @@ syntax_test(
                       (expression
                         (basic_expression
                           10)))))))))))
+    """
+)
+
+syntax_test(
+    name="atom_braced_literal_no_type",
+    source="let _ = { x = 10 };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              (braced_literal
+                (initializer_list
+                  (expression
+                    (binary_expression
+                      (expression
+                        (basic_expression
+                          x))
+                      op: =
+                      (expression
+                        (basic_expression
+                          10)))))))))))
+    """
+)
+
+syntax_test(
+    name="address_of",
+    source = "let _ = &(10 + 11) + &x - &Foo { 10 };",
+    expected = """
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (binary_expression
+              (expression
+                (binary_expression
+                  (expression
+                    (unary_expression
+                      op: &
+                      (expression
+                        (binary_expression
+                          (expression
+                            (basic_expression
+                              10))
+                          op: +
+                          (expression
+                            (basic_expression
+                              11))))))
+                  op: +
+                  (expression
+                    (unary_expression
+                      op: &
+                      (expression
+                        (basic_expression
+                          x))))))
+              op: -
+              (expression
+                (unary_expression
+                  op: &
+                  (expression
+                    (basic_expression
+                      (braced_literal
+                        (type
+                          (scoped_identifier
+                            Foo))
+                        (initializer_list
+                          (expression
+                            (basic_expression
+                              10)))))))))))))
     """
 )
