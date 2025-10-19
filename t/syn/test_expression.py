@@ -489,35 +489,84 @@ syntax_test(
     """,
 )
 
-# syntax_test(
-#     name="atom_braced_literal_ident",
-#     source="let _ = Foo{ 10 };",
-#     expected="""
-#     """,
-# )
-#
-# syntax_test(
-#     name="atom_braced_literal_scoped_ident",
-#     source="let _ = Foo.Bar.baz{ 10 };",
-#     expected="""
-#     """,
-# )
-#
-# syntax_test(
-#     name="atom_braced_literal_array",
-#     source="let _ = []u32{ 10 };",
-#     expected="""
-#     """,
-# )
-#
-# syntax_test(
-#     name="atom_braced_literal_pointer",
-#     source="let _ = *u32{ &x };",
-#     expected="""
-#     """,
-# )
-#
-# # what should this be?: *{ 10 }
+syntax_test(
+    name="atom_braced_literal_ident",
+    source="let _ = Foo{ 10 };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              (braced_literal
+                (type
+                  (scoped_identifier
+                    Foo))
+                (initializer_list
+                  (expression
+                    (basic_expression
+                      10)))))))))
+    """,
+)
+
+syntax_test(
+    name="atom_braced_literal_scoped_ident",
+    source="let _ = Foo.Bar.baz{ 10 };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              (braced_literal
+                (type
+                  (scoped_identifier
+                    Foo
+                    Bar
+                    baz))
+                (initializer_list
+                  (expression
+                    (basic_expression
+                      10)))))))))
+    """,
+)
+
+syntax_test(
+    name="atom_braced_literal_array",
+    source="let _ = []u32{ x, y, z };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              (braced_literal
+                (type
+                  (collection_type
+                    (type
+                      (builtin_type
+                        u32))))
+                (initializer_list
+                  (expression
+                    (basic_expression
+                      x))
+                  (expression
+                    (basic_expression
+                      y))
+                  (expression
+                    (basic_expression
+                      z)))))))))
+    """,
+)
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity0",
