@@ -1,9 +1,3 @@
-Working on testing the parser.
-
-* new else statement for error handling
-
-switch structs, unions and errors to use commas
-
---- We will use `while` instead of `for`!
-[ ] finish new dumper
-[ ] finish new parser based on tree-sitter grammar
+* Support all statements of the language
+* Support else postfix expression
+  - new else statement for error handling
