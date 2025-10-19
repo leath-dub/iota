@@ -176,10 +176,106 @@ Declaration *declaration(Parse_Context *c) {
       n->t = DECLARATION_FUNCTION;
       n->function_declaration = function_declaration(c);
       break;
+    case T_STRUCT:
+      n->t = DECLARATION_STRUCT;
+      n->struct_declaration = struct_declaration(c);
+      break;
+    case T_ENUM:
+      n->t = DECLARATION_ENUM;
+      n->enum_declaration = enum_declaration(c);
+      break;
+    case T_ERROR:
+      n->t = DECLARATION_ERROR;
+      n->error_declaration = error_declaration(c);
+      break;
     default:
       expected(c, n->id, "start of declaration");
       advance(c, FOLLOW_DECLARATION);
       break;
+  }
+  return n;
+}
+
+Struct_Declaration *struct_declaration(Parse_Context *c) {
+  Struct_Declaration *n = NODE(c, Struct_Declaration);
+  assert(consume(c).t == T_STRUCT);
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->identifier = name;
+  n->body = struct_body(c, FOLLOW_DECLARATION);
+  return n;
+}
+
+Struct_Body *struct_body(Parse_Context *c, Toks follow) {
+  Struct_Body *n = NODE(c, Struct_Body);
+  switch (at(c).t) {
+    case T_LBRC:
+      next(c);
+      n->tuple_like = false;
+      n->field_list = field_list(c);
+      if (!expect(c, n->id, T_RBRC)) {
+        advance(c, follow);
+        return n;
+      }
+      break;
+    case T_LPAR:
+      next(c);
+      n->tuple_like = true;
+      n->type_list = type_list(c);
+      if (!expect(c, n->id, T_RPAR)) {
+        advance(c, follow);
+        return n;
+      }
+      break;
+    default:
+      expected(c, n->id, "a struct or tuple body");
+      advance(c, follow);
+      break;
+  }
+  return n;
+}
+
+Enum_Declaration *enum_declaration(Parse_Context *c) {
+  Enum_Declaration *n = NODE(c, Enum_Declaration);
+  assert(consume(c).t == T_ENUM);
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->identifier = name;
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->enumerators = identifier_list(c);
+  if (!expect(c, n->id, T_RBRC)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  return n;
+}
+
+Error_Declaration *error_declaration(Parse_Context *c) {
+  Error_Declaration *n = NODE(c, Error_Declaration);
+  assert(consume(c).t == T_ERROR);
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->identifier = name;
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
+  }
+  n->errors = error_list(c);
+  if (!expect(c, n->id, T_RBRC)) {
+    advance(c, FOLLOW_DECLARATION);
+    return n;
   }
   return n;
 }
@@ -553,30 +649,7 @@ Collection_Type *collection_type(Parse_Context *c) {
 Struct_Type *struct_type(Parse_Context *c) {
   Struct_Type *n = NODE(c, Struct_Type);
   assert(consume(c).t == T_STRUCT);
-  switch (at(c).t) {
-    case T_LBRC:
-      next(c);
-      n->tuple_like = false;
-      n->field_list = field_list(c);
-      if (!expect(c, n->id, T_RBRC)) {
-        advance(c, FOLLOW_TYPE);
-        return n;
-      }
-      break;
-    case T_LPAR:
-      next(c);
-      n->tuple_like = true;
-      n->type_list = type_list(c);
-      if (!expect(c, n->id, T_RPAR)) {
-        advance(c, FOLLOW_TYPE);
-        return n;
-      }
-      break;
-    default:
-      expected(c, n->id, "a struct or tuple body");
-      advance(c, FOLLOW_TYPE);
-      break;
-  }
+  n->body = struct_body(c, FOLLOW_TYPE);
   return n;
 }
 
@@ -681,6 +754,10 @@ Identifier_List *identifier_list(Parse_Context *c) {
       advance(c, FOLLOW_IDENTIFIER_LIST);
       return n;
     }
+    // Ignore trailing comma
+    if (looking_at(c, T_RBRC)) {
+      break;
+    }
     Tok identifier = at(c);
     if (!expect(c, n->id, T_IDENT)) {
       advance(c, FOLLOW_IDENTIFIER_LIST);
@@ -700,6 +777,10 @@ Error_List *error_list(Parse_Context *c) {
     if (!start && !expect(c, n->id, T_COMMA)) {
       advance(c, FOLLOW_ERROR_LIST);
       return n;
+    }
+    // Ignore trailing comma
+    if (looking_at(c, T_RBRC)) {
+      break;
     }
     APPEND(n, error(c));
     start = false;

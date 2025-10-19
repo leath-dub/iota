@@ -56,6 +56,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -78,6 +79,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -106,6 +108,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -134,6 +137,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -163,6 +167,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -185,6 +190,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -207,6 +213,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -234,6 +241,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -253,6 +261,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -275,6 +284,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -303,6 +313,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -334,6 +345,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -368,6 +380,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -434,6 +447,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -450,6 +464,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -466,6 +481,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -482,6 +498,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -498,6 +515,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -521,6 +539,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -546,6 +565,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -577,6 +597,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -599,6 +620,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -631,6 +653,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -663,6 +686,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -686,6 +710,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -712,6 +737,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression
@@ -762,6 +788,7 @@ syntax_test(
     (declarations
       (declaration
         (variable_declaration
+          mutable: false
           (variable_binding
             _)
           (expression

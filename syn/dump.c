@@ -110,6 +110,9 @@ void dump_declaration(Dump_Out *d, Parse_Context *c, Declaration *n) {
 
 void dump_variable_declaration(Dump_Out *d, Parse_Context *c,
                                Variable_Declaration *n) {
+  bool mut = n->classifier.t == T_MUT;
+  dumpf(d, "mutable: %s", mut ? "true" : "false");
+  dump_rawf(d, "\n");
   D(variable_binding, n->binding);
   if (n->type) {
     dump_rawf(d, "\n");
@@ -140,6 +143,10 @@ void dump_struct_declaration(Dump_Out *d, Parse_Context *c,
   dumpf(d, "name: ");
   dump_field_tok(d, c, n->identifier);
   dump_rawf(d, "\n");
+  D(struct_body, n->body);
+}
+
+void dump_struct_body(Dump_Out *d, Parse_Context *c, Struct_Body *n) {
   if (n->tuple_like) {
     D(type_list, n->type_list);
   } else {
@@ -378,9 +385,9 @@ void dump_destructure_tuple(Dump_Out *d, Parse_Context *c,
 
 void dump_destructure_union(Dump_Out *d, Parse_Context *c,
                             Destructure_Union *n) {
-  D(binding, n->binding);
-  dump_rawf(d, "\n");
   dump_tok(d, c, n->tag);
+  dump_rawf(d, "\n");
+  D(binding, n->binding);
 }
 
 void dump_type(Dump_Out *d, Parse_Context *c, Type *n) {
@@ -430,12 +437,7 @@ void dump_collection_type(Dump_Out *d, Parse_Context *c, Collection_Type *n) {
 }
 
 void dump_struct_type(Dump_Out *d, Parse_Context *c, Struct_Type *n) {
-  dumpf(d, "tuple: %s\n", n->tuple_like ? "true" : "false");
-  if (n->tuple_like) {
-    D(type_list, n->type_list);
-  } else {
-    D(field_list, n->field_list);
-  }
+  D(struct_body, n->body);
 }
 
 void dump_union_type(Dump_Out *d, Parse_Context *c, Union_Type *n) {

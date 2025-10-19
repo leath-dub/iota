@@ -35,6 +35,10 @@ Imports *imports(Parse_Context *c);
 Import *import(Parse_Context *c);
 Declarations *declarations(Parse_Context *c);
 Declaration *declaration(Parse_Context *c);
+Struct_Declaration *struct_declaration(Parse_Context *c);
+Struct_Body *struct_body(Parse_Context *c, Toks follow);
+Enum_Declaration *enum_declaration(Parse_Context *c);
+Error_Declaration *error_declaration(Parse_Context *c);
 Variable_Declaration *variable_declaration(Parse_Context *c);
 Function_Declaration *function_declaration(Parse_Context *c);
 Function_Parameter_List *function_parameter_list(Parse_Context *c);
@@ -114,6 +118,7 @@ void dump_function_declaration(Dump_Out *d, Parse_Context *c,
                                Function_Declaration *n);
 void dump_struct_declaration(Dump_Out *d, Parse_Context *c,
                              Struct_Declaration *n);
+void dump_struct_body(Dump_Out *d, Parse_Context *c, Struct_Body *n);
 void dump_enum_declaration(Dump_Out *d, Parse_Context *c, Enum_Declaration *n);
 void dump_error_declaration(Dump_Out *d, Parse_Context *c,
                             Error_Declaration *n);

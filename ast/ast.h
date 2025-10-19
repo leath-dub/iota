@@ -14,6 +14,7 @@ struct Variable_Declaration;
 struct Function_Declaration;
 struct Type_Parameter_List;
 struct Struct_Declaration;
+struct Struct_Body;
 struct Enum_Declaration;
 struct Error_Declaration;
 struct Union_Declaration;
@@ -222,6 +223,11 @@ struct Struct_Declaration {
   Node_ID id;
   Tok identifier;
   MAYBE(struct Type_Parameter_List *) type_params;
+  struct Struct_Body *body;
+};
+
+struct Struct_Body {
+  Node_ID id;
   bool tuple_like;
   union {
     struct Type_List *type_list;
@@ -403,12 +409,8 @@ struct Collection_Type {
 
 struct Struct_Type {
   Node_ID id;
-  bool tuple_like;
   MAYBE(struct Type_Parameter_List *) type_params;
-  union {
-    struct Type_List *type_list;
-    struct Field_List *field_list;
-  };
+  struct Struct_Body *body;
 };
 
 struct Type_List {
@@ -576,6 +578,7 @@ typedef struct Variable_Declaration Variable_Declaration;
 typedef struct Function_Declaration Function_Declaration;
 typedef struct Type_Parameter_List Type_Parameter_List;
 typedef struct Struct_Declaration Struct_Declaration;
+typedef struct Struct_Body Struct_Body;
 typedef struct Enum_Declaration Enum_Declaration;
 typedef struct Error_Declaration Error_Declaration;
 typedef struct Union_Declaration Union_Declaration;
