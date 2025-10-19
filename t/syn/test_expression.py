@@ -518,17 +518,80 @@ syntax_test(
 # )
 #
 # # what should this be?: *{ 10 }
-#
-# syntax_test(
-#     name="atom_braced_literal_pointer_ambiguity0",
-#     source="let _ = x *u32;",
-#     expected="""
-#     """,
-# )
-#
-# syntax_test(
-#     name="atom_braced_literal_pointer_ambiguity1",
-#     source="let _ = x * (*u32{ 10 });",
-#     expected="""
-#     """,
-# )
+
+syntax_test(
+    name="atom_braced_literal_pointer_ambiguity0",
+    source="let _ = x *Foo;",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (binary_expression
+              (expression
+                (basic_expression
+                  x))
+              op: *
+              (expression
+                (basic_expression
+                  Foo)))))))
+    """,
+)
+
+syntax_test(
+    name="atom_braced_literal_pointer_ambiguity1",
+    source="let _ = x * (*u32{ 10 });",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (binary_expression
+              (expression
+                (basic_expression
+                  x))
+              op: *
+              (expression
+                (unary_expression
+                  op: *
+                  (expression
+                    (basic_expression
+                      (braced_literal
+                        (type
+                          (builtin_type
+                            u32))
+                        (initializer_list
+                          (expression
+                            (basic_expression
+                              10)))))))))))))
+    """,
+)
+
+syntax_test(
+    name="atom_braced_literal_pointer_ambiguity2",
+    source="let _ = *{ 10 };",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (unary_expression
+              op: *
+              (expression
+                (basic_expression
+                  (braced_literal
+                    (initializer_list
+                      (expression
+                        (basic_expression
+                          10)))))))))))
+    """
+)

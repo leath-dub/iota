@@ -118,7 +118,7 @@ DECLARE_FOLLOW_SET(STATEMENT_LIST, T_LBRC)
 DECLARE_FOLLOW_SET(STATEMENT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION, T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(BASIC_EXPRESSION, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ,
-                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK, T_SCLN)
+                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
 // TODO: once we have an automated tool
 // DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
@@ -1123,12 +1123,12 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       n->token = consume(c);
       return n;
     }
-    if (!expect(c, n->id, T_LBRC)) {
+    if (!expect(c, n->braced_lit->id, T_LBRC)) {
       advance(c, FOLLOW_BASIC_EXPRESSION);
       return n;
     }
     n->braced_lit->initializer = initializer_list(c, T_RBRC);
-    if (!expect(c, n->id, T_RBRC)) {
+    if (!expect(c, n->braced_lit->id, T_RBRC)) {
       advance(c, FOLLOW_BASIC_EXPRESSION);
     }
     return n;
@@ -1138,34 +1138,31 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       next(c);
       n->t = BASIC_EXPRESSION_BRACED_LIT;
       n->braced_lit = NODE(c, Braced_Literal);
-      if (!expect(c, n->id, T_LPAR)) {
+      if (!expect(c, n->braced_lit->id, T_LPAR)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
         return n;
       }
       n->braced_lit->type.ok = true;
       n->braced_lit->type.value = type(c);
-      if (!expect(c, n->id, T_RPAR)) {
+      if (!expect(c, n->braced_lit->id, T_RPAR)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
         return n;
       }
-      if (!expect(c, n->id, T_LBRC)) {
+      if (!expect(c, n->braced_lit->id, T_LBRC)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
         return n;
       }
       n->braced_lit->initializer = initializer_list(c, T_RBRC);
-      if (!expect(c, n->id, T_RBRC)) {
+      if (!expect(c, n->braced_lit->id, T_RBRC)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
         return n;
       }
       return n;
     }
     case T_LBRC: {
+      next(c);
       n->t = BASIC_EXPRESSION_BRACED_LIT;
       n->braced_lit = NODE(c, Braced_Literal);
-      if (!expect(c, n->id, T_LBRC)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
-        return n;
-      }
       n->braced_lit->initializer = initializer_list(c, T_RBRC);
       if (!expect(c, n->id, T_RBRC)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
@@ -1180,7 +1177,8 @@ Basic_Expression *basic_expression(Parse_Context *c) {
     default:
       expected(c, n->id, "a basic expression");
       advance(c, FOLLOW_BASIC_EXPRESSION);
-      break;
+      n->t = BASIC_EXPRESSION_TOKEN;
+      return n;
   }
   n->t = BASIC_EXPRESSION_TOKEN;
   n->token = consume(c);
