@@ -1,5 +1,3 @@
-redo-ifchange runner.sh
-
 TESTS=""
 for test in syn/*; do
   case $test in
@@ -8,4 +6,4 @@ for test in syn/*; do
   esac
 done
 
-redo-ifchange runner.sh $TESTS
+redo-ifchange $TESTS

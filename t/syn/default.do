@@ -1,4 +1,3 @@
-redo-ifchange $2.py dump_ast ../runner.sh ../test.py
+redo-ifchange $2.py dump_ast ../test.py
 cd ..
-. ./runner.sh
-run_test test.py syn/$2.py
+./test.py syn/$2.py
