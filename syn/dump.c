@@ -420,10 +420,12 @@ void dump_builtin_type(Dump_Out *d, Parse_Context *c, Builtin_Type *n) {
 }
 
 void dump_collection_type(Dump_Out *d, Parse_Context *c, Collection_Type *n) {
-  dumpf(d, "index: ");
-  d->is_field = true;
-  D(expression, n->index_expression);
-  dump_rawf(d, "\n");
+  if (n->index_expression.ok) {
+    dumpf(d, "index: ");
+    d->is_field = true;
+    D(expression, n->index_expression.value);
+    dump_rawf(d, "\n");
+  }
   D(type, n->element_type);
 }
 

@@ -397,7 +397,7 @@ struct Builtin_Type {
 
 struct Collection_Type {
   Node_ID id;
-  struct Expression *index_expression;  // nullable
+  MAYBE(struct Expression *) index_expression;
   struct Type *element_type;
 };
 

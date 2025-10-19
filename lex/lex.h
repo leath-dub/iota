@@ -73,6 +73,7 @@ typedef enum {
   T_BOOL,    // keyword: bool
   T_STRING,  // keyword: string
   T_ANY,     // keyword: any
+  T_CONS,    // keyword: cons
   T_IDENT,   // identifier
 
   TOK_KIND_COUNT,

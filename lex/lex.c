@@ -69,6 +69,7 @@ string tok_to_string[TOK_KIND_COUNT] = {
     [T_BOOL] = ZTOS("bool"),
     [T_STRING] = ZTOS("string"),
     [T_ANY] = ZTOS("any"),
+    [T_CONS] = ZTOS("cons"),
     [T_IMPORT] = ZTOS("import"),
     [T_ERROR] = ZTOS("error"),
     [T_USE] = ZTOS("use"),
@@ -97,7 +98,7 @@ static const Keyword_Binding keyword_to_kind[] = {
     {ZTOS("s64"), T_S64},     {ZTOS("u64"), T_U64},
     {ZTOS("f32"), T_F32},     {ZTOS("f64"), T_F64},
     {ZTOS("bool"), T_BOOL},   {ZTOS("string"), T_STRING},
-    {ZTOS("any"), T_ANY},
+    {ZTOS("any"), T_ANY},     {ZTOS("cons"), T_CONS},
 };
 static const u32 keyword_to_kind_count =
     sizeof(keyword_to_kind) / sizeof(Keyword_Binding);

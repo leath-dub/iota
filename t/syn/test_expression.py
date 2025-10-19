@@ -472,3 +472,63 @@ syntax_test(
               'x')))))
     """,
 )
+
+syntax_test(
+    name="atom_ident",
+    source="let _ = Foo;",
+    expected="""
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          (variable_binding
+            _)
+          (expression
+            (basic_expression
+              Foo)))))
+    """,
+)
+
+# syntax_test(
+#     name="atom_braced_literal_ident",
+#     source="let _ = Foo{ 10 };",
+#     expected="""
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_scoped_ident",
+#     source="let _ = Foo.Bar.baz{ 10 };",
+#     expected="""
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_array",
+#     source="let _ = []u32{ 10 };",
+#     expected="""
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_pointer",
+#     source="let _ = *u32{ &x };",
+#     expected="""
+#     """,
+# )
+#
+# # what should this be?: *{ 10 }
+#
+# syntax_test(
+#     name="atom_braced_literal_pointer_ambiguity0",
+#     source="let _ = x *u32;",
+#     expected="""
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_pointer_ambiguity1",
+#     source="let _ = x * (*u32{ 10 });",
+#     expected="""
+#     """,
+# )

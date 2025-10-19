@@ -534,7 +534,14 @@ Type *type(Parse_Context *c) {
 Collection_Type *collection_type(Parse_Context *c) {
   Collection_Type *n = NODE(c, Collection_Type);
   assert(consume(c).t == T_LBRK);
-  n->index_expression = expression(c, TOKS(T_RBRK));
+  // For empty index, e.g.: []u32
+  if (looking_at(c, T_RBRK)) {
+    next(c);
+    n->element_type = type(c);
+    return n;
+  }
+  n->index_expression.ok = true;
+  n->index_expression.value = expression(c, TOKS(T_RBRK));
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return n;
@@ -1115,6 +1122,31 @@ Basic_Expression *basic_expression(Parse_Context *c) {
     return n;
   }
   switch (at(c).t) {
+    case T_CONS: {
+      next(c);
+      n->t = BASIC_EXPRESSION_BRACED_LIT;
+      n->braced_lit = NODE(c, Braced_Literal);
+      if (!expect(c, n->id, T_LPAR)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      n->braced_lit->type.ok = true;
+      n->braced_lit->type.value = type(c);
+      if (!expect(c, n->id, T_RPAR)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      if (!expect(c, n->id, T_LBRC)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      n->braced_lit->initializer = initializer_list(c, T_RBRC);
+      if (!expect(c, n->id, T_RBRC)) {
+        advance(c, FOLLOW_BASIC_EXPRESSION);
+        return n;
+      }
+      return n;
+    }
     case T_LBRC: {
       n->t = BASIC_EXPRESSION_BRACED_LIT;
       n->braced_lit = NODE(c, Braced_Literal);
