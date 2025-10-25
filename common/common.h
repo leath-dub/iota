@@ -55,6 +55,9 @@ void panic(const char *msg);
   } while (0)
 #define LOGF(fmt, ...) fprintf(stderr, fmt "\n", __VA_ARGS__)
 
+#define AT(arr, index) \
+  (assert(index < (arr).len && "index out of bounds"), &(arr).items[index])
+
 // Generic dynamic array append. expects "arr" to have shape
 // *struct { <int> len, <int> cap, <typeof(item)*> items }
 #define APPEND(arr, ...)                                             \

@@ -21,6 +21,7 @@ typedef struct {
   Lexer lex;
   Arena arena;
   Node_Metadata meta;
+  Node_ID current;
 } Parse_Context;
 
 typedef struct {

@@ -1,3 +1,6 @@
+* Finish work to remove old dump.c
+  - we now have a way to describe the ast from syn.c (lower maintainence)
+    implicitly by how we are parsing
 * Support all statements of the language
 * Support else postfix expression
   - new else statement for error handling

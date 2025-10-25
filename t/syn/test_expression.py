@@ -802,3 +802,23 @@ syntax_test(
               field: baz)))))
     """,
 )
+
+syntax_test(
+    name="post_increment",
+    source = "let _ = foo++;",
+    expected = """
+    (imports)
+    (declarations
+      (declaration
+        (variable_declaration
+          mutable: false
+          (variable_binding
+            _)
+          (expression
+            (postfix_expression
+              op: ++
+              (expression
+                (basic_expression
+                  foo)))))))
+    """,
+)

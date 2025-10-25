@@ -65,14 +65,13 @@ struct Array_Access_Expression;
 struct Unary_Expression;
 struct Binary_Expression;
 struct Braced_Literal;
-
 struct Index;
 
-typedef struct {
+struct Source_File {
   Node_ID id;
   struct Imports *imports;
   struct Declarations *declarations;
-} Source_File;
+};
 
 struct Imports {
   Node_ID id;
@@ -570,6 +569,7 @@ struct Binary_Expression {
   struct Expression *right;
 };
 
+typedef struct Source_File Source_File;
 typedef struct Imports Imports;
 typedef struct Declarations Declarations;
 typedef struct Import Import;
@@ -599,7 +599,6 @@ typedef struct Identifier_List Identifier_List;
 typedef struct Error_List Error_List;
 typedef struct Error Error;
 typedef struct Statement Statement;
-typedef struct Declaration Declaration;
 typedef struct If_Statement If_Statement;
 typedef struct Condition Condition;
 typedef struct Union_Tag_Condition Union_Tag_Condition;
@@ -632,26 +631,137 @@ typedef struct Initializer_List Initializer_List;
 typedef struct Braced_Literal Braced_Literal;
 
 typedef enum {
+  NODE_SOURCE_FILE,
+  NODE_IMPORTS,
+  NODE_DECLARATIONS,
+  NODE_IMPORT,
+  NODE_DECLARATION,
+  NODE_VARIABLE_DECLARATION,
+  NODE_FUNCTION_DECLARATION,
+  NODE_TYPE_PARAMETER_LIST,
+  NODE_STRUCT_DECLARATION,
+  NODE_STRUCT_BODY,
+  NODE_ENUM_DECLARATION,
+  NODE_ERROR_DECLARATION,
+  NODE_UNION_DECLARATION,
+  NODE_DESTRUCTURE_TUPLE,
+  NODE_DESTRUCTURE_STRUCT,
+  NODE_DESTRUCTURE_UNION,
+  NODE_BINDING,
+  NODE_BINDING_LIST,
+  NODE_ALIASED_BINDING,
+  NODE_ALIASED_BINDING_LIST,
+  NODE_VARIABLE_BINDING,
+  NODE_FUNCTION_PARAMETER_LIST,
+  NODE_FUNCTION_PARAMETER,
+  NODE_TYPE_LIST,
+  NODE_FIELD_LIST,
+  NODE_FIELD,
+  NODE_IDENTIFIER_LIST,
+  NODE_ERROR_LIST,
+  NODE_ERROR,
+  NODE_STATEMENT,
+  NODE_IF_STATEMENT,
+  NODE_CONDITION,
+  NODE_UNION_TAG_CONDITION,
+  NODE_RETURN_STATEMENT,
+  NODE_DEFER_STATEMENT,
+  NODE_COMPOUND_STATEMENT,
+  NODE_ELSE,
+  NODE_TYPE,
+  NODE_BUILTIN_TYPE,
+  NODE_COLLECTION_TYPE,
+  NODE_STRUCT_TYPE,
+  NODE_UNION_TYPE,
+  NODE_ENUM_TYPE,
+  NODE_ERROR_TYPE,
+  NODE_POINTER_TYPE,
+  NODE_FUNCTION_TYPE,
+  NODE_SCOPED_IDENTIFIER,
+  NODE_EXPRESSION,
+  NODE_BASIC_EXPRESSION,
+  NODE_PARENTHESIZED_EXPRESSION,
+  NODE_COMPOSITE_LITERAL_EXPRESSION,
+  NODE_POSTFIX_EXPRESSION,
+  NODE_FUNCTION_CALL_EXPRESSION,
+  NODE_FIELD_ACCESS_EXPRESSION,
+  NODE_INDEX,
+  NODE_ARRAY_ACCESS_EXPRESSION,
+  NODE_UNARY_EXPRESSION,
+  NODE_BINARY_EXPRESSION,
+  NODE_INITIALIZER_LIST,
+  NODE_BRACED_LITERAL,
+  NODE_KIND_COUNT,
+} Node_Kind;
+
+typedef enum {
   NFLAG_NONE = 0,
   NFLAG_ERROR = 1,
+} Node_Flag;
+
+typedef struct {
+  Node_Flag *items;
+  u32 cap;
+  u32 len;
 } Node_Flags;
 
 typedef struct {
-  Node_Flags *items;
+  const char **items;
   u32 cap;
   u32 len;
-} Node_Flags_Data;
+} Node_Names;
+
+typedef enum {
+  CHILD_TOKEN,
+  CHILD_NODE,
+} Child_Kind;
+
+typedef struct {
+  Child_Kind t;
+  union {
+    Tok token;
+    Node_ID id;
+  };
+  MAYBE(const char *) name;
+} Node_Child;
+
+typedef struct {
+  Node_Child *items;
+  u32 cap;
+  u32 len;
+  bool final;
+} Node_Children;
+
+typedef struct {
+  Node_Children *items;
+  u32 cap;
+  u32 len;
+} Node_Trees;
 
 typedef struct {
   Node_ID next_id;
-  Node_Flags_Data flags;
+  Node_Flags flags;
+  Node_Trees trees;
+  Node_Names names;
 } Node_Metadata;
+
+const char *node_kind_name(Node_Kind kind);
 
 Node_Metadata new_node_metadata(void);
 void node_metadata_free(Node_Metadata *m);
-void *new_node(Node_Metadata *m, Arena *a, usize size, usize align);
-void add_node_flags(Node_Metadata *m, Node_ID id, Node_Flags flags);
-
+void *new_node(Node_Metadata *m, Arena *a, Node_Kind kind);
+void add_node_flags(Node_Metadata *m, Node_ID id, Node_Flag flags);
 bool has_error(Node_Metadata *m, void *node);
+
+void add_child(Node_Metadata *m, Node_ID id, Node_Child child);
+Node_Child child_token(Tok token);
+Node_Child child_token_named(const char *name, Tok token);
+Node_Child child_node(Node_ID node);
+Node_Child child_node_named(const char *name, Node_ID node);
+
+const char *get_node_name(Node_Metadata *m, Node_ID id);
+Node_Children *get_node_children(Node_Metadata *m, Node_ID id);
+void freeze_node_children(Node_Metadata *m, Node_ID id);
+Node_Child *last_child(Node_Metadata *m, Node_ID id);
 
 #endif

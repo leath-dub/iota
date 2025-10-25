@@ -14,7 +14,8 @@ def dump_ast(source: str) -> str:
     return subprocess.run(
         ["syn/dump_ast"],
         input=bytes(source, "utf-8"),
-        capture_output=True
+        capture_output=True,
+        check=True
     ).stdout.decode()
 
 def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "") -> None:
