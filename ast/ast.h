@@ -18,67 +18,73 @@ typedef u32 Node_ID;
 // For these reasons, The weird and arcane trick known as "X macro" is used
 // below (see here for more: info https://en.wikipedia.org/wiki/X_macro).
 
-#define EACH_NODE                                                 \
-  USE(Source_File, SOURCE_FILE)                                   \
-  USE(Imports, IMPORTS)                                           \
-  USE(Declarations, DECLARATIONS)                                 \
-  USE(Import, IMPORT)                                             \
-  USE(Declaration, DECLARATION)                                   \
-  USE(Variable_Declaration, VARIABLE_DECLARATION)                 \
-  USE(Function_Declaration, FUNCTION_DECLARATION)                 \
-  USE(Type_Parameter_List, TYPE_PARAMETER_LIST)                   \
-  USE(Struct_Declaration, STRUCT_DECLARATION)                     \
-  USE(Struct_Body, STRUCT_BODY)                                   \
-  USE(Enum_Declaration, ENUM_DECLARATION)                         \
-  USE(Error_Declaration, ERROR_DECLARATION)                       \
-  USE(Union_Declaration, UNION_DECLARATION)                       \
-  USE(Variable_Binding, VARIABLE_BINDING)                         \
-  USE(Destructure_Tuple, DESTRUCTURE_TUPLE)                       \
-  USE(Destructure_Struct, DESTRUCTURE_STRUCT)                     \
-  USE(Destructure_Union, DESTRUCTURE_UNION)                       \
-  USE(Binding, BINDING)                                           \
-  USE(Binding_List, BINDING_LIST)                                 \
-  USE(Aliased_Binding, ALIASED_BINDING)                           \
-  USE(Aliased_Binding_List, ALIASED_BINDING_LIST)                 \
-  USE(Function_Parameter_List, FUNCTION_PARAMETER_LIST)           \
-  USE(Function_Parameter, FUNCTION_PARAMETER)                     \
-  USE(Type_List, TYPE_LIST)                                       \
-  USE(Field_List, FIELD_LIST)                                     \
-  USE(Field, FIELD)                                               \
-  USE(Identifier_List, IDENTIFIER_LIST)                           \
-  USE(Error_List, ERROR_LIST)                                     \
-  USE(Error, ERROR)                                               \
-  USE(Statement, STATEMENT)                                       \
-  USE(If_Statement, IF_STATEMENT)                                 \
-  USE(Condition, CONDITION)                                       \
-  USE(Union_Tag_Condition, UNION_TAG_CONDITION)                   \
-  USE(Return_Statement, RETURN_STATEMENT)                         \
-  USE(Defer_Statement, DEFER_STATEMENT)                           \
-  USE(Compound_Statement, COMPOUND_STATEMENT)                     \
-  USE(Else, ELSE)                                                 \
-  USE(Type, TYPE)                                                 \
-  USE(Builtin_Type, BUILTIN_TYPE)                                 \
-  USE(Collection_Type, COLLECTION_TYPE)                           \
-  USE(Struct_Type, STRUCT_TYPE)                                   \
-  USE(Union_Type, UNION_TYPE)                                     \
-  USE(Enum_Type, ENUM_TYPE)                                       \
-  USE(Error_Type, ERROR_TYPE)                                     \
-  USE(Pointer_Type, POINTER_TYPE)                                 \
-  USE(Function_Type, FUNCTION_TYPE)                               \
-  USE(Scoped_Identifier, SCOPED_IDENTIFIER)                       \
-  USE(Expression, EXPRESSION)                                     \
-  USE(Basic_Expression, BASIC_EXPRESSION)                         \
-  USE(Parenthesized_Expression, PARENTHESIZED_EXPRESSION)         \
-  USE(Composite_Literal_Expression, COMPOSITE_LITERAL_EXPRESSION) \
-  USE(Postfix_Expression, POSTFIX_EXPRESSION)                     \
-  USE(Function_Call_Expression, FUNCTION_CALL_EXPRESSION)         \
-  USE(Initializer_List, INITIALIZER_LIST)                         \
-  USE(Field_Access_Expression, FIELD_ACCESS_EXPRESSION)           \
-  USE(Array_Access_Expression, ARRAY_ACCESS_EXPRESSION)           \
-  USE(Unary_Expression, UNARY_EXPRESSION)                         \
-  USE(Binary_Expression, BINARY_EXPRESSION)                       \
-  USE(Braced_Literal, BRACED_LITERAL)                             \
-  USE(Index, INDEX)
+#define EACH_NODE                                                         \
+  USE(Source_File, SOURCE_FILE, "source_file")                            \
+  USE(Imports, IMPORTS, "imports")                                        \
+  USE(Declarations, DECLARATIONS, "declarations")                         \
+  USE(Import, IMPORT, "import")                                           \
+  USE(Declaration, DECLARATION, "declaration")                            \
+  USE(Variable_Declaration, VARIABLE_DECLARATION, "variable_declaration") \
+  USE(Function_Declaration, FUNCTION_DECLARATION, "function_declaration") \
+  USE(Type_Parameter_List, TYPE_PARAMETER_LIST, "type_parameter_list")    \
+  USE(Struct_Declaration, STRUCT_DECLARATION, "struct_declaration")       \
+  USE(Struct_Body, STRUCT_BODY, "struct_body")                            \
+  USE(Enum_Declaration, ENUM_DECLARATION, "enum_declaration")             \
+  USE(Error_Declaration, ERROR_DECLARATION, "error_declaration")          \
+  USE(Union_Declaration, UNION_DECLARATION, "union_declaration")          \
+  USE(Variable_Binding, VARIABLE_BINDING, "variable_binding")             \
+  USE(Destructure_Tuple, DESTRUCTURE_TUPLE, "destructure_tuple")          \
+  USE(Destructure_Struct, DESTRUCTURE_STRUCT, "destructure_struct")       \
+  USE(Destructure_Union, DESTRUCTURE_UNION, "destructure_union")          \
+  USE(Binding, BINDING, "binding")                                        \
+  USE(Binding_List, BINDING_LIST, "binding_list")                         \
+  USE(Aliased_Binding, ALIASED_BINDING, "aliased_binding")                \
+  USE(Aliased_Binding_List, ALIASED_BINDING_LIST, "aliased_binding_list") \
+  USE(Function_Parameter_List, FUNCTION_PARAMETER_LIST,                   \
+      "function_parameter_list")                                          \
+  USE(Function_Parameter, FUNCTION_PARAMETER, "function_parameter")       \
+  USE(Type_List, TYPE_LIST, "type_list")                                  \
+  USE(Field_List, FIELD_LIST, "field_list")                               \
+  USE(Field, FIELD, "field")                                              \
+  USE(Identifier_List, IDENTIFIER_LIST, "identifier_list")                \
+  USE(Error_List, ERROR_LIST, "error_list")                               \
+  USE(Error, ERROR, "error")                                              \
+  USE(Statement, STATEMENT, "statement")                                  \
+  USE(If_Statement, IF_STATEMENT, "if_statement")                         \
+  USE(Condition, CONDITION, "condition")                                  \
+  USE(Union_Tag_Condition, UNION_TAG_CONDITION, "union_tag_condition")    \
+  USE(Return_Statement, RETURN_STATEMENT, "return_statement")             \
+  USE(Defer_Statement, DEFER_STATEMENT, "defer_statement")                \
+  USE(Compound_Statement, COMPOUND_STATEMENT, "compound_statement")       \
+  USE(Else, ELSE, "else")                                                 \
+  USE(Type, TYPE, "type")                                                 \
+  USE(Builtin_Type, BUILTIN_TYPE, "builtin_type")                         \
+  USE(Collection_Type, COLLECTION_TYPE, "collection_type")                \
+  USE(Struct_Type, STRUCT_TYPE, "struct_type")                            \
+  USE(Union_Type, UNION_TYPE, "union_type")                               \
+  USE(Enum_Type, ENUM_TYPE, "enum_type")                                  \
+  USE(Error_Type, ERROR_TYPE, "error_type")                               \
+  USE(Pointer_Type, POINTER_TYPE, "pointer_type")                         \
+  USE(Function_Type, FUNCTION_TYPE, "function_type")                      \
+  USE(Scoped_Identifier, SCOPED_IDENTIFIER, "scoped_identifier")          \
+  USE(Expression, EXPRESSION, "expression")                               \
+  USE(Basic_Expression, BASIC_EXPRESSION, "basic_expression")             \
+  USE(Parenthesized_Expression, PARENTHESIZED_EXPRESSION,                 \
+      "parenthesized_expression")                                         \
+  USE(Composite_Literal_Expression, COMPOSITE_LITERAL_EXPRESSION,         \
+      "composite_literal_expression")                                     \
+  USE(Postfix_Expression, POSTFIX_EXPRESSION, "postfix_expression")       \
+  USE(Function_Call_Expression, FUNCTION_CALL_EXPRESSION,                 \
+      "function_call_expression")                                         \
+  USE(Initializer_List, INITIALIZER_LIST, "initializer_list")             \
+  USE(Field_Access_Expression, FIELD_ACCESS_EXPRESSION,                   \
+      "field_access_expression")                                          \
+  USE(Array_Access_Expression, ARRAY_ACCESS_EXPRESSION,                   \
+      "array_access_expression")                                          \
+  USE(Unary_Expression, UNARY_EXPRESSION, "unary_expression")             \
+  USE(Binary_Expression, BINARY_EXPRESSION, "binary_expression")          \
+  USE(Braced_Literal, BRACED_LITERAL, "braced_literal")                   \
+  USE(Index, INDEX, "index")
 
 #define USE(NODE, ...) struct NODE;
 EACH_NODE
@@ -591,7 +597,7 @@ EACH_NODE
 #undef USE
 
 typedef enum {
-#define USE(_, UPPER_NAME) NODE_##UPPER_NAME,
+#define USE(_, UPPER_NAME, ...) NODE_##UPPER_NAME,
   EACH_NODE
 #undef USE
       NODE_KIND_COUNT,
