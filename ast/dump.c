@@ -12,8 +12,13 @@ static void deindent(Tree_Dump_Ctx *ctx) {
 void tree_dump(Tree_Dump_Ctx *ctx, Node_ID id) {
   const Node_Children *children = get_node_children(ctx->meta, id);
 
-  fprintf(ctx->fs, "%*s%s {", ctx->indent_level * ctx->indent_width, "",
-          get_node_name(ctx->meta, id));
+  if (ctx->meta->flags.items[id] & NFLAG_ERROR) {
+    fprintf(ctx->fs, "%*s%s(error!) {", ctx->indent_level * ctx->indent_width,
+            "", get_node_name(ctx->meta, id));
+  } else {
+    fprintf(ctx->fs, "%*s%s {", ctx->indent_level * ctx->indent_width, "",
+            get_node_name(ctx->meta, id));
+  }
   if (children->len != 0) {
     fprintf(ctx->fs, "\n");
   }
