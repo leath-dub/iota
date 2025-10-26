@@ -762,4 +762,13 @@ const char *get_node_name(Node_Metadata *m, Node_ID id);
 Node_Children *get_node_children(Node_Metadata *m, Node_ID id);
 Node_Child *last_child(Node_Metadata *m, Node_ID id);
 
+typedef struct {
+  FILE *fs;
+  u32 indent_level;
+  u8 indent_width;
+  Node_Metadata *meta;
+} Tree_Dump_Ctx;
+
+void tree_dump(Tree_Dump_Ctx *ctx, Node_ID id);
+
 #endif
