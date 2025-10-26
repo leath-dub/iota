@@ -2,7 +2,9 @@ syntax_test(
     name = "empty_file",
     source = "",
     expected = """
-    (imports)
-    (declarations)
+    source_file {
+      imports {}
+      declarations {}
+    }
     """,
 )

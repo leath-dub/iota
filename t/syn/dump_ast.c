@@ -25,11 +25,13 @@ int main(void) {
   Source_Code code = new_source_code(ztos("<stdin>"), text);
   Parse_Context pc = new_parse_context(code);
   Source_File *file = source_file(&pc);
-  Dump_Out out = new_dump_out();
-  dump_source_file(&out, &pc, file);
+
+  Tree_Dump_Ctx dump_ctx = {
+      .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
+  tree_dump(&dump_ctx, file->id);
+
   parse_context_free(&pc);
   source_code_free(&code);
-  printf("\n");
-  fflush(out.fs);
+  fflush(dump_ctx.fs);
   free(text.data);
 }

@@ -5,7 +5,7 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("let _ = ((x + ((foo)[10])) - 12);");
+  string source = ztos("let _ = foo++;");
   Source_Code code = new_source_code(ztos("<string>"), source);
 
   Parse_Context pc = new_parse_context(code);

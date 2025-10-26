@@ -11,22 +11,30 @@ paramf = Template("$name $param_type")
 multi_paramf = Template("$name.. $param_type")
 
 expectedf = Template("""
-    (imports)
-    (declarations
-      (declaration
-        (function_declaration
-          name: $name
+  source_file {
+    imports {}
+    declarations {
+      declaration {
+        function_declaration {
+          name='$name'
 $body
-          (compound_statement))))
-   """)
+          compound_statement {}
+        }
+      }
+    }
+  }
+""")
 
-expected_paramf = Template("""(function_parameter
-  name: (variable_binding
-    $name)
-  variadic: $variadic
-  (type
-    (builtin_type
-      $param_type)))""")
+expected_paramf = Template("""function_parameter {
+  variable_binding {
+    name='$name'
+  }$kind
+  type {
+    builtin_type {
+      name='$param_type'
+    }
+  }
+}""")
 
 @dataclass
 class TestCase:
@@ -65,7 +73,7 @@ class FunDef:
         def generate_param(is_variadic: bool) -> str:
             return expected_paramf.substitute(
                 name="x",
-                variadic=str(is_variadic).lower(),
+                kind="\n  kind='..'" if is_variadic else "",
                 param_type="s32",
             )
 
@@ -73,11 +81,11 @@ class FunDef:
         self.for_each_param(lambda is_variadic: params.append(generate_param(is_variadic)))
 
         params_txt = textwrap.indent("\n".join(params), "  ")
-        params_txt = f"(function_parameter_list\n{params_txt})"
+        params_txt = f"function_parameter_list {{\n{params_txt}\n}}"
 
         return_type = self.return_type
         if len(self.return_type) != 0:
-            return_type = f"(type\n  (builtin_type\n    {self.return_type}))"
+            return_type = f"type {{\n  builtin_type {{\n    name='{self.return_type}'\n  }}\n}}"
 
         body = "\n".join((params_txt, return_type))
         body = textwrap.indent(body, "  " * 5).rstrip()

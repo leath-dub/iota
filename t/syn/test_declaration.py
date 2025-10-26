@@ -4,13 +4,20 @@ syntax_test(
     name="variable_declaration_primitive",
     source="let x;",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            x))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                name='x'
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -18,16 +25,25 @@ syntax_test(
     name="variable_declaration_with_type",
     source="let x u32;",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            x)
-          (type
-            (builtin_type
-              u32)))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                name='x'
+              }
+            type {
+              builtin_type {
+                name='u32'
+              }
+            }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -35,16 +51,26 @@ syntax_test(
     name="variable_declaration_with_value",
     source="let x = 10;",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            x)
-          (expression
-            (basic_expression
-              10)))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                name='x'
+              }
+            value:
+              expression {
+                basic_expression {
+                  atom='10'
+                }
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -52,13 +78,20 @@ syntax_test(
     name="variable_declaration_mut",
     source="mut x;",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: true
-          (variable_binding
-            x))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='mut'
+            binding:
+              variable_binding {
+                name='x'
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -66,27 +99,42 @@ syntax_test(
     name="variable_declaration_destructure_struct",
     source="let { *px = x, *py = y, meta };",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            (destructure_struct
-              (aliased_binding_list
-                (aliased_binding
-                  (binding
-                    *
-                    px)
-                  alias: x)
-                (aliased_binding
-                  (binding
-                    *
-                    py)
-                  alias: y)
-                (aliased_binding
-                  (binding
-                    meta))))))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                destructure_struct {
+                  aliased_binding_list {
+                    aliased_binding {
+                      binding {
+                        kind='*'
+                        name='px'
+                      }
+                      alias='x'
+                    }
+                    aliased_binding {
+                      binding {
+                        kind='*'
+                        name='py'
+                      }
+                      alias='y'
+                    }
+                    aliased_binding {
+                      binding {
+                        name='meta'
+                      }
+                    }
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -94,19 +142,30 @@ syntax_test(
     name="variable_declaration_destructure_tuple",
     source="let ( *px, y );",
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            (destructure_tuple
-              (binding_list
-                (binding
-                  *
-                  px)
-                (binding
-                  y)))))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                destructure_tuple {
+                  binding_list {
+                    binding {
+                      kind='*'
+                      name='px'
+                    }
+                    binding {
+                      name='y'
+                    }
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -117,25 +176,40 @@ syntax_test(
     let err(*bar);
     """,
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            (destructure_union
-              ok
-              (binding
-                foo)))))
-      (declaration
-        (variable_declaration
-          mutable: false
-          (variable_binding
-            (destructure_union
-              err
-              (binding
-                *
-                bar))))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                destructure_union {
+                  tag='ok'
+                  binding {
+                    name='foo'
+                  }
+                }
+              }
+          }
+        }
+        declaration {
+          variable_declaration {
+            kind='let'
+            binding:
+              variable_binding {
+                destructure_union {
+                  tag='err'
+                  binding {
+                    kind='*'
+                    name='bar'
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -148,23 +222,35 @@ syntax_test(
     }
     """,
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (struct_declaration
-          name: Point
-          (struct_body
-            (field_list
-              (field
-                name: x
-                (type
-                  (builtin_type
-                    f32)))
-              (field
-                name: y
-                (type
-                  (builtin_type
-                    f32))))))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          struct_declaration {
+            struct_body {
+              field_list {
+                field {
+                  name='x'
+                  type {
+                    builtin_type {
+                      name='f32'
+                    }
+                  }
+                }
+                field {
+                  name='y'
+                  type {
+                    builtin_type {
+                      name='f32'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -179,16 +265,22 @@ syntax_test(
     }
     """,
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (enum_declaration
-          name: Direction
-          (identifier_list
-            north
-            south
-            east
-            west))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          enum_declaration {
+            name='Direction'
+            identifier_list {
+              'north'
+              'south'
+              'east'
+              'west'
+            }
+          }
+        }
+      }
+    }
     """,
 )
 
@@ -202,23 +294,32 @@ syntax_test(
     }
     """,
     expected="""
-    (imports)
-    (declarations
-      (declaration
-        (error_declaration
-          name: Parse_Error
-          (error_list
-            (error
-              embedded: false
-              (scoped_identifier
-                Missing_Semicolon))
-            (error
-              embedded: false
-              (scoped_identifier
-                Unmatched_Quote))
-            (error
-              embedded: true
-              (scoped_identifier
-                IO_Error))))))
+    source_file {
+      imports {}
+      declarations {
+        declaration {
+          error_declaration {
+            error_list {
+              error {
+                scoped_identifier {
+                  'Missing_Semicolon'
+                }
+              }
+              error {
+                scoped_identifier {
+                  'Unmatched_Quote'
+                }
+              }
+              error {
+                kind='!'
+                scoped_identifier {
+                  'IO_Error'
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     """,
 )

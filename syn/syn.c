@@ -386,7 +386,7 @@ Variable_Binding *variable_binding(Parse_Context *c) {
         {
           Node_Context destr_ctx = start_node(c, NODE_DESTRUCTURE_UNION);
           n->destructure_union = destr_ctx.node;
-          n->destructure_union->tag = name;
+          n->destructure_union->tag = token_attr(c, "tag", name);
           n->destructure_union->binding = binding(c);
           (void)end_node(c, destr_ctx);
         }
@@ -412,14 +412,14 @@ Binding *binding(Parse_Context *c) {
   Node_Context nc = start_node(c, NODE_BINDING);
   Binding *n = nc.node;
   if (looking_at(c, T_STAR)) {
-    n->reference = consume(c);
+    n->reference = token_attr(c, "kind", consume(c));
   }
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
     advance(c, FOLLOW_BINDING);
     return end_node(c, nc);
   }
-  n->identifier = name;
+  n->identifier = token_attr(c, "name", name);
   return end_node(c, nc);
 }
 
@@ -435,7 +435,7 @@ Aliased_Binding *aliased_binding(Parse_Context *c) {
       return end_node(c, nc);
     }
     n->alias.ok = true;
-    n->alias.value = name;
+    n->alias.value = token_attr(c, "alias", name);
   }
   return end_node(c, nc);
 }
@@ -512,7 +512,7 @@ Function_Declaration *function_declaration(Parse_Context *c) {
     advance(c, FOLLOW_DECLARATION);
     return end_node(c, nc);
   }
-  n->identifier = name;
+  n->identifier = token_attr(c, "name", name);
   if (!expect(c, n->id, T_LPAR)) {
     advance(c, FOLLOW_DECLARATION);
     return end_node(c, nc);
@@ -554,6 +554,7 @@ Function_Parameter *function_parameter(Parse_Context *c) {
   Function_Parameter *n = nc.node;
   n->binding = variable_binding(c);
   if (looking_at(c, T_DOTDOT)) {
+    token_attr(c, "kind", at(c));
     next(c);
     n->variadic = true;
   }
@@ -666,7 +667,7 @@ Type *type(Parse_Context *c) {
       {
         Node_Context builtin_ctx = start_node(c, NODE_BUILTIN_TYPE);
         Builtin_Type *builtin_type = builtin_ctx.node;
-        builtin_type->token = consume(c);
+        builtin_type->token = token_attr(c, "name", consume(c));
         n->t = TYPE_BUILTIN;
         n->builtin_type = end_node(c, builtin_ctx);
       }
@@ -767,7 +768,7 @@ Field *field(Parse_Context *c) {
     advance(c, FOLLOW_FIELD);
     return end_node(c, nc);
   }
-  n->identifier = tok;
+  n->identifier = token_attr(c, "name", tok);
   n->type = type(c);
   return end_node(c, nc);
 }
@@ -889,7 +890,7 @@ Error *error(Parse_Context *c) {
   Error *n = nc.node;
   if (looking_at(c, T_BANG)) {
     n->embedded = true;
-    next(c);
+    token_attr(c, "kind", consume(c));
   }
   n->scoped_identifier = scoped_identifier(c, FOLLOW_ERROR);
   return end_node(c, nc);
@@ -937,7 +938,7 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  APPEND(n, identifier);
+  APPEND(n, token_attr_anon(c, identifier));
   while (looking_at(c, T_DOT)) {
     next(c);
     Tok identifier = at(c);
@@ -945,7 +946,7 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
       advance(c, follow);
       return end_node(c, nc);
     }
-    APPEND(n, identifier);
+    APPEND(n, token_attr_anon(c, identifier));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
@@ -1068,7 +1069,7 @@ static Index *index(Parse_Context *c) {
   // e.g. [:10]
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
-    next(c);
+    token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
       // Although it is not technically correct to have
       // ';' as a "valid" delimiter, it is used here to prevent
@@ -1084,7 +1085,7 @@ static Index *index(Parse_Context *c) {
 
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
-    next(c);
+    token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
       n->end.value = expression(c, TOKS(T_RBRK, T_SCLN));
       n->end.ok = true;
@@ -1130,7 +1131,7 @@ static Node_Context parse_postfix(Parse_Context *c, Expression *lhs) {
         goto yield_call_expr;
       }
 
-      call->arguments = initializer_list(c, T_RPAR);
+      call->arguments = attr(c, "args", initializer_list(c, T_RPAR));
 
       if (!expect(c, call->id, T_RPAR)) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
@@ -1146,7 +1147,7 @@ static Node_Context parse_postfix(Parse_Context *c, Expression *lhs) {
       Field_Access_Expression *access = access_ctx.node;
 
       Node_Context lhs_ctx = begin_node(c, lhs);
-      access->lvalue = end_node(c, lhs_ctx);
+      access->lvalue = attr(c, "lvalue", end_node(c, lhs_ctx));
 
       next(c);
       Tok field = at(c);
@@ -1154,7 +1155,7 @@ static Node_Context parse_postfix(Parse_Context *c, Expression *lhs) {
         advance(c, FOLLOW_BASIC_EXPRESSION);
         goto yield_access_expr;
       }
-      access->field = field;
+      access->field = token_attr(c, "field", field);
 
     yield_access_expr:
       expr->t = EXPRESSION_FIELD_ACCESS;
@@ -1165,7 +1166,7 @@ static Node_Context parse_postfix(Parse_Context *c, Expression *lhs) {
       Node_Context postfix_ctx = start_node(c, NODE_POSTFIX_EXPRESSION);
       Postfix_Expression *postfix = postfix_ctx.node;
 
-      postfix->op = consume(c);
+      postfix->op = token_attr(c, "op", consume(c));
       Node_Context lhs_ctx = begin_node(c, lhs);
       postfix->inner_expression = end_node(c, lhs_ctx);
 
@@ -1345,11 +1346,12 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
     Node_Context bin_ctx = start_node(c, NODE_BINARY_EXPRESSION);
     Binary_Expression *bin_expr = bin_ctx.node;
 
-    bin_expr->op = op;
+    bin_expr->op = token_attr(c, "op", op);
     Node_Context old_lhs_ctx = begin_node(c, lhs);
-    bin_expr->left = end_node(c, old_lhs_ctx);
+    bin_expr->left = attr(c, "left", end_node(c, old_lhs_ctx));
     next(c);
-    bin_expr->right = end_node(c, expression_power(c, pow.right, delim));
+    bin_expr->right =
+        attr(c, "right", end_node(c, expression_power(c, pow.right, delim)));
 
     new_expr->t = EXPRESSION_BINARY;
     new_expr->binary_expression = end_node(c, bin_ctx);
@@ -1383,8 +1385,8 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       // the token itself as the basic expression
       backtrack(c, marker);
       n->t = BASIC_EXPRESSION_TOKEN;
-      n->token = token_attr(c, "atom", consume(c));
       c->current = n->id;
+      n->token = token_attr(c, "atom", consume(c));
       return end_node(c, nc);
     }
 
