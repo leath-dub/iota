@@ -6,66 +6,83 @@
 
 typedef u32 Node_ID;
 
-struct Imports;
-struct Declarations;
-struct Import;
-struct Declaration;
-struct Variable_Declaration;
-struct Function_Declaration;
-struct Type_Parameter_List;
-struct Struct_Declaration;
-struct Struct_Body;
-struct Enum_Declaration;
-struct Error_Declaration;
-struct Union_Declaration;
-struct Variable_Binding;
-struct Destructure_Tuple;
-struct Destructure_Struct;
-struct Destructure_Union;
-struct Binding;
-struct Binding_List;
-struct Aliased_Binding;
-struct Aliased_Binding_List;
-struct Function_Parameter_List;
-struct Function_Parameter;
-struct Type_List;
-struct Field_List;
-struct Field;
-struct Identifier_List;
-struct Error_List;
-struct Error;
-struct Statement;
-struct Declaration;
-struct If_Statement;
-struct Condition;
-struct Union_Tag_Condition;
-struct Return_Statement;
-struct Defer_Statement;
-struct Compound_Statement;
-struct Else;
-struct Type;
-struct Builtin_Type;
-struct Collection_Type;
-struct Struct_Type;
-struct Union_Type;
-struct Enum_Type;
-struct Error_Type;
-struct Pointer_Type;
-struct Function_Type;
-struct Scoped_Identifier;
-struct Expression;
-struct Basic_Expression;
-struct Parenthesized_Expression;
-struct Composite_Literal_Expression;
-struct Postfix_Expression;
-struct Function_Call_Expression;
-struct Initializer_List;
-struct Field_Access_Expression;
-struct Array_Access_Expression;
-struct Unary_Expression;
-struct Binary_Expression;
-struct Braced_Literal;
-struct Index;
+// There are a bunch of places where we need to do something for every AST node
+// type:
+//
+// * Forward declare all AST nodes - so we don't have to care about order of
+// nodes
+// * `typedef` all AST nodes - so no need for consumers of `ast` module to type
+//   `struct` prefix on each type
+// * Add enumerator in Node_Kind enum
+//
+// For these reasons, The weird and arcane trick known as "X macro" is used
+// below (see here for more: info https://en.wikipedia.org/wiki/X_macro).
+
+#define EACH_NODE                                                 \
+  USE(Source_File, SOURCE_FILE)                                   \
+  USE(Imports, IMPORTS)                                           \
+  USE(Declarations, DECLARATIONS)                                 \
+  USE(Import, IMPORT)                                             \
+  USE(Declaration, DECLARATION)                                   \
+  USE(Variable_Declaration, VARIABLE_DECLARATION)                 \
+  USE(Function_Declaration, FUNCTION_DECLARATION)                 \
+  USE(Type_Parameter_List, TYPE_PARAMETER_LIST)                   \
+  USE(Struct_Declaration, STRUCT_DECLARATION)                     \
+  USE(Struct_Body, STRUCT_BODY)                                   \
+  USE(Enum_Declaration, ENUM_DECLARATION)                         \
+  USE(Error_Declaration, ERROR_DECLARATION)                       \
+  USE(Union_Declaration, UNION_DECLARATION)                       \
+  USE(Variable_Binding, VARIABLE_BINDING)                         \
+  USE(Destructure_Tuple, DESTRUCTURE_TUPLE)                       \
+  USE(Destructure_Struct, DESTRUCTURE_STRUCT)                     \
+  USE(Destructure_Union, DESTRUCTURE_UNION)                       \
+  USE(Binding, BINDING)                                           \
+  USE(Binding_List, BINDING_LIST)                                 \
+  USE(Aliased_Binding, ALIASED_BINDING)                           \
+  USE(Aliased_Binding_List, ALIASED_BINDING_LIST)                 \
+  USE(Function_Parameter_List, FUNCTION_PARAMETER_LIST)           \
+  USE(Function_Parameter, FUNCTION_PARAMETER)                     \
+  USE(Type_List, TYPE_LIST)                                       \
+  USE(Field_List, FIELD_LIST)                                     \
+  USE(Field, FIELD)                                               \
+  USE(Identifier_List, IDENTIFIER_LIST)                           \
+  USE(Error_List, ERROR_LIST)                                     \
+  USE(Error, ERROR)                                               \
+  USE(Statement, STATEMENT)                                       \
+  USE(If_Statement, IF_STATEMENT)                                 \
+  USE(Condition, CONDITION)                                       \
+  USE(Union_Tag_Condition, UNION_TAG_CONDITION)                   \
+  USE(Return_Statement, RETURN_STATEMENT)                         \
+  USE(Defer_Statement, DEFER_STATEMENT)                           \
+  USE(Compound_Statement, COMPOUND_STATEMENT)                     \
+  USE(Else, ELSE)                                                 \
+  USE(Type, TYPE)                                                 \
+  USE(Builtin_Type, BUILTIN_TYPE)                                 \
+  USE(Collection_Type, COLLECTION_TYPE)                           \
+  USE(Struct_Type, STRUCT_TYPE)                                   \
+  USE(Union_Type, UNION_TYPE)                                     \
+  USE(Enum_Type, ENUM_TYPE)                                       \
+  USE(Error_Type, ERROR_TYPE)                                     \
+  USE(Pointer_Type, POINTER_TYPE)                                 \
+  USE(Function_Type, FUNCTION_TYPE)                               \
+  USE(Scoped_Identifier, SCOPED_IDENTIFIER)                       \
+  USE(Expression, EXPRESSION)                                     \
+  USE(Basic_Expression, BASIC_EXPRESSION)                         \
+  USE(Parenthesized_Expression, PARENTHESIZED_EXPRESSION)         \
+  USE(Composite_Literal_Expression, COMPOSITE_LITERAL_EXPRESSION) \
+  USE(Postfix_Expression, POSTFIX_EXPRESSION)                     \
+  USE(Function_Call_Expression, FUNCTION_CALL_EXPRESSION)         \
+  USE(Initializer_List, INITIALIZER_LIST)                         \
+  USE(Field_Access_Expression, FIELD_ACCESS_EXPRESSION)           \
+  USE(Array_Access_Expression, ARRAY_ACCESS_EXPRESSION)           \
+  USE(Unary_Expression, UNARY_EXPRESSION)                         \
+  USE(Binary_Expression, BINARY_EXPRESSION)                       \
+  USE(Braced_Literal, BRACED_LITERAL)                             \
+  USE(Index, INDEX)
+
+#define USE(NODE, ...) struct NODE;
+EACH_NODE
+#undef USE
 
 struct Source_File {
   Node_ID id;
@@ -569,129 +586,15 @@ struct Binary_Expression {
   struct Expression *right;
 };
 
-typedef struct Source_File Source_File;
-typedef struct Imports Imports;
-typedef struct Declarations Declarations;
-typedef struct Import Import;
-typedef struct Declaration Declaration;
-typedef struct Variable_Declaration Variable_Declaration;
-typedef struct Function_Declaration Function_Declaration;
-typedef struct Type_Parameter_List Type_Parameter_List;
-typedef struct Struct_Declaration Struct_Declaration;
-typedef struct Struct_Body Struct_Body;
-typedef struct Enum_Declaration Enum_Declaration;
-typedef struct Error_Declaration Error_Declaration;
-typedef struct Union_Declaration Union_Declaration;
-typedef struct Destructure_Tuple Destructure_Tuple;
-typedef struct Destructure_Struct Destructure_Struct;
-typedef struct Destructure_Union Destructure_Union;
-typedef struct Binding Binding;
-typedef struct Binding_List Binding_List;
-typedef struct Aliased_Binding Aliased_Binding;
-typedef struct Aliased_Binding_List Aliased_Binding_List;
-typedef struct Variable_Binding Variable_Binding;
-typedef struct Function_Parameter_List Function_Parameter_List;
-typedef struct Function_Parameter Function_Parameter;
-typedef struct Type_List Type_List;
-typedef struct Field_List Field_List;
-typedef struct Field Field;
-typedef struct Identifier_List Identifier_List;
-typedef struct Error_List Error_List;
-typedef struct Error Error;
-typedef struct Statement Statement;
-typedef struct If_Statement If_Statement;
-typedef struct Condition Condition;
-typedef struct Union_Tag_Condition Union_Tag_Condition;
-typedef struct Return_Statement Return_Statement;
-typedef struct Defer_Statement Defer_Statement;
-typedef struct Compound_Statement Compound_Statement;
-typedef struct Else Else;
-typedef struct Type Type;
-typedef struct Builtin_Type Builtin_Type;
-typedef struct Collection_Type Collection_Type;
-typedef struct Struct_Type Struct_Type;
-typedef struct Union_Type Union_Type;
-typedef struct Enum_Type Enum_Type;
-typedef struct Error_Type Error_Type;
-typedef struct Pointer_Type Pointer_Type;
-typedef struct Function_Type Function_Type;
-typedef struct Scoped_Identifier Scoped_Identifier;
-typedef struct Expression Expression;
-typedef struct Basic_Expression Basic_Expression;
-typedef struct Parenthesized_Expression Parenthesized_Expression;
-typedef struct Composite_Literal_Expression Composite_Literal_Expression;
-typedef struct Postfix_Expression Postfix_Expression;
-typedef struct Function_Call_Expression Function_Call_Expression;
-typedef struct Field_Access_Expression Field_Access_Expression;
-typedef struct Index Index;
-typedef struct Array_Access_Expression Array_Access_Expression;
-typedef struct Unary_Expression Unary_Expression;
-typedef struct Binary_Expression Binary_Expression;
-typedef struct Initializer_List Initializer_List;
-typedef struct Braced_Literal Braced_Literal;
+#define USE(NODE, ...) typedef struct NODE NODE;
+EACH_NODE
+#undef USE
 
 typedef enum {
-  NODE_SOURCE_FILE,
-  NODE_IMPORTS,
-  NODE_DECLARATIONS,
-  NODE_IMPORT,
-  NODE_DECLARATION,
-  NODE_VARIABLE_DECLARATION,
-  NODE_FUNCTION_DECLARATION,
-  NODE_TYPE_PARAMETER_LIST,
-  NODE_STRUCT_DECLARATION,
-  NODE_STRUCT_BODY,
-  NODE_ENUM_DECLARATION,
-  NODE_ERROR_DECLARATION,
-  NODE_UNION_DECLARATION,
-  NODE_DESTRUCTURE_TUPLE,
-  NODE_DESTRUCTURE_STRUCT,
-  NODE_DESTRUCTURE_UNION,
-  NODE_BINDING,
-  NODE_BINDING_LIST,
-  NODE_ALIASED_BINDING,
-  NODE_ALIASED_BINDING_LIST,
-  NODE_VARIABLE_BINDING,
-  NODE_FUNCTION_PARAMETER_LIST,
-  NODE_FUNCTION_PARAMETER,
-  NODE_TYPE_LIST,
-  NODE_FIELD_LIST,
-  NODE_FIELD,
-  NODE_IDENTIFIER_LIST,
-  NODE_ERROR_LIST,
-  NODE_ERROR,
-  NODE_STATEMENT,
-  NODE_IF_STATEMENT,
-  NODE_CONDITION,
-  NODE_UNION_TAG_CONDITION,
-  NODE_RETURN_STATEMENT,
-  NODE_DEFER_STATEMENT,
-  NODE_COMPOUND_STATEMENT,
-  NODE_ELSE,
-  NODE_TYPE,
-  NODE_BUILTIN_TYPE,
-  NODE_COLLECTION_TYPE,
-  NODE_STRUCT_TYPE,
-  NODE_UNION_TYPE,
-  NODE_ENUM_TYPE,
-  NODE_ERROR_TYPE,
-  NODE_POINTER_TYPE,
-  NODE_FUNCTION_TYPE,
-  NODE_SCOPED_IDENTIFIER,
-  NODE_EXPRESSION,
-  NODE_BASIC_EXPRESSION,
-  NODE_PARENTHESIZED_EXPRESSION,
-  NODE_COMPOSITE_LITERAL_EXPRESSION,
-  NODE_POSTFIX_EXPRESSION,
-  NODE_FUNCTION_CALL_EXPRESSION,
-  NODE_FIELD_ACCESS_EXPRESSION,
-  NODE_INDEX,
-  NODE_ARRAY_ACCESS_EXPRESSION,
-  NODE_UNARY_EXPRESSION,
-  NODE_BINARY_EXPRESSION,
-  NODE_INITIALIZER_LIST,
-  NODE_BRACED_LITERAL,
-  NODE_KIND_COUNT,
+#define USE(_, UPPER_NAME) NODE_##UPPER_NAME,
+  EACH_NODE
+#undef USE
+      NODE_KIND_COUNT,
 } Node_Kind;
 
 typedef enum {
