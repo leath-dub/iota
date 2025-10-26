@@ -5,78 +5,80 @@
 #include "../mod/mod.h"
 #include "uc.h"
 
+#define EACH_TOKEN                          \
+  TOKEN(EMPTY, "<empty token>")             \
+  TOKEN(EOF, "<end of file>")               \
+  TOKEN(CMNT, "<comment>")                  \
+  TOKEN(SYNTHESIZED, "<synthesized token>") \
+  TOKEN(ILLEGAL, "<illegal token>")         \
+  TOKEN(LBRK, "'['")                        \
+  TOKEN(RBRK, "']'")                        \
+  TOKEN(LPAR, "'('")                        \
+  TOKEN(RPAR, "')'")                        \
+  TOKEN(LBRC, "'{'")                        \
+  TOKEN(RBRC, "'}'")                        \
+  TOKEN(SCLN, "';'")                        \
+  TOKEN(CLN, "':'")                         \
+  TOKEN(COMMA, "','")                       \
+  TOKEN(BANG, "'!'")                        \
+  TOKEN(DOT, "'.'")                         \
+  TOKEN(DOTDOT, "'..'")                     \
+  TOKEN(PLUS, "'+'")                        \
+  TOKEN(MINUS, "'-'")                       \
+  TOKEN(STAR, "'*'")                        \
+  TOKEN(SLASH, "'/'")                       \
+  TOKEN(EQ, "'='")                          \
+  TOKEN(EQEQ, "'=='")                       \
+  TOKEN(NEQ, "'!='")                        \
+  TOKEN(PIPE, "'|'")                        \
+  TOKEN(AMP, "'&'")                         \
+  TOKEN(PERC, "'%'")                        \
+  TOKEN(INC, "'++'")                        \
+  TOKEN(DEC, "'--'")                        \
+  TOKEN(CHAR, "<character>")                \
+  TOKEN(STR, "<string>")                    \
+  TOKEN(NUM, "<number>")                    \
+  KEYWORD(NOT, "not")                       \
+  KEYWORD(AND, "and")                       \
+  KEYWORD(OR, "or")                         \
+  KEYWORD(FUN, "fun")                       \
+  KEYWORD(IF, "if")                         \
+  KEYWORD(ELSE, "else")                     \
+  KEYWORD(FOR, "for")                       \
+  KEYWORD(WHILE, "while")                   \
+  KEYWORD(DEFER, "defer")                   \
+  KEYWORD(STRUCT, "struct")                 \
+  KEYWORD(UNION, "union")                   \
+  KEYWORD(ENUM, "enum")                     \
+  KEYWORD(LET, "let")                       \
+  KEYWORD(MUT, "mut")                       \
+  KEYWORD(TYPE, "type")                     \
+  KEYWORD(IMPORT, "import")                 \
+  KEYWORD(ERROR, "error")                   \
+  KEYWORD(USE, "use")                       \
+  KEYWORD(S8, "s8")                         \
+  KEYWORD(U8, "u8")                         \
+  KEYWORD(S16, "s16")                       \
+  KEYWORD(U16, "u16")                       \
+  KEYWORD(S32, "s32")                       \
+  KEYWORD(U32, "u32")                       \
+  KEYWORD(S64, "s64")                       \
+  KEYWORD(U64, "u64")                       \
+  KEYWORD(F32, "f32")                       \
+  KEYWORD(F64, "f64")                       \
+  KEYWORD(BOOL, "bool")                     \
+  KEYWORD(STRING, "string")                 \
+  KEYWORD(ANY, "any")                       \
+  KEYWORD(CONS, "cons")                     \
+  KEYWORD(IDENT, "identifier")
+
 typedef enum {
-  T_EMPTY = 0,    // sentinal token value (used for initial state of lexer)
-  T_EOF,          // EOF
-  T_CMNT,         // comment
-  T_SYNTHESIZED,  // not a real token, used when synthesizing a AST (the ast is
-                  // more of a CST in the iota compiler
-  T_ILLEGAL,
-  T_LBRK,    // [
-  T_RBRK,    // ]
-  T_LPAR,    // (
-  T_RPAR,    // )
-  T_LBRC,    // {
-  T_RBRC,    // }
-  T_SCLN,    // ;
-  T_CLN,     // :
-  T_COMMA,   // ,
-  T_BANG,    // !
-  T_DOT,     // .
-  T_DOTDOT,  // ..
-
-  T_PLUS,   // +
-  T_MINUS,  // -
-  T_STAR,   // *
-  T_SLASH,  // /
-  T_EQ,     // =
-  T_EQEQ,   // ==
-  T_NEQ,    // !=
-  T_PIPE,   // |
-  T_AMP,    // &
-  T_PERC,   // %
-  T_INC,    // ++
-  T_DEC,    // --
-
-  T_CHAR,  // character
-  T_STR,   // string
-  T_NUM,   // number
-
-  T_NOT,     // keyword: not
-  T_AND,     // keyword: and
-  T_OR,      // keyword: or
-  T_FUN,     // keyword: fun
-  T_IF,      // keyword: if
-  T_ELSE,    // keyword: else
-  T_FOR,     // keyword: for
-  T_WHILE,   // keyword: while
-  T_DEFER,   // keyword: defer
-  T_STRUCT,  // keyword: struct
-  T_UNION,   // keyword: union
-  T_ENUM,    // keyword: enum
-  T_LET,     // keyword: let
-  T_MUT,     // keyword: mut
-  T_TYPE,    // keyword: type
-  T_IMPORT,  // keyword: import
-  T_ERROR,   // keyword: error
-  T_USE,     // keyword: use
-  T_S8,      // keyword: s8
-  T_U8,      // keyword: u8
-  T_S16,     // keyword: s16
-  T_U16,     // keyword: u16
-  T_S32,     // keyword: s32
-  T_U32,     // keyword: u32
-  T_S64,     // keyword: s64
-  T_U64,     // keyword: u64
-  T_F32,     // keyword: f32
-  T_F64,     // keyword: f64
-  T_BOOL,    // keyword: bool
-  T_STRING,  // keyword: string
-  T_ANY,     // keyword: any
-  T_CONS,    // keyword: cons
-  T_IDENT,   // identifier
-
-  TOK_KIND_COUNT,
+#define TOKEN(NAME, ...) T_##NAME,
+#define KEYWORD(NAME, ...) T_##NAME,
+  EACH_TOKEN
+#undef TOKEN
+#undef KEYWORD
+      TOK_KIND_COUNT,
 } Tok_Kind;
 
 extern string tok_to_string[TOK_KIND_COUNT];

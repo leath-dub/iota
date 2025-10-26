@@ -11,94 +11,19 @@ typedef struct {
 } Keyword_Binding;
 
 string tok_to_string[TOK_KIND_COUNT] = {
-    [T_LBRK] = ZTOS("'['"),
-    [T_RBRK] = ZTOS("']'"),
-    [T_LPAR] = ZTOS("'('"),
-    [T_RPAR] = ZTOS("')'"),
-    [T_LBRC] = ZTOS("'{'"),
-    [T_RBRC] = ZTOS("'}'"),
-    [T_SCLN] = ZTOS("';'"),
-    [T_CLN] = ZTOS("':'"),
-    [T_COMMA] = ZTOS("','"),
-    [T_BANG] = ZTOS("'!'"),
-    [T_DOT] = ZTOS("'.'"),
-    [T_DOTDOT] = ZTOS("'..'"),
-
-    [T_PLUS] = ZTOS("'+'"),
-    [T_MINUS] = ZTOS("'-'"),
-    [T_STAR] = ZTOS("'*'"),
-    [T_SLASH] = ZTOS("'/'"),
-    [T_EQ] = ZTOS("'='"),
-    [T_EQEQ] = ZTOS("'=='"),
-    [T_NEQ] = ZTOS("'!='"),
-    [T_PIPE] = ZTOS("'|'"),
-    [T_AMP] = ZTOS("'&'"),
-    [T_PERC] = ZTOS("'%'"),
-    [T_INC] = ZTOS("'++'"),
-    [T_DEC] = ZTOS("'--'"),
-
-    [T_CHAR] = ZTOS("character"),
-    [T_STR] = ZTOS("string"),
-    [T_NUM] = ZTOS("number"),
-
-    [T_NOT] = ZTOS("not"),
-    [T_AND] = ZTOS("and"),
-    [T_OR] = ZTOS("or"),
-    [T_FUN] = ZTOS("fun"),
-    [T_IF] = ZTOS("if"),
-    [T_ELSE] = ZTOS("else"),
-    [T_FOR] = ZTOS("for"),
-    [T_WHILE] = ZTOS("while"),
-    [T_DEFER] = ZTOS("defer"),
-    [T_STRUCT] = ZTOS("struct"),
-    [T_UNION] = ZTOS("union"),
-    [T_ENUM] = ZTOS("enum"),
-    [T_LET] = ZTOS("let"),
-    [T_MUT] = ZTOS("mut"),
-    [T_TYPE] = ZTOS("type"),
-    [T_S8] = ZTOS("s8"),
-    [T_U8] = ZTOS("u8"),
-    [T_S16] = ZTOS("s16"),
-    [T_U16] = ZTOS("u16"),
-    [T_S32] = ZTOS("s32"),
-    [T_U32] = ZTOS("u32"),
-    [T_S64] = ZTOS("s64"),
-    [T_U64] = ZTOS("u64"),
-    [T_F32] = ZTOS("f32"),
-    [T_F64] = ZTOS("f64"),
-    [T_BOOL] = ZTOS("bool"),
-    [T_STRING] = ZTOS("string"),
-    [T_ANY] = ZTOS("any"),
-    [T_CONS] = ZTOS("cons"),
-    [T_IMPORT] = ZTOS("import"),
-    [T_ERROR] = ZTOS("error"),
-    [T_USE] = ZTOS("use"),
-    [T_IDENT] = ZTOS("identifier"),
-
-    [T_EOF] = ZTOS("EOF"),
-    [T_CMNT] = ZTOS("comment"),
-    [T_EMPTY] = ZTOS("<empty token>"),
-    [T_ILLEGAL] = ZTOS("<illegal token>"),
-    [T_SYNTHESIZED] = ZTOS("<synthesized token>"),
+#define KEYWORD(...)
+#define TOKEN(NAME, REPR) [T_##NAME] = ZTOS(REPR),
+    EACH_TOKEN
+#undef TOKEN
+#undef KEYWORD
 };
 
 static const Keyword_Binding keyword_to_kind[] = {
-    {ZTOS("not"), T_NOT},     {ZTOS("and"), T_AND},
-    {ZTOS("or"), T_OR},       {ZTOS("fun"), T_FUN},
-    {ZTOS("if"), T_IF},       {ZTOS("else"), T_ELSE},
-    {ZTOS("for"), T_FOR},     {ZTOS("while"), T_WHILE},
-    {ZTOS("defer"), T_DEFER}, {ZTOS("struct"), T_STRUCT},
-    {ZTOS("union"), T_UNION}, {ZTOS("enum"), T_ENUM},
-    {ZTOS("let"), T_LET},     {ZTOS("mut"), T_MUT},
-    {ZTOS("type"), T_TYPE},   {ZTOS("import"), T_IMPORT},
-    {ZTOS("error"), T_ERROR}, {ZTOS("use"), T_USE},
-    {ZTOS("s8"), T_S8},       {ZTOS("u8"), T_U8},
-    {ZTOS("s16"), T_S16},     {ZTOS("u16"), T_U16},
-    {ZTOS("s32"), T_S32},     {ZTOS("u32"), T_U32},
-    {ZTOS("s64"), T_S64},     {ZTOS("u64"), T_U64},
-    {ZTOS("f32"), T_F32},     {ZTOS("f64"), T_F64},
-    {ZTOS("bool"), T_BOOL},   {ZTOS("string"), T_STRING},
-    {ZTOS("any"), T_ANY},     {ZTOS("cons"), T_CONS},
+#define TOKEN(...)
+#define KEYWORD(NAME, REPR) {ZTOS(REPR), T_##NAME},
+    EACH_TOKEN
+#undef KEYWORD
+#undef TOKEN
 };
 static const u32 keyword_to_kind_count =
     sizeof(keyword_to_kind) / sizeof(Keyword_Binding);
