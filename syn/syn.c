@@ -53,13 +53,7 @@ static Node_Context start_node(Parse_Context *c, Node_Kind kind) {
 static void set_current_node(Parse_Context *c, Node_ID id) { c->current = id; }
 
 static void *end_node(Parse_Context *c, Node_Context ctx) {
-  // The node is finished so we can pass its child array to the arena
-  const Node_Children *children = get_node_children(&c->meta, c->current);
-  assert(!children->final);
-  freeze_node_children(&c->meta, c->current);
-  if (children->cap != 0) {
-    arena_own(&c->arena, children->items, children->cap);
-  }
+  assert(*(Node_ID *)ctx.node == c->current);
   if (!ctx.root) {
     add_child(&c->meta, ctx.parent, child_node(c->current));
     set_current_node(c, ctx.parent);
@@ -618,6 +612,7 @@ Compound_Statement *compound_statement(Parse_Context *c) {
     }
     APPEND(n, statement(c));
   }
+  arena_own(&c->arena, n->items, n->cap);
   next(c);
   return end_node(c, nc);
 }
@@ -671,8 +666,8 @@ Type *type(Parse_Context *c) {
       {
         Node_Context builtin_ctx = start_node(c, NODE_BUILTIN_TYPE);
         Builtin_Type *builtin_type = builtin_ctx.node;
-        n->t = TYPE_BUILTIN;
         builtin_type->token = consume(c);
+        n->t = TYPE_BUILTIN;
         n->builtin_type = end_node(c, builtin_ctx);
       }
       break;

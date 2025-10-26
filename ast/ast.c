@@ -31,6 +31,10 @@ void node_metadata_free(Node_Metadata *m) {
     free(m->flags.items);
   }
   if (m->trees.items != NULL) {
+    for (u32 id = 0; id < m->trees.len; id++) {
+      Node_Children *children = get_node_children(m, id);
+      free(children->items);
+    }
     free(m->trees.items);
   }
   if (m->names.items != NULL) {
@@ -50,10 +54,6 @@ bool has_error(Node_Metadata *m, void *node) {
 
 void add_child(Node_Metadata *m, Node_ID id, Node_Child child) {
   Node_Children *children = &m->trees.items[id];
-  assert(!children->final &&
-         "tried to add children to node who's children are "
-         "marked final. This is likely a problem related to"
-         "operating on a node after call to 'end_node'.");
   APPEND(children, child);
 }
 
@@ -124,10 +124,6 @@ const char *get_node_name(Node_Metadata *m, Node_ID id) {
 
 Node_Children *get_node_children(Node_Metadata *m, Node_ID id) {
   return AT(m->trees, id);
-}
-
-void freeze_node_children(Node_Metadata *m, Node_ID id) {
-  m->trees.items[id].final = true;
 }
 
 Node_Child *last_child(Node_Metadata *m, Node_ID id) {

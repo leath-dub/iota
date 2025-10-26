@@ -28,6 +28,8 @@ typedef struct {
   Lexer lex;
 } Parse_State;
 
+void check_allocs(void);
+
 Parse_Context new_parse_context(Source_Code code);
 void parse_context_free(Parse_Context *c);
 

@@ -729,7 +729,6 @@ typedef struct {
   Node_Child *items;
   u32 cap;
   u32 len;
-  bool final;
 } Node_Children;
 
 typedef struct {
@@ -761,7 +760,6 @@ Node_Child child_node_named(const char *name, Node_ID node);
 
 const char *get_node_name(Node_Metadata *m, Node_ID id);
 Node_Children *get_node_children(Node_Metadata *m, Node_ID id);
-void freeze_node_children(Node_Metadata *m, Node_ID id);
 Node_Child *last_child(Node_Metadata *m, Node_ID id);
 
 #endif
