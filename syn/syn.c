@@ -1272,7 +1272,7 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
       next(c);
       Toks new_delim;
       new_delim.len = delim.len;
-      new_delim.items = malloc(delim.len * sizeof(Tok_Kind));
+      new_delim.items = malloc((delim.len + 1) * sizeof(Tok_Kind));
       memcpy(new_delim.items, delim.items, delim.len * sizeof(Tok_Kind));
       if (!one_of(T_RPAR, delim)) {
         new_delim.len = delim.len + 1;
