@@ -16,25 +16,28 @@ iota = IotaLib("../ffi/libiota.so")
 class SyntaxTests(unittest.TestCase):
     pass
 
-def dump_ast(source: str) -> str:
-    return iota.parse_as(Node.SOURCE_FILE, source)
+def dump_ast(source: str, node: (str | None) = None) -> str:
+    t = Node.SOURCE_FILE
+    if node:
+        t = getattr(Node, node)
+    return iota.parse_as(t, source)
 
-def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "") -> None:
+def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "", node: (str | None) = None) -> None:
     source = textwrap.dedent(source)
     expected = textwrap.dedent(expected)
     # Remove first prefix newline if it exists.
     if len(expected) != 0 and expected[0] == "\n":
         expected = expected[1:]
     def test(self):
-        ast = dump_ast(source)
+        ast = dump_ast(source, node)
         self.maxDiff = None
         self.assertEqual(ast, expected)
     setattr(SyntaxTests, f"test_{name}", test)
 
 # Function to test if given input sources share the same AST
-def syntax_test_equal(name: str = "unamed_test", lhs: str = "", rhs: str = "") -> None:
-    lhs_ast = dump_ast(lhs)
-    syntax_test(name, rhs, lhs_ast)
+def syntax_test_equal(name: str = "unamed_test", lhs: str = "", rhs: str = "", node: (str | None) = None) -> None:
+    lhs_ast = dump_ast(lhs, node)
+    syntax_test(name, rhs, lhs_ast, node)
 
 def load_test(path):
     path = pathlib.Path(path)

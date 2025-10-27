@@ -5,13 +5,13 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos(
-      "error Parse_Error { Missing_Semicolon, Unmatched_Quote, !IO_Error, }");
+  string source = ztos("10 + (11 * 12) + 10");
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
 
-  SourceFile *root = parse_source_file(&pc);
+  // SourceFile *root = parse_source_file(&pc);
+  Expr *root = parse_expr(&pc, TOKS(T_EOF));
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};

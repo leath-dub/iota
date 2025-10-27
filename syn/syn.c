@@ -51,14 +51,12 @@ static void set_current_node(ParseCtx *c, NodeID id) { c->current = id; }
 
 static void *end_node(ParseCtx *c, NodeCtx ctx) {
   assert(*(NodeID *)ctx.node == c->current);
-  bool root = c->current == 0;
+  bool root = ctx.parent == c->current;
   if (!root) {
     assert(ctx.parent !=
            c->current);  // Make sure we can't accidentally add a cycle
     add_child(&c->meta, ctx.parent, child_node(c->current));
     set_current_node(c, ctx.parent);
-  } else {
-    assert(ctx.parent == c->current);
   }
   return ctx.node;
 }
@@ -1448,7 +1446,18 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
 }
 
 Expr *parse_expr(ParseCtx *c, Toks delim) {
-  return end_node(c, expr_with_bpow(c, 0, delim));
+  // HACK to allow calling parse_expr as a root node,
+  // we force the root constraint (node_ctx.parent == parse_ctx.current), if
+  // the parent before calling `expr_with_bpow` was root (id=0).
+  //
+  // This is needed as expressions are the exception in that node id 0 can
+  // actually become a child of higher id node.
+  NodeID parent = c->current;
+  NodeCtx ctx = expr_with_bpow(c, 0, delim);
+  if (parent == 0) {
+    ctx.parent = c->current;
+  }
+  return end_node(c, ctx);
 }
 
 static void set_atom_token(ParseCtx *c, Atom *atom) {

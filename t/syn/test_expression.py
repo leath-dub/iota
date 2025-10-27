@@ -4,136 +4,106 @@
 
 syntax_test_equal(
     name="precedence_addmul",
-    lhs="let _ = 10 + (11 * 12) + 10;",
-    rhs="let _ = 10 + 11 * 12 + 10;",
+    lhs="10 + (11 * 12) + 10",
+    rhs="10 + 11 * 12 + 10",
+    node="EXPR",
 )
 
 syntax_test_equal(
     name="precedence_addsub",
-    lhs="let _ = ((10 - 11) + 12) + 10;",
-    rhs="let _ = 10 - 11 + 12 + 10;",
+    lhs="((10 - 11) + 12) + 10",
+    rhs="10 - 11 + 12 + 10",
+    node="EXPR",
 )
 
 syntax_test_equal(
     name="precedence_subdiv",
-    lhs="let _ = 10 - ((11 / 12) / 10);",
-    rhs="let _ = 10 - 11 / 12 / 10;",
+    lhs="10 - ((11 / 12) / 10)",
+    rhs="10 - 11 / 12 / 10",
+    node="EXPR",
 )
 
 syntax_test_equal(
     name="precedence_submul",
-    lhs="let _ = (((10 * 11) / 12) / 10);",
-    rhs="let _ = 10 * 11 / 12 / 10;",
+    lhs="(((10 * 11) / 12) / 10)",
+    rhs="10 * 11 / 12 / 10",
+    node="EXPR",
 )
 
 syntax_test_equal(
     name="precedence_index",
-    lhs="let _ = ((x + ((foo)[10])) - 12);",
-    rhs="let _ = x + foo[10] - 12;",
+    lhs="((x + ((foo)[10])) - 12)",
+    rhs="x + foo[10] - 12",
+    node="EXPR",
 )
 
 syntax_test_equal(
     name="precedence_assign",
-    lhs="""
-    fun _() {
-        (x + (10[*30:])) = (12 + (15 * 3));
-    }
-    """,
-    rhs="""
-    fun _() {
-        x + 10[*30:] = 12 + 15 * 3;
-    }
-    """,
+    lhs="(x + (10[*30:])) = (12 + (15 * 3))",
+    rhs="x + 10[*30:] = 12 + 15 * 3",
+    node="EXPR",
 )
 
 # Index expression
 
 syntax_test(
     name="index_expression_basic",
-    source="let _ = foo[10];",
+    source="foo[10]",
     expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            kind='let'
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                coll_access {
-                  expr {
-                    atom {
-                      ident='foo'
-                    }
-                  }
-                  index {
-                    expr {
-                      atom {
-                        '10'
-                      }
-                    }
-                  }
-                }
-              }
+    expr {
+      coll_access {
+        expr {
+          atom {
+            ident='foo'
+          }
+        }
+        index {
+          expr {
+            atom {
+              '10'
+            }
           }
         }
       }
     }
     """,
+    node="EXPR",
 )
 
 syntax_test(
     name="index_expression_sub",
-    source="let _ = (foo + bar)[10];",
+    source="(foo + bar)[10]",
     expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            kind='let'
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
+    expr {
+      coll_access {
+        expr {
+          bin_expr {
+            op='+'
+            left:
               expr {
-                coll_access {
-                  expr {
-                    bin_expr {
-                      op='+'
-                      left:
-                        expr {
-                          atom {
-                            ident='foo'
-                          }
-                        }
-                      right:
-                        expr {
-                          atom {
-                            ident='bar'
-                          }
-                        }
-                    }
-                  }
-                  index {
-                    expr {
-                      atom {
-                        '10'
-                      }
-                    }
-                  }
+                atom {
+                  ident='foo'
                 }
               }
+            right:
+              expr {
+                atom {
+                  ident='bar'
+                }
+              }
+          }
+        }
+        index {
+          expr {
+            atom {
+              '10'
+            }
           }
         }
       }
     }
     """,
+    node="EXPR",
 )
 
 syntax_test(
