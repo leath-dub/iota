@@ -5,17 +5,17 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("let _ = @foo++; let foo = 10;");
+  string source = ztos(
+      "error Parse_Error { Missing_Semicolon, Unmatched_Quote, !IO_Error, }");
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
 
-  SourceFile *sf = source_file(&pc);
-  (void)sf;
+  SourceFile *root = parse_source_file(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
-  tree_dump(&dump_ctx, sf->id);
+  tree_dump(&dump_ctx, root->id);
   //
   // printf("---\n");
   //

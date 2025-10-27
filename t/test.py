@@ -7,16 +7,17 @@ import subprocess
 import argparse
 import sys
 
+sys.path.append("../ffi")
+
+from iotalib import IotaLib, Node
+
+iota = IotaLib("../ffi/libiota.so")
+
 class SyntaxTests(unittest.TestCase):
     pass
 
 def dump_ast(source: str) -> str:
-    return subprocess.run(
-        ["syn/dump_ast"],
-        input=bytes(source, "utf-8"),
-        capture_output=True,
-        check=True
-    ).stdout.decode()
+    return iota.parse_as(Node.SOURCE_FILE, source)
 
 def syntax_test(name: str = "unamed_test", source: str = "", expected: str = "") -> None:
     source = textwrap.dedent(source)

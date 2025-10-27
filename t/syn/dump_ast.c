@@ -24,7 +24,7 @@ int main(void) {
   string text = read_all(stdin);
   SourceCode code = new_source_code(ztos("<stdin>"), text);
   ParseCtx pc = new_parse_ctx(code);
-  SourceFile *file = source_file(&pc);
+  SourceFile *file = parse_source_file(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};

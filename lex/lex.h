@@ -38,6 +38,7 @@
   TOKEN(CHAR, "<character>")                \
   TOKEN(STR, "<string>")                    \
   TOKEN(NUM, "<number>")                    \
+  TOKEN(IDENT, "<identifier>")              \
   KEYWORD(NOT, "not")                       \
   KEYWORD(AND, "and")                       \
   KEYWORD(OR, "or")                         \
@@ -69,8 +70,7 @@
   KEYWORD(BOOL, "bool")                     \
   KEYWORD(STRING, "string")                 \
   KEYWORD(ANY, "any")                       \
-  KEYWORD(CONS, "cons")                     \
-  KEYWORD(IDENT, "identifier")
+  KEYWORD(CONS, "cons")
 
 typedef enum {
 #define TOKEN(NAME, ...) T_##NAME,

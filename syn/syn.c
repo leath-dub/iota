@@ -11,7 +11,6 @@
 typedef struct {
   void *node;
   NodeID parent;
-  bool root;
 } NodeCtx;
 
 static void *make_node(ParseCtx *c, NodeKind kind) {
@@ -37,7 +36,6 @@ static Tok token_attr_anon(ParseCtx *c, Tok tok) {
 
 static NodeCtx begin_node(ParseCtx *c, void *node) {
   NodeCtx ctx = {
-      .root = false,
       .node = node,
       .parent = c->current,
   };
@@ -53,7 +51,10 @@ static void set_current_node(ParseCtx *c, NodeID id) { c->current = id; }
 
 static void *end_node(ParseCtx *c, NodeCtx ctx) {
   assert(*(NodeID *)ctx.node == c->current);
-  if (!ctx.root) {
+  bool root = c->current == 0;
+  if (!root) {
+    assert(ctx.parent !=
+           c->current);  // Make sure we can't accidentally add a cycle
     add_child(&c->meta, ctx.parent, child_node(c->current));
     set_current_node(c, ctx.parent);
   } else {
@@ -167,29 +168,29 @@ DECLARE_FOLLOW_SET(STMT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION, T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
                    T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
+DECLARE_FOLLOW_SET(UNION_TAG_COND, T_LBRC)
 // TODO: once we have an automated tool
 // DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
-SourceFile *source_file(ParseCtx *c) {
+SourceFile *parse_source_file(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
-  nc.root = true;
   SourceFile *n = nc.node;
-  n->imports = imports(c);
-  n->decls = decls(c);
+  n->imports = parse_imports(c);
+  n->decls = parse_decls(c);
   return end_node(c, nc);
 }
 
-Imports *imports(ParseCtx *c) {
+Imports *parse_imports(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_IMPORTS);
   Imports *n = nc.node;
   while (looking_at(c, T_IMPORT)) {
-    APPEND(n, import(c));
+    APPEND(n, parse_import(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Import *import(ParseCtx *c) {
+Import *parse_import(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_IMPORT);
   Import *n = nc.node;
   assert(expect(c, n->id, T_IMPORT));
@@ -207,40 +208,40 @@ Import *import(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-Decls *decls(ParseCtx *c) {
+Decls *parse_decls(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_DECLS);
   Decls *n = nc.node;
   while (!looking_at(c, T_EOF)) {
-    APPEND(n, decl(c));
+    APPEND(n, parse_decl(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Decl *decl(ParseCtx *c) {
+Decl *parse_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_DECL);
   Decl *n = nc.node;
   switch (at(c).t) {
     case T_LET:
     case T_MUT:
       n->t = DECL_VAR;
-      n->var_decl = var_decl(c);
+      n->var_decl = parse_var_decl(c);
       break;
     case T_FUN:
       n->t = DECL_FN;
-      n->fn_decl = fn_decl(c);
+      n->fn_decl = parse_fn_decl(c);
       break;
     case T_STRUCT:
       n->t = DECL_STRUCT;
-      n->struct_decl = struct_decl(c);
+      n->struct_decl = parse_struct_decl(c);
       break;
     case T_ENUM:
       n->t = DECL_ENUM;
-      n->enum_decl = enum_decl(c);
+      n->enum_decl = parse_enum_decl(c);
       break;
     case T_ERROR:
       n->t = DECL_ERR;
-      n->err_decl = err_decl(c);
+      n->err_decl = parse_err_decl(c);
       break;
     default:
       expected(c, n->id, "start of declaration");
@@ -250,7 +251,7 @@ Decl *decl(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-StructDecl *struct_decl(ParseCtx *c) {
+StructDecl *parse_struct_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_STRUCT_DECL);
   StructDecl *n = nc.node;
   assert(consume(c).t == T_STRUCT);
@@ -260,18 +261,18 @@ StructDecl *struct_decl(ParseCtx *c) {
     return end_node(c, nc);
   }
   n->ident = name;
-  n->body = struct_body(c, FOLLOW_DECL);
+  n->body = parse_struct_body(c, FOLLOW_DECL);
   return end_node(c, nc);
 }
 
-StructBody *struct_body(ParseCtx *c, Toks follow) {
+StructBody *parse_struct_body(ParseCtx *c, Toks follow) {
   NodeCtx nc = start_node(c, NODE_STRUCT_BODY);
   StructBody *n = nc.node;
   switch (at(c).t) {
     case T_LBRC:
       next(c);
       n->tuple_like = false;
-      n->fields = fields(c);
+      n->fields = parse_fields(c);
       if (!expect(c, n->id, T_RBRC)) {
         advance(c, follow);
         return end_node(c, nc);
@@ -280,7 +281,7 @@ StructBody *struct_body(ParseCtx *c, Toks follow) {
     case T_LPAR:
       next(c);
       n->tuple_like = true;
-      n->types = types(c);
+      n->types = parse_types(c);
       if (!expect(c, n->id, T_RPAR)) {
         advance(c, follow);
         return end_node(c, nc);
@@ -294,7 +295,7 @@ StructBody *struct_body(ParseCtx *c, Toks follow) {
   return end_node(c, nc);
 }
 
-EnumDecl *enum_decl(ParseCtx *c) {
+EnumDecl *parse_enum_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ENUM_DECL);
   EnumDecl *n = nc.node;
   assert(consume(c).t == T_ENUM);
@@ -308,7 +309,7 @@ EnumDecl *enum_decl(ParseCtx *c) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->alts = idents(c);
+  n->alts = parse_idents(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
@@ -316,7 +317,7 @@ EnumDecl *enum_decl(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-ErrDecl *err_decl(ParseCtx *c) {
+ErrDecl *parse_err_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ERR_DECL);
   ErrDecl *n = nc.node;
   assert(consume(c).t == T_ERROR);
@@ -330,7 +331,7 @@ ErrDecl *err_decl(ParseCtx *c) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->errs = errs(c);
+  n->errs = parse_errs(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
@@ -338,21 +339,21 @@ ErrDecl *err_decl(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-VarDecl *var_decl(ParseCtx *c) {
+VarDecl *parse_var_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_VAR_DECL);
   VarDecl *n = nc.node;
   Tok classifier = at(c);
   assert(classifier.t == T_MUT || classifier.t == T_LET);
   n->classifier = token_attr(c, "kind", consume(c));
-  n->binding = attr(c, "binding", var_binding(c));
+  n->binding = attr(c, "binding", parse_var_binding(c));
   if (!looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
     // Must have a type
-    n->type = type(c);
+    n->type = parse_type(c);
   }
   if (looking_at(c, T_EQ)) {
     n->init.ok = true;
     n->init.assign_token = consume(c);
-    n->init.expr = attr(c, "value", expr(c, TOKS(T_SCLN)));
+    n->init.expr = attr(c, "value", parse_expr(c, TOKS(T_SCLN)));
   }
   if (!expect(c, n->id, T_SCLN)) {
     advance(c, FOLLOW_DECL);
@@ -361,35 +362,26 @@ VarDecl *var_decl(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-VarBinding *var_binding(ParseCtx *c) {
+VarBinding *parse_var_binding(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_VAR_BINDING);
   VarBinding *n = nc.node;
   switch (at(c).t) {
     case T_LPAR:
       n->t = VAR_BINDING_UNPACK_TUPLE;
-      n->unpack_tuple = unpack_tuple(c, FOLLOW_VAR_BINDING);
+      n->unpack_tuple = parse_unpack_tuple(c, FOLLOW_VAR_BINDING);
       break;
     case T_LBRC:
       n->t = VAR_BINDING_UNPACK_STRUCT;
-      n->unpack_struct = unpack_struct(c, FOLLOW_VAR_BINDING);
+      n->unpack_struct = parse_unpack_struct(c, FOLLOW_VAR_BINDING);
       break;
     case T_IDENT: {
+      ParseState at_ident = set_marker(c);
       Tok name = consume(c);
       if (looking_at(c, T_LPAR)) {
-        next(c);
+        backtrack(c, at_ident);
         n->t = VAR_BINDING_UNPACK_UNION;
-        {
-          NodeCtx destr_ctx = start_node(c, NODE_UNPACK_UNION);
-          n->unpack_union = destr_ctx.node;
-          n->unpack_union->tag = token_attr(c, "tag", name);
-          n->unpack_union->binding = binding(c);
-          (void)end_node(c, destr_ctx);
-        }
-        if (!expect(c, n->id, T_RPAR)) {
-          advance(c, FOLLOW_VAR_BINDING);
-          return end_node(c, nc);
-        }
-        return end_node(c, nc);
+        n->unpack_union = parse_unpack_union(c, FOLLOW_VAR_BINDING);
+        break;
       }
       n->t = VAR_BINDING_BASIC;
       n->basic = token_attr(c, "name", name);
@@ -403,7 +395,7 @@ VarBinding *var_binding(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-Binding *binding(ParseCtx *c) {
+Binding *parse_binding(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_BINDING);
   Binding *n = nc.node;
   if (looking_at(c, T_STAR)) {
@@ -418,10 +410,10 @@ Binding *binding(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-AliasBinding *alias_binding(ParseCtx *c) {
+AliasBinding *parse_alias_binding(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ALIAS_BINDING);
   AliasBinding *n = nc.node;
-  n->binding = binding(c);
+  n->binding = parse_binding(c);
   if (looking_at(c, T_EQ)) {
     next(c);
     Tok name = at(c);
@@ -435,14 +427,14 @@ AliasBinding *alias_binding(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-UnpackStruct *unpack_struct(ParseCtx *c, Toks follow) {
+UnpackStruct *parse_unpack_struct(ParseCtx *c, Toks follow) {
   NodeCtx nc = start_node(c, NODE_UNPACK_STRUCT);
   UnpackStruct *n = nc.node;
   if (!expect(c, n->id, T_LBRC)) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  n->bindings = alias_bindings(c, T_RBRC);
+  n->bindings = parse_alias_bindings(c, T_RBRC);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, follow);
     return end_node(c, nc);
@@ -450,14 +442,14 @@ UnpackStruct *unpack_struct(ParseCtx *c, Toks follow) {
   return end_node(c, nc);
 }
 
-UnpackTuple *unpack_tuple(ParseCtx *c, Toks follow) {
+UnpackTuple *parse_unpack_tuple(ParseCtx *c, Toks follow) {
   NodeCtx nc = start_node(c, NODE_UNPACK_TUPLE);
   UnpackTuple *n = nc.node;
   if (!expect(c, n->id, T_LPAR)) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  n->bindings = bindings(c, T_RPAR);
+  n->bindings = parse_bindings(c, T_RPAR);
   if (!expect(c, n->id, T_RPAR)) {
     advance(c, follow);
     return end_node(c, nc);
@@ -465,39 +457,63 @@ UnpackTuple *unpack_tuple(ParseCtx *c, Toks follow) {
   return end_node(c, nc);
 }
 
-AliasBindings *alias_bindings(ParseCtx *c, TokKind end) {
+UnpackUnion *parse_unpack_union(ParseCtx *c, Toks follow) {
+  NodeCtx nc = start_node(c, NODE_UNPACK_UNION);
+  UnpackUnion *n = nc.node;
+
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, follow);
+    return end_node(c, nc);
+  }
+  n->tag = token_attr(c, "tag", name);
+
+  if (!expect(c, n->id, T_LPAR)) {
+    advance(c, follow);
+    return end_node(c, nc);
+  }
+  n->binding = parse_binding(c);
+  if (!expect(c, n->id, T_RPAR)) {
+    advance(c, follow);
+    return end_node(c, nc);
+  }
+
+  return end_node(c, nc);
+}
+
+AliasBindings *parse_alias_bindings(ParseCtx *c, TokKind end) {
   NodeCtx nc = start_node(c, NODE_ALIAS_BINDINGS);
   AliasBindings *n = nc.node;
-  APPEND(n, alias_binding(c));
+  APPEND(n, parse_alias_binding(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, end)) {
       break;
     }
-    APPEND(n, alias_binding(c));
+    APPEND(n, parse_alias_binding(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Bindings *bindings(ParseCtx *c, TokKind end) {
+Bindings *parse_bindings(ParseCtx *c, TokKind end) {
   NodeCtx nc = start_node(c, NODE_BINDINGS);
   Bindings *n = nc.node;
-  APPEND(n, binding(c));
+  APPEND(n, parse_binding(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, end)) {
       break;
     }
-    APPEND(n, binding(c));
+    APPEND(n, parse_binding(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-FnDecl *fn_decl(ParseCtx *c) {
+FnDecl *parse_fn_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FN_DECL);
   FnDecl *n = nc.node;
   assert(consume(c).t == T_FUN);
@@ -512,52 +528,52 @@ FnDecl *fn_decl(ParseCtx *c) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->params = fn_params(c);
+  n->params = parse_fn_params(c);
   if (!expect(c, n->id, T_RPAR)) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
   if (!looking_at(c, T_LBRC)) {
     n->return_type.ok = true;
-    n->return_type.value = type(c);
+    n->return_type.value = parse_type(c);
   }
-  n->body = comp_stmt(c);
+  n->body = parse_comp_stmt(c);
   return end_node(c, nc);
 }
 
-FnParams *fn_params(ParseCtx *c) {
+FnParams *parse_fn_params(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FN_PARAMS);
   FnParams *n = nc.node;
   if (looking_at(c, T_RPAR)) {
     return end_node(c, nc);
   }
-  APPEND(n, fn_param(c));
+  APPEND(n, parse_fn_param(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, T_RPAR)) {
       break;
     }
-    APPEND(n, fn_param(c));
+    APPEND(n, parse_fn_param(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-FnParam *fn_param(ParseCtx *c) {
+FnParam *parse_fn_param(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FN_PARAM);
   FnParam *n = nc.node;
-  n->binding = var_binding(c);
+  n->binding = parse_var_binding(c);
   if (looking_at(c, T_DOTDOT)) {
     token_attr(c, "kind", at(c));
     next(c);
     n->variadic = true;
   }
-  n->type = type(c);
+  n->type = parse_type(c);
   return end_node(c, nc);
 }
 
-Stmt *stmt(ParseCtx *c) {
+Stmt *parse_stmt(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_STMT);
   Stmt *n = nc.node;
   switch (at(c).t) {
@@ -569,21 +585,21 @@ Stmt *stmt(ParseCtx *c) {
     case T_ERROR:
     case T_UNION:
       n->t = STMT_DECL;
-      n->decl = decl(c);
+      n->decl = parse_decl(c);
       break;
     case T_LBRC:
       n->t = STMT_COMP;
-      n->comp_stmt = comp_stmt(c);
+      n->comp_stmt = parse_comp_stmt(c);
       break;
-    // case T_IF:
-    //   n->t = STATEMENT_IF;
-    //   n->if_statement = if
-    //   break;
+    case T_IF:
+      n->t = STMT_IF;
+      n->if_stmt = parse_if_stmt(c);
+      break;
     // case T_WHILE:
     //   break;
     default:
       n->t = STMT_EXPR;
-      n->expr = expr(c, TOKS(T_SCLN));
+      n->expr = parse_expr(c, TOKS(T_SCLN));
       if (!expect(c, n->id, T_SCLN)) {
         advance(c, FOLLOW_STMT);
         return end_node(c, nc);
@@ -593,7 +609,7 @@ Stmt *stmt(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-CompStmt *comp_stmt(ParseCtx *c) {
+CompStmt *parse_comp_stmt(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_COMP_STMT);
   CompStmt *n = nc.node;
   if (!expect(c, n->id, T_LBRC)) {
@@ -606,10 +622,75 @@ CompStmt *comp_stmt(ParseCtx *c) {
       advance(c, FOLLOW_STMT);
       break;
     }
-    APPEND(n, stmt(c));
+    APPEND(n, parse_stmt(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   next(c);
+  return end_node(c, nc);
+}
+
+IfStmt *parse_if_stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_IF_STMT);
+  IfStmt *n = nc.node;
+  assert(consume(c).t == T_IF);
+  n->cond = parse_cond(c);
+  n->true_branch = parse_comp_stmt(c);
+  if (looking_at(c, T_ELSE)) {
+    n->else_branch.ok = true;
+    n->else_branch.value = parse_else(c);
+  }
+  return end_node(c, nc);
+}
+
+Else *parse_else(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ELSE);
+  Else *n = nc.node;
+  assert(consume(c).t == T_ELSE);
+  if (at(c).t == T_IF) {
+    n->t = ELSE_IF;
+    n->if_stmt = parse_if_stmt(c);
+  } else {
+    n->t = ELSE_COMP;
+    n->comp_stmt = parse_comp_stmt(c);
+  }
+  return end_node(c, nc);
+}
+
+Cond *parse_cond(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_COND);
+  Cond *n = nc.node;
+  switch (at(c).t) {
+    case T_LET:
+    case T_MUT:
+      n->t = COND_UNION_TAG;
+      n->union_tag = parse_union_tag_cond(c);
+      break;
+    default:
+      n->t = COND_EXPR;
+      n->expr = parse_expr(c, TOKS(T_LBRC));
+      break;
+  }
+  return end_node(c, nc);
+}
+
+UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_UNION_TAG_COND);
+  UnionTagCond *n = nc.node;
+
+  Tok classifier = at(c);
+  assert(classifier.t == T_MUT || classifier.t == T_LET);
+
+  n->classifier = token_attr(c, "kind", consume(c));
+  n->trigger = parse_unpack_union(c, FOLLOW_UNION_TAG_COND);
+
+  Tok assign_token = at(c);
+  if (!expect(c, n->id, T_EQ)) {
+    advance(c, FOLLOW_UNION_TAG_COND);
+    return end_node(c, nc);
+  }
+  n->assign_token = assign_token;
+  n->expr = parse_expr(c, FOLLOW_UNION_TAG_COND);
+
   return end_node(c, nc);
 }
 
@@ -642,7 +723,7 @@ static bool starts_type(TokKind t) {
   }
 }
 
-Type *type(ParseCtx *c) {
+Type *parse_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_TYPE);
   Type *n = nc.node;
   switch (at(c).t) {
@@ -670,35 +751,35 @@ Type *type(ParseCtx *c) {
     }
     case T_LBRK:
       n->t = TYPE_COLL;
-      n->coll_type = coll_type(c);
+      n->coll_type = parse_coll_type(c);
       break;
     case T_STRUCT:
       n->t = TYPE_STRUCT;
-      n->struct_type = struct_type(c);
+      n->struct_type = parse_struct_type(c);
       break;
     case T_UNION:
       n->t = TYPE_UNION;
-      n->union_type = union_type(c);
+      n->union_type = parse_union_type(c);
       break;
     case T_ENUM:
       n->t = TYPE_ENUM;
-      n->enum_type = enum_type(c);
+      n->enum_type = parse_enum_type(c);
       break;
     case T_ERROR:
       n->t = TYPE_ERR;
-      n->err_type = err_type(c);
+      n->err_type = parse_err_type(c);
       break;
     case T_STAR:
       n->t = TYPE_PTR;
-      n->ptr_type = ptr_type(c);
+      n->ptr_type = parse_ptr_type(c);
       break;
     case T_FUN:
       n->t = TYPE_FN;
-      n->fn_type = fn_type(c);
+      n->fn_type = parse_fn_type(c);
       break;
     case T_IDENT:
       n->t = TYPE_SCOPED_IDENT;
-      n->scoped_ident = scoped_ident(c, FOLLOW_TYPE);
+      n->scoped_ident = parse_scoped_ident(c, FOLLOW_TYPE);
       break;
     default:
       expected(c, n->id, "a type");
@@ -708,54 +789,54 @@ Type *type(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-CollType *coll_type(ParseCtx *c) {
+CollType *parse_coll_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_COLL_TYPE);
   CollType *n = nc.node;
   assert(consume(c).t == T_LBRK);
   // For empty index, e.g.: []u32
   if (looking_at(c, T_RBRK)) {
     next(c);
-    n->element_type = type(c);
+    n->element_type = parse_type(c);
     return end_node(c, nc);
   }
   n->index_expr.ok = true;
-  n->index_expr.value = expr(c, TOKS(T_RBRK));
+  n->index_expr.value = parse_expr(c, TOKS(T_RBRK));
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->element_type = type(c);
+  n->element_type = parse_type(c);
   return end_node(c, nc);
 }
 
-StructType *struct_type(ParseCtx *c) {
+StructType *parse_struct_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_STRUCT_TYPE);
   StructType *n = nc.node;
   assert(consume(c).t == T_STRUCT);
-  n->body = struct_body(c, FOLLOW_TYPE);
+  n->body = parse_struct_body(c, FOLLOW_TYPE);
   return end_node(c, nc);
 }
 
-Fields *fields(ParseCtx *c) {
+Fields *parse_fields(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FIELDS);
   Fields *n = nc.node;
   if (looking_at(c, T_RBRC)) {
     return end_node(c, nc);
   }
-  APPEND(n, field(c));
+  APPEND(n, parse_field(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, T_RBRC)) {
       break;
     }
-    APPEND(n, field(c));
+    APPEND(n, parse_field(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Field *field(ParseCtx *c) {
+Field *parse_field(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FIELD);
   Field *n = nc.node;
   Tok tok = at(c);
@@ -764,30 +845,30 @@ Field *field(ParseCtx *c) {
     return end_node(c, nc);
   }
   n->ident = token_attr(c, "name", tok);
-  n->type = type(c);
+  n->type = parse_type(c);
   return end_node(c, nc);
 }
 
-Types *types(ParseCtx *c) {
+Types *parse_types(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_TYPES);
   Types *n = nc.node;
   if (looking_at(c, T_RPAR)) {
     return end_node(c, nc);
   }
-  APPEND(n, type(c));
+  APPEND(n, parse_type(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, T_RPAR)) {
       break;
     }
-    APPEND(n, type(c));
+    APPEND(n, parse_type(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-UnionType *union_type(ParseCtx *c) {
+UnionType *parse_union_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_UNION_TYPE);
   UnionType *n = nc.node;
   assert(consume(c).t == T_UNION);
@@ -795,7 +876,7 @@ UnionType *union_type(ParseCtx *c) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->fields = fields(c);
+  n->fields = parse_fields(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -803,7 +884,7 @@ UnionType *union_type(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-EnumType *enum_type(ParseCtx *c) {
+EnumType *parse_enum_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ENUM_TYPE);
   EnumType *n = nc.node;
   assert(consume(c).t == T_ENUM);
@@ -811,7 +892,7 @@ EnumType *enum_type(ParseCtx *c) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->alts = idents(c);
+  n->alts = parse_idents(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -819,7 +900,7 @@ EnumType *enum_type(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-ErrType *err_type(ParseCtx *c) {
+ErrType *parse_err_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ERR_TYPE);
   ErrType *n = nc.node;
   assert(consume(c).t == T_ERROR);
@@ -827,7 +908,7 @@ ErrType *err_type(ParseCtx *c) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->errs = errs(c);
+  n->errs = parse_errs(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -835,7 +916,7 @@ ErrType *err_type(ParseCtx *c) {
   return end_node(c, nc);
 }
 
-Idents *idents(ParseCtx *c) {
+Idents *parse_idents(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_IDENTS);
   Idents *n = nc.node;
   bool start = true;
@@ -856,11 +937,13 @@ Idents *idents(ParseCtx *c) {
     APPEND(n, token_attr_anon(c, identifier));
     start = false;
   }
-  arena_own(&c->arena, n->items, n->cap);
+  if (n->len != 0) {
+    arena_own(&c->arena, n->items, n->cap);
+  }
   return end_node(c, nc);
 }
 
-Errs *errs(ParseCtx *c) {
+Errs *parse_errs(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ERRS);
   Errs *n = nc.node;
   bool start = true;
@@ -873,36 +956,38 @@ Errs *errs(ParseCtx *c) {
     if (looking_at(c, T_RBRC)) {
       break;
     }
-    APPEND(n, err(c));
+    APPEND(n, parse_err(c));
     start = false;
   }
-  arena_own(&c->arena, n->items, n->cap);
+  if (n->len != 0) {
+    arena_own(&c->arena, n->items, n->cap);
+  }
   return end_node(c, nc);
 }
 
-Err *err(ParseCtx *c) {
+Err *parse_err(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ERR);
   Err *n = nc.node;
   if (looking_at(c, T_BANG)) {
     n->embedded = true;
     token_attr(c, "kind", consume(c));
   }
-  n->scoped_ident = scoped_ident(c, FOLLOW_ERR);
+  n->scoped_ident = parse_scoped_ident(c, FOLLOW_ERR);
   return end_node(c, nc);
 }
 
-PtrType *ptr_type(ParseCtx *c) {
+PtrType *parse_ptr_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_PTR_TYPE);
   PtrType *n = nc.node;
   assert(consume(c).t == T_STAR);
   if (looking_at(c, T_MUT)) {
     n->classifier = consume(c);
   }
-  n->ref_type = type(c);
+  n->ref_type = parse_type(c);
   return end_node(c, nc);
 }
 
-FnType *fn_type(ParseCtx *c) {
+FnType *parse_fn_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_FN_TYPE);
   FnType *n = nc.node;
   assert(consume(c).t == T_FUN);
@@ -910,14 +995,14 @@ FnType *fn_type(ParseCtx *c) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->params = types(c);
+  n->params = parse_types(c);
   if (!expect(c, n->id, T_RPAR)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
   if (!one_of(at(c).t, FOLLOW_TYPE)) {
     n->return_type.ok = true;
-    n->return_type.value = type(c);
+    n->return_type.value = parse_type(c);
   }
   return end_node(c, nc);
 }
@@ -925,7 +1010,7 @@ FnType *fn_type(ParseCtx *c) {
 // Some rules that are used in many contexts take a follow set from the
 // caller. This improves the error recovery as it has more context of what
 // it should be syncing on than just "whatever can follow is really common rule"
-ScopedIdent *scoped_ident(ParseCtx *c, Toks follow) {
+ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
   NodeCtx nc = start_node(c, NODE_SCOPED_IDENT);
   ScopedIdent *n = nc.node;
   Tok identifier = at(c);
@@ -935,8 +1020,14 @@ ScopedIdent *scoped_ident(ParseCtx *c, Toks follow) {
   }
   APPEND(n, token_attr_anon(c, identifier));
   while (looking_at(c, T_DOT)) {
+    ParseState at_dot = set_marker(c);
     next(c);
     Tok identifier = at(c);
+    // Stop on '{' to allow for <ident>.{ syntax
+    if (looking_at(c, T_LBRC)) {
+      backtrack(c, at_dot);
+      break;
+    }
     if (!expect(c, n->id, T_IDENT)) {
       advance(c, follow);
       return end_node(c, nc);
@@ -947,7 +1038,7 @@ ScopedIdent *scoped_ident(ParseCtx *c, Toks follow) {
   return end_node(c, nc);
 }
 
-Init *init(ParseCtx *c, TokKind delim) {
+Init *parse_init(ParseCtx *c, TokKind delim) {
   NodeCtx nc = start_node(c, NODE_INIT);
   Init *n = nc.node;
   // No items in list, just return
@@ -955,14 +1046,14 @@ Init *init(ParseCtx *c, TokKind delim) {
     return end_node(c, nc);
   }
   Toks follow_item = TOKS(T_COMMA, delim);
-  APPEND(n, expr(c, follow_item));
+  APPEND(n, parse_expr(c, follow_item));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, delim)) {
       break;
     }
-    APPEND(n, expr(c, follow_item));
+    APPEND(n, parse_expr(c, follow_item));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
@@ -1069,20 +1160,20 @@ static Index *index(ParseCtx *c) {
       // Although it is not technically correct to have
       // ';' as a "valid" delimiter, it is used here to prevent
       // spurious errors caused by unmatched '['
-      n->end.value = expr(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = parse_expr(c, TOKS(T_RBRK, T_SCLN));
       n->end.ok = true;
     }
     goto delim;
   }
 
-  n->start.value = expr(c, TOKS(T_RBRK, T_CLN, T_SCLN));
+  n->start.value = parse_expr(c, TOKS(T_RBRK, T_CLN, T_SCLN));
   n->start.ok = true;
 
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
     token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
-      n->end.value = expr(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = parse_expr(c, TOKS(T_RBRK, T_SCLN));
       n->end.ok = true;
     }
     goto delim;
@@ -1126,7 +1217,7 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
         goto yield_call_expr;
       }
 
-      call->args = attr(c, "args", init(c, T_RPAR));
+      call->args = attr(c, "args", parse_init(c, T_RPAR));
 
       if (!expect(c, call->id, T_RPAR)) {
         advance(c, FOLLOW_ATOM);
@@ -1284,7 +1375,7 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
       }
     } else {
       lhs->t = EXPR_ATOM;
-      lhs->atom = atom(c);
+      lhs->atom = parse_atom(c);
     }
   }
 
@@ -1356,11 +1447,38 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
   return lhs_ctx;
 }
 
-Expr *expr(ParseCtx *c, Toks delim) {
+Expr *parse_expr(ParseCtx *c, Toks delim) {
   return end_node(c, expr_with_bpow(c, 0, delim));
 }
 
-Atom *atom(ParseCtx *c) {
+static void set_atom_token(ParseCtx *c, Atom *atom) {
+  const char *attr_ = NULL;
+  switch (at(c).t) {
+    case T_IDENT:
+      attr_ = "ident";
+      break;
+    case T_CHAR:
+      attr_ = "char";
+      break;
+#define TOKEN(...)
+#define KEYWORD(NAME, ...) \
+  case T_##NAME:           \
+    attr_ = "keyword";     \
+    break;
+      EACH_TOKEN
+#undef TOKEN
+#undef KEYWORD
+    default:
+      break;
+  }
+  if (attr_) {
+    atom->token = token_attr(c, attr_, consume(c));
+  } else {
+    atom->token = token_attr_anon(c, consume(c));
+  }
+}
+
+Atom *parse_atom(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ATOM);
   Atom *n = nc.node;
   Tok first = at(c);
@@ -1370,17 +1488,29 @@ Atom *atom(ParseCtx *c) {
 
     braced_lit->type.ok = true;
     ParseState marker = set_marker(c);
-    braced_lit->type.value = type(c);
+    braced_lit->type.value = parse_type(c);
 
-    if (first.t == T_IDENT && !looking_at(c, T_LBRC)) {
-      // The first token was an identifier and we don't have
-      // a '{'. This means that the identifier should be just
-      // the token itself as the basic expression
-      backtrack(c, marker);
-      n->t = ATOM_TOKEN;
-      c->current = n->id;
-      n->token = token_attr_anon(c, consume(c));
-      return end_node(c, nc);
+    if (first.t == T_IDENT) {
+      if (!looking_at(c, T_DOT)) {
+        // The first token was an identifier and we don't have
+        // a '.'. This means that the identifier should be just
+        // the token itself as the basic expression
+        backtrack(c, marker);
+        n->t = ATOM_TOKEN;
+        c->current = n->id;
+        set_atom_token(c, n);
+        return end_node(c, nc);
+      }
+      // When '.' is specified, if the next token is '{' it means the identifier
+      // was for the purposes of defining a compound literal.
+      next(c);
+      if (!looking_at(c, T_LBRC)) {
+        backtrack(c, marker);
+        n->t = ATOM_TOKEN;
+        c->current = n->id;
+        set_atom_token(c, n);
+        return end_node(c, nc);
+      }
     }
 
     if (!expect(c, braced_lit->id, T_LBRC)) {
@@ -1390,7 +1520,7 @@ Atom *atom(ParseCtx *c) {
       return end_node(c, nc);
     }
 
-    braced_lit->init = init(c, T_RBRC);
+    braced_lit->init = parse_init(c, T_RBRC);
     if (!expect(c, braced_lit->id, T_RBRC)) {
       advance(c, FOLLOW_ATOM);
     }
@@ -1412,7 +1542,7 @@ Atom *atom(ParseCtx *c) {
       }
 
       braced_lit->type.ok = true;
-      braced_lit->type.value = type(c);
+      braced_lit->type.value = parse_type(c);
 
       if (!expect(c, braced_lit->id, T_RPAR)) {
         advance(c, FOLLOW_ATOM);
@@ -1424,7 +1554,7 @@ Atom *atom(ParseCtx *c) {
         goto yield_braced_lit;
       }
 
-      braced_lit->init = init(c, T_RBRC);
+      braced_lit->init = parse_init(c, T_RBRC);
 
       if (!expect(c, braced_lit->id, T_RBRC)) {
         advance(c, FOLLOW_ATOM);
@@ -1442,7 +1572,7 @@ Atom *atom(ParseCtx *c) {
       NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
       BracedLit *braced_lit = lit_ctx.node;
 
-      braced_lit->init = init(c, T_RBRC);
+      braced_lit->init = parse_init(c, T_RBRC);
       n->t = ATOM_BRACED_LIT;
       n->braced_lit = end_node(c, lit_ctx);
 
@@ -1456,7 +1586,7 @@ Atom *atom(ParseCtx *c) {
     case T_CHAR:
     case T_STR:
       n->t = ATOM_TOKEN;
-      n->token = token_attr_anon(c, consume(c));
+      set_atom_token(c, n);
       return end_node(c, nc);
     default:
       break;

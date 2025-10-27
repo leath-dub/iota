@@ -1,4 +1,4 @@
-// For fmemopen
+// For open_memstream
 #define _POSIX_C_SOURCE 200809L
 
 #include "../lex/lex.h"

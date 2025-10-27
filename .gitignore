@@ -6,6 +6,8 @@ result
 *.did.tmp
 *.o
 *.d
+*.a
+*.so
 .direnv/
 cmd/iotac
 lex/ucgen

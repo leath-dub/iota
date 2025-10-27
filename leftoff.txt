@@ -1,8 +1,6 @@
 * Remove unecessary passing of id to functions in syn
   - what node we are working on is now kept track of anyway with the new API
-* Finish work to remove old dump.c
-  - we now have a way to describe the ast from syn.c (lower maintainence)
-    implicitly by how we are parsing
 * Support all statements of the language
+  - add more tests for them too (currently just basic if statement test)
 * Support else postfix expression
   - new else statement for error handling

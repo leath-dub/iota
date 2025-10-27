@@ -11,7 +11,7 @@ typedef struct {
 } KeywordBinding;
 
 string tok_to_string[TOK_KIND_COUNT] = {
-#define KEYWORD(...)
+#define KEYWORD(NAME, REPR) [T_##NAME] = ZTOS("keyword " REPR),
 #define TOKEN(NAME, REPR) [T_##NAME] = ZTOS(REPR),
     EACH_TOKEN
 #undef TOKEN

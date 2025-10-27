@@ -67,7 +67,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -109,13 +109,13 @@ syntax_test(
                       left:
                         expr {
                           atom {
-                            'foo'
+                            ident='foo'
                           }
                         }
                       right:
                         expr {
                           atom {
-                            'bar'
+                            ident='bar'
                           }
                         }
                     }
@@ -155,7 +155,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -205,7 +205,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -257,7 +257,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -296,7 +296,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -335,7 +335,7 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   index {
@@ -381,7 +381,7 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
@@ -414,14 +414,14 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
                     init {
                       expr {
                         atom {
-                          'x'
+                          ident='x'
                         }
                       }
                     }
@@ -453,7 +453,7 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
@@ -464,7 +464,7 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                'x'
+                                ident='x'
                               }
                             }
                           right:
@@ -504,19 +504,19 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
                     init {
                       expr {
                         atom {
-                          'x'
+                          ident='x'
                         }
                       }
                       expr {
                         atom {
-                          'y'
+                          ident='y'
                         }
                       }
                     }
@@ -554,14 +554,14 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
                     init {
                       expr {
                         atom {
-                          'x'
+                          ident='x'
                         }
                       }
                       expr {
@@ -570,7 +570,7 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                'y'
+                                ident='y'
                               }
                             }
                           right:
@@ -583,7 +583,7 @@ syntax_test(
                       }
                       expr {
                         atom {
-                          'y'
+                          ident='y'
                         }
                       }
                     }
@@ -615,7 +615,7 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                   args:
@@ -624,7 +624,7 @@ syntax_test(
                         fn_call {
                           expr {
                             atom {
-                              'foo'
+                              ident='foo'
                             }
                           }
                           args:
@@ -633,7 +633,7 @@ syntax_test(
                                 fn_call {
                                   expr {
                                     atom {
-                                      'foo'
+                                      ident='foo'
                                     }
                                   }
                                   args:
@@ -642,7 +642,7 @@ syntax_test(
                                         fn_call {
                                           expr {
                                             atom {
-                                              'bar'
+                                              ident='bar'
                                             }
                                           }
                                           args:
@@ -658,7 +658,7 @@ syntax_test(
                                                             op='*'
                                                             expr {
                                                               atom {
-                                                                'in'
+                                                                ident='in'
                                                               }
                                                             }
                                                           }
@@ -682,7 +682,7 @@ syntax_test(
                                         fn_call {
                                           expr {
                                             atom {
-                                              'foo'
+                                              ident='foo'
                                             }
                                           }
                                           args:
@@ -699,7 +699,7 @@ syntax_test(
                         fn_call {
                           expr {
                             atom {
-                              'foo'
+                              ident='foo'
                             }
                           }
                           args:
@@ -789,7 +789,7 @@ syntax_test(
             value:
               expr {
                 atom {
-                  ''x''
+                  char=''x''
                 }
               }
           }
@@ -816,7 +816,7 @@ syntax_test(
             value:
               expr {
                 atom {
-                  'Foo'
+                  ident='Foo'
                 }
               }
           }
@@ -828,7 +828,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_ident",
-    source="let _ = Foo{ 10 };",
+    source="let _ = Foo.{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -868,7 +868,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_scoped_ident",
-    source="let _ = Foo.Bar.baz{ 10 };",
+    source="let _ = Foo.Bar.baz.{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -938,17 +938,17 @@ syntax_test(
                     init {
                       expr {
                         atom {
-                          'x'
+                          ident='x'
                         }
                       }
                       expr {
                         atom {
-                          'y'
+                          ident='y'
                         }
                       }
                       expr {
                         atom {
-                          'z'
+                          ident='z'
                         }
                       }
                     }
@@ -983,13 +983,13 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        'x'
+                        ident='x'
                       }
                     }
                   right:
                     expr {
                       atom {
-                        'Foo'
+                        ident='Foo'
                       }
                     }
                 }
@@ -1022,7 +1022,7 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        'x'
+                        ident='x'
                       }
                     }
                   right:
@@ -1079,7 +1079,7 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        'x'
+                        ident='x'
                       }
                     }
                   right:
@@ -1179,7 +1179,7 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                'x'
+                                ident='x'
                               }
                             }
                           right:
@@ -1203,7 +1203,7 @@ syntax_test(
 
 syntax_test(
     name="address_of",
-    source = "let _ = &(10 + 11) + &x - &Foo { 10 };",
+    source = "let _ = &(10 + 11) + &x - &Foo.{ 10 };",
     expected = """
     source_file {
       imports {}
@@ -1252,7 +1252,7 @@ syntax_test(
                               op='&'
                               expr {
                                 atom {
-                                  'x'
+                                  ident='x'
                                 }
                               }
                             }
@@ -1315,7 +1315,7 @@ syntax_test(
                         lvalue:
                           expr {
                             atom {
-                              'foo'
+                              ident='foo'
                             }
                           }
                         field='bar'
@@ -1351,7 +1351,7 @@ syntax_test(
                   op='++'
                   expr {
                     atom {
-                      'foo'
+                      ident='foo'
                     }
                   }
                 }
