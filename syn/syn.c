@@ -1,6 +1,5 @@
 #include "syn.h"
 
-// TODO: add IR that populates child parent node metadata.
 // TODO: add delimiter tokens as part of the parsing context
 
 #include <assert.h>
