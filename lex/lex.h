@@ -35,10 +35,10 @@
   TOKEN(PERC, "'%'")                        \
   TOKEN(INC, "'++'")                        \
   TOKEN(DEC, "'--'")                        \
-  TOKEN(CHAR, "<character>")                \
-  TOKEN(STR, "<string>")                    \
-  TOKEN(NUM, "<number>")                    \
-  TOKEN(IDENT, "<identifier>")              \
+  TOKEN(CHAR, "character")                  \
+  TOKEN(STR, "string")                      \
+  TOKEN(NUM, "number")                      \
+  TOKEN(IDENT, "identifier")                \
   KEYWORD(NOT, "not")                       \
   KEYWORD(AND, "and")                       \
   KEYWORD(OR, "or")                         \

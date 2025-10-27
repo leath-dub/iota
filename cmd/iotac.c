@@ -5,13 +5,13 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("10 + (11 * 12) + 10");
+  string source = ztos("{ *fjksdljflksl = x } ..dskfjklsjl");
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
 
   // SourceFile *root = parse_source_file(&pc);
-  Expr *root = parse_expr(&pc, TOKS(T_EOF));
+  FnParam *root = parse_fn_param(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
