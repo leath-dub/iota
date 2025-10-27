@@ -4,7 +4,7 @@ syntax_test(
     expected = """
     source_file {
       imports {}
-      declarations {}
+      decls {}
     }
     """,
 )

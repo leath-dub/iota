@@ -54,26 +54,26 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
-                    expression {
-                      basic_expression {
-                        atom='10'
+                    expr {
+                      atom {
+                        '10'
                       }
                     }
                   }
@@ -92,38 +92,38 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    binary_expression {
+              expr {
+                coll_access {
+                  expr {
+                    bin_expr {
                       op='+'
                       left:
-                        expression {
-                          basic_expression {
-                            atom='foo'
+                        expr {
+                          atom {
+                            'foo'
                           }
                         }
                       right:
-                        expression {
-                          basic_expression {
-                            atom='bar'
+                        expr {
+                          atom {
+                            'bar'
                           }
                         }
                     }
                   }
                   index {
-                    expression {
-                      basic_expression {
-                        atom='10'
+                    expr {
+                      atom {
+                        '10'
                       }
                     }
                   }
@@ -142,36 +142,36 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
-                    expression {
-                      binary_expression {
+                    expr {
+                      bin_expr {
                         op='+'
                         left:
-                          expression {
-                            basic_expression {
-                              atom='10'
+                          expr {
+                            atom {
+                              '10'
                             }
                           }
                         right:
-                          expression {
-                            basic_expression {
-                              atom='30'
+                          expr {
+                            atom {
+                              '30'
                             }
                           }
                       }
@@ -192,36 +192,36 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
-                    expression {
-                      binary_expression {
+                    expr {
+                      bin_expr {
                         op='+'
                         left:
-                          expression {
-                            basic_expression {
-                              atom='10'
+                          expr {
+                            atom {
+                              '10'
                             }
                           }
                         right:
-                          expression {
-                            basic_expression {
-                              atom='30'
+                          expr {
+                            atom {
+                              '30'
                             }
                           }
                       }
@@ -244,26 +244,26 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
-                    expression {
-                      basic_expression {
-                        atom='10'
+                    expr {
+                      atom {
+                        '10'
                       }
                     }
                     ':'
@@ -283,27 +283,27 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
                     ':'
-                    expression {
-                      basic_expression {
-                        atom='10'
+                    expr {
+                      atom {
+                        '10'
                       }
                     }
                   }
@@ -322,32 +322,32 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                array_access_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                coll_access {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   index {
-                    expression {
-                      basic_expression {
-                        atom='10'
+                    expr {
+                      atom {
+                        '10'
                       }
                     }
                     ':'
-                    expression {
-                      basic_expression {
-                        atom='20'
+                    expr {
+                      atom {
+                        '20'
                       }
                     }
                   }
@@ -368,24 +368,24 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {}
+                    init {}
                 }
               }
           }
@@ -401,27 +401,27 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='x'
+                    init {
+                      expr {
+                        atom {
+                          'x'
                         }
                       }
                     }
@@ -440,37 +440,37 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {
-                      expression {
-                        binary_expression {
+                    init {
+                      expr {
+                        bin_expr {
                           op='='
                           left:
-                            expression {
-                              basic_expression {
-                                atom='x'
+                            expr {
+                              atom {
+                                'x'
                               }
                             }
                           right:
-                            expression {
-                              basic_expression {
-                                atom='10'
+                            expr {
+                              atom {
+                                '10'
                               }
                             }
                         }
@@ -491,32 +491,32 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='x'
+                    init {
+                      expr {
+                        atom {
+                          'x'
                         }
                       }
-                      expression {
-                        basic_expression {
-                          atom='y'
+                      expr {
+                        atom {
+                          'y'
                         }
                       }
                     }
@@ -541,49 +541,49 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='x'
+                    init {
+                      expr {
+                        atom {
+                          'x'
                         }
                       }
-                      expression {
-                        binary_expression {
+                      expr {
+                        bin_expr {
                           op='='
                           left:
-                            expression {
-                              basic_expression {
-                                atom='y'
+                            expr {
+                              atom {
+                                'y'
                               }
                             }
                           right:
-                            expression {
-                              basic_expression {
-                                atom='10'
+                            expr {
+                              atom {
+                                '10'
                               }
                             }
                         }
                       }
-                      expression {
-                        basic_expression {
-                          atom='y'
+                      expr {
+                        atom {
+                          'y'
                         }
                       }
                     }
@@ -602,91 +602,91 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                function_call_expression {
-                  expression {
-                    basic_expression {
-                      atom='foo'
+              expr {
+                fn_call {
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                   args:
-                    initializer_list {
-                      expression {
-                        function_call_expression {
-                          expression {
-                            basic_expression {
-                              atom='foo'
+                    init {
+                      expr {
+                        fn_call {
+                          expr {
+                            atom {
+                              'foo'
                             }
                           }
                           args:
-                            initializer_list {
-                              expression {
-                                function_call_expression {
-                                  expression {
-                                    basic_expression {
-                                      atom='foo'
+                            init {
+                              expr {
+                                fn_call {
+                                  expr {
+                                    atom {
+                                      'foo'
                                     }
                                   }
                                   args:
-                                    initializer_list {
-                                      expression {
-                                        function_call_expression {
-                                          expression {
-                                            basic_expression {
-                                              atom='bar'
+                                    init {
+                                      expr {
+                                        fn_call {
+                                          expr {
+                                            atom {
+                                              'bar'
                                             }
                                           }
                                           args:
-                                            initializer_list {
-                                              expression {
-                                                function_call_expression {
-                                                  expression {
-                                                    binary_expression {
+                                            init {
+                                              expr {
+                                                fn_call {
+                                                  expr {
+                                                    bin_expr {
                                                       op='+'
                                                       left:
-                                                        expression {
-                                                          unary_expression {
+                                                        expr {
+                                                          unary_expr {
                                                             op='*'
-                                                            expression {
-                                                              basic_expression {
-                                                                atom='in'
+                                                            expr {
+                                                              atom {
+                                                                'in'
                                                               }
                                                             }
                                                           }
                                                         }
                                                       right:
-                                                        expression {
-                                                          basic_expression {
-                                                            atom='10'
+                                                        expr {
+                                                          atom {
+                                                            '10'
                                                           }
                                                         }
                                                     }
                                                   }
                                                   args:
-                                                    initializer_list {}
+                                                    init {}
                                                 }
                                               }
                                             }
                                         }
                                       }
-                                      expression {
-                                        function_call_expression {
-                                          expression {
-                                            basic_expression {
-                                              atom='foo'
+                                      expr {
+                                        fn_call {
+                                          expr {
+                                            atom {
+                                              'foo'
                                             }
                                           }
                                           args:
-                                            initializer_list {}
+                                            init {}
                                         }
                                       }
                                     }
@@ -695,15 +695,15 @@ syntax_test(
                             }
                         }
                       }
-                      expression {
-                        function_call_expression {
-                          expression {
-                            basic_expression {
-                              atom='foo'
+                      expr {
+                        fn_call {
+                          expr {
+                            atom {
+                              'foo'
                             }
                           }
                           args:
-                            initializer_list {}
+                            init {}
                         }
                       }
                     }
@@ -724,18 +724,18 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  atom='10'
+              expr {
+                atom {
+                  '10'
                 }
               }
           }
@@ -751,18 +751,18 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  atom='"this is a string"'
+              expr {
+                atom {
+                  '"this is a string"'
                 }
               }
           }
@@ -778,18 +778,18 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  atom=''x''
+              expr {
+                atom {
+                  ''x''
                 }
               }
           }
@@ -805,18 +805,18 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  atom='Foo'
+              expr {
+                atom {
+                  'Foo'
                 }
               }
           }
@@ -832,27 +832,27 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  braced_literal {
+              expr {
+                atom {
+                  braced_lit {
                     type {
-                      scoped_identifier {
+                      scoped_ident {
                         'Foo'
                       }
                     }
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='10'
+                    init {
+                      expr {
+                        atom {
+                          '10'
                         }
                       }
                     }
@@ -872,29 +872,29 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  braced_literal {
+              expr {
+                atom {
+                  braced_lit {
                     type {
-                      scoped_identifier {
+                      scoped_ident {
                         'Foo'
                         'Bar'
                         'baz'
                       }
                     }
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='10'
+                    init {
+                      expr {
+                        atom {
+                          '10'
                         }
                       }
                     }
@@ -914,41 +914,41 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  braced_literal {
+              expr {
+                atom {
+                  braced_lit {
                     type {
-                      collection_type {
+                      coll_type {
                         type {
                           builtin_type {
-                            name='u32'
+                            'u32'
                           }
                         }
                       }
                     }
-                    initializer_list {
-                      expression {
-                        basic_expression {
-                          atom='x'
+                    init {
+                      expr {
+                        atom {
+                          'x'
                         }
                       }
-                      expression {
-                        basic_expression {
-                          atom='y'
+                      expr {
+                        atom {
+                          'y'
                         }
                       }
-                      expression {
-                        basic_expression {
-                          atom='z'
+                      expr {
+                        atom {
+                          'z'
                         }
                       }
                     }
@@ -968,28 +968,28 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                binary_expression {
+              expr {
+                bin_expr {
                   op='*'
                   left:
-                    expression {
-                      basic_expression {
-                        atom='x'
+                    expr {
+                      atom {
+                        'x'
                       }
                     }
                   right:
-                    expression {
-                      basic_expression {
-                        atom='Foo'
+                    expr {
+                      atom {
+                        'Foo'
                       }
                     }
                 }
@@ -1007,40 +1007,40 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                binary_expression {
+              expr {
+                bin_expr {
                   op='*'
                   left:
-                    expression {
-                      basic_expression {
-                        atom='x'
+                    expr {
+                      atom {
+                        'x'
                       }
                     }
                   right:
-                    expression {
-                      unary_expression {
+                    expr {
+                      unary_expr {
                         op='*'
-                        expression {
-                          basic_expression {
-                            braced_literal {
+                        expr {
+                          atom {
+                            braced_lit {
                               type {
                                 builtin_type {
-                                  name='u32'
+                                  'u32'
                                 }
                               }
-                              initializer_list {
-                                expression {
-                                  basic_expression {
-                                    atom='10'
+                              init {
+                                expr {
+                                  atom {
+                                    '10'
                                   }
                                 }
                               }
@@ -1064,41 +1064,41 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                binary_expression {
+              expr {
+                bin_expr {
                   op='*'
                   left:
-                    expression {
-                      basic_expression {
-                        atom='x'
+                    expr {
+                      atom {
+                        'x'
                       }
                     }
                   right:
-                    expression {
-                      basic_expression {
-                        braced_literal {
+                    expr {
+                      atom {
+                        braced_lit {
                           type {
-                            pointer_type {
+                            ptr_type {
                               type {
                                 builtin_type {
-                                  name='u32'
+                                  'u32'
                                 }
                               }
                             }
                           }
-                          initializer_list {
-                            expression {
-                              basic_expression {
-                                atom='10'
+                          init {
+                            expr {
+                              atom {
+                                '10'
                               }
                             }
                           }
@@ -1120,25 +1120,25 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                unary_expression {
+              expr {
+                unary_expr {
                   op='*'
-                  expression {
-                    basic_expression {
-                      braced_literal {
-                        initializer_list {
-                          expression {
-                            basic_expression {
-                              atom='10'
+                  expr {
+                    atom {
+                      braced_lit {
+                        init {
+                          expr {
+                            atom {
+                              '10'
                             }
                           }
                         }
@@ -1160,32 +1160,32 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                basic_expression {
-                  braced_literal {
-                    initializer_list {
-                      expression {
-                        binary_expression {
+              expr {
+                atom {
+                  braced_lit {
+                    init {
+                      expr {
+                        bin_expr {
                           op='='
                           left:
-                            expression {
-                              basic_expression {
-                                atom='x'
+                            expr {
+                              atom {
+                                'x'
                               }
                             }
                           right:
-                            expression {
-                              basic_expression {
-                                atom='10'
+                            expr {
+                              atom {
+                                '10'
                               }
                             }
                         }
@@ -1207,39 +1207,39 @@ syntax_test(
     expected = """
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                binary_expression {
+              expr {
+                bin_expr {
                   op='-'
                   left:
-                    expression {
-                      binary_expression {
+                    expr {
+                      bin_expr {
                         op='+'
                         left:
-                          expression {
-                            unary_expression {
+                          expr {
+                            unary_expr {
                               op='&'
-                              expression {
-                                binary_expression {
+                              expr {
+                                bin_expr {
                                   op='+'
                                   left:
-                                    expression {
-                                      basic_expression {
-                                        atom='10'
+                                    expr {
+                                      atom {
+                                        '10'
                                       }
                                     }
                                   right:
-                                    expression {
-                                      basic_expression {
-                                        atom='11'
+                                    expr {
+                                      atom {
+                                        '11'
                                       }
                                     }
                                 }
@@ -1247,12 +1247,12 @@ syntax_test(
                             }
                           }
                         right:
-                          expression {
-                            unary_expression {
+                          expr {
+                            unary_expr {
                               op='&'
-                              expression {
-                                basic_expression {
-                                  atom='x'
+                              expr {
+                                atom {
+                                  'x'
                                 }
                               }
                             }
@@ -1260,21 +1260,21 @@ syntax_test(
                       }
                     }
                   right:
-                    expression {
-                      unary_expression {
+                    expr {
+                      unary_expr {
                         op='&'
-                        expression {
-                          basic_expression {
-                            braced_literal {
+                        expr {
+                          atom {
+                            braced_lit {
                               type {
-                                scoped_identifier {
+                                scoped_ident {
                                   'Foo'
                                 }
                               }
-                              initializer_list {
-                                expression {
-                                  basic_expression {
-                                    atom='10'
+                              init {
+                                expr {
+                                  atom {
+                                    '10'
                                   }
                                 }
                               }
@@ -1298,24 +1298,24 @@ syntax_test(
     expected = """
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                field_access_expression {
+              expr {
+                field_access {
                   lvalue:
-                    expression {
-                      field_access_expression {
+                    expr {
+                      field_access {
                         lvalue:
-                          expression {
-                            basic_expression {
-                              atom='foo'
+                          expr {
+                            atom {
+                              'foo'
                             }
                           }
                         field='bar'
@@ -1337,21 +1337,21 @@ syntax_test(
     expected = """
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='_'
               }
             value:
-              expression {
-                postfix_expression {
+              expr {
+                postfix_expr {
                   op='++'
-                  expression {
-                    basic_expression {
-                      atom='foo'
+                  expr {
+                    atom {
+                      'foo'
                     }
                   }
                 }

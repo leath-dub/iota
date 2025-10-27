@@ -5,73 +5,73 @@
 #include "../lex/lex.h"
 
 typedef struct {
-  Tok_Kind *items;
+  TokKind *items;
   u32 len;
 } Toks;
 
 // I know this is smelly but C is very limited for variadic args and not storing
 // size with array is really limiting for building abstractions
-#define TOKS(...)                                               \
-  (Toks) {                                                      \
-    .items = (Tok_Kind[]){__VA_ARGS__},                         \
-    .len = sizeof((Tok_Kind[]){__VA_ARGS__}) / sizeof(Tok_Kind) \
+#define TOKS(...)                                             \
+  (Toks) {                                                    \
+    .items = (TokKind[]){__VA_ARGS__},                        \
+    .len = sizeof((TokKind[]){__VA_ARGS__}) / sizeof(TokKind) \
   }
 
 typedef struct {
   Lexer lex;
   Arena arena;
-  Node_Metadata meta;
-  Node_ID current;
-} Parse_Context;
+  NodeMetadata meta;
+  NodeID current;
+} ParseCtx;
 
 typedef struct {
   Lexer lex;
-} Parse_State;
+} ParseState;
 
 void check_allocs(void);
 
-Parse_Context new_parse_context(Source_Code code);
-void parse_context_free(Parse_Context *c);
+ParseCtx new_parse_ctx(SourceCode code);
+void parse_ctx_free(ParseCtx *c);
 
-Source_File *source_file(Parse_Context *c);
-Imports *imports(Parse_Context *c);
-Import *import(Parse_Context *c);
-Declarations *declarations(Parse_Context *c);
-Declaration *declaration(Parse_Context *c);
-Struct_Declaration *struct_declaration(Parse_Context *c);
-Struct_Body *struct_body(Parse_Context *c, Toks follow);
-Enum_Declaration *enum_declaration(Parse_Context *c);
-Error_Declaration *error_declaration(Parse_Context *c);
-Variable_Declaration *variable_declaration(Parse_Context *c);
-Function_Declaration *function_declaration(Parse_Context *c);
-Function_Parameter_List *function_parameter_list(Parse_Context *c);
-Function_Parameter *function_parameter(Parse_Context *c);
-Variable_Binding *variable_binding(Parse_Context *c);
-Binding *binding(Parse_Context *c);
-Aliased_Binding *aliased_binding(Parse_Context *c);
-Aliased_Binding_List *aliased_binding_list(Parse_Context *c, Tok_Kind end);
-Binding_List *binding_list(Parse_Context *c, Tok_Kind end);
-Destructure_Struct *destructure_struct(Parse_Context *c, Toks follow);
-Destructure_Tuple *destructure_tuple(Parse_Context *c, Toks follow);
-Statement *statement(Parse_Context *c);
-Compound_Statement *compound_statement(Parse_Context *c);
-Type *type(Parse_Context *c);
-Collection_Type *collection_type(Parse_Context *c);
-Struct_Type *struct_type(Parse_Context *c);
-Type_List *type_list(Parse_Context *c);
-Field_List *field_list(Parse_Context *c);
-Field *field(Parse_Context *c);
-Union_Type *union_type(Parse_Context *c);
-Enum_Type *enum_type(Parse_Context *c);
-Error_Type *error_type(Parse_Context *c);
-Pointer_Type *pointer_type(Parse_Context *c);
-Function_Type *function_type(Parse_Context *c);
-Identifier_List *identifier_list(Parse_Context *c);
-Error_List *error_list(Parse_Context *c);
-Error *error(Parse_Context *c);
-Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow);
-Expression *expression(Parse_Context *c, Toks delim);
-Basic_Expression *basic_expression(Parse_Context *c);
-Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim);
+SourceFile *source_file(ParseCtx *c);
+Imports *imports(ParseCtx *c);
+Import *import(ParseCtx *c);
+Decls *decls(ParseCtx *c);
+Decl *decl(ParseCtx *c);
+StructDecl *struct_decl(ParseCtx *c);
+StructBody *struct_body(ParseCtx *c, Toks follow);
+EnumDecl *enum_decl(ParseCtx *c);
+ErrDecl *err_decl(ParseCtx *c);
+VarDecl *var_decl(ParseCtx *c);
+FnDecl *fn_decl(ParseCtx *c);
+FnParams *fn_params(ParseCtx *c);
+FnParam *fn_param(ParseCtx *c);
+VarBinding *var_binding(ParseCtx *c);
+Binding *binding(ParseCtx *c);
+AliasBinding *alias_binding(ParseCtx *c);
+AliasBindings *alias_bindings(ParseCtx *c, TokKind end);
+Bindings *bindings(ParseCtx *c, TokKind end);
+UnpackStruct *unpack_struct(ParseCtx *c, Toks follow);
+UnpackTuple *unpack_tuple(ParseCtx *c, Toks follow);
+Stmt *stmt(ParseCtx *c);
+CompStmt *comp_stmt(ParseCtx *c);
+Type *type(ParseCtx *c);
+CollType *coll_type(ParseCtx *c);
+StructType *struct_type(ParseCtx *c);
+Types *types(ParseCtx *c);
+Fields *fields(ParseCtx *c);
+Field *field(ParseCtx *c);
+UnionType *union_type(ParseCtx *c);
+EnumType *enum_type(ParseCtx *c);
+ErrType *err_type(ParseCtx *c);
+PtrType *ptr_type(ParseCtx *c);
+FnType *fn_type(ParseCtx *c);
+Idents *idents(ParseCtx *c);
+Errs *errs(ParseCtx *c);
+Err *err(ParseCtx *c);
+ScopedIdent *scoped_ident(ParseCtx *c, Toks follow);
+Expr *expr(ParseCtx *c, Toks delim);
+Atom *atom(ParseCtx *c);
+Init *init(ParseCtx *c, TokKind delim);
 
 #endif

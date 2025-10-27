@@ -30,7 +30,7 @@ void test_basic(void) {
       "       let c = 'x';\n"
       "       let msg = \"Hello, world\";\n"
       "}");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
 
   ASSERT(peek_and_consume(&l).t == T_FUN);
@@ -97,7 +97,7 @@ void test_basic(void) {
 
 void test_empty_file(void) {
   string source = ztos("");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
   // 3 times for good measure :)
   ASSERT(peek_and_consume(&l).t == T_EOF);
@@ -109,7 +109,7 @@ void test_empty_file(void) {
 void test_just_whitespace(void) {
   // just whitespace
   string source = ztos("    \n\t  \t  ");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
   ASSERT(peek_and_consume(&l).t == T_EOF);
   source_code_free(&code);
@@ -117,7 +117,7 @@ void test_just_whitespace(void) {
 
 void test_single_token(void) {
   string source = ztos("x");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
   ASSERT(peek_and_consume(&l).t == T_IDENT);
   ASSERT(peek_and_consume(&l).t == T_EOF);
@@ -126,7 +126,7 @@ void test_single_token(void) {
 
 void test_keywords(void) {
   string source = ztos("funbar fun if ifdo struct structx");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
 
   Tok tok = peek_and_consume(&l);
@@ -158,7 +158,7 @@ void test_keywords(void) {
 }
 
 void test_number(void) {
-  Source_Code code = new_source_code(ztos("<string>"), ztos("0"));
+  SourceCode code = new_source_code(ztos("<string>"), ztos("0"));
   Lexer l = new_lexer(code);
   Tok tok = peek_and_consume(&l);
   ASSERT(tok.t == T_NUM);
@@ -181,7 +181,7 @@ void test_error(void) {
   usize len = 0;
   FILE *es = open_memstream(&buf, &len);
 
-  Source_Code code = new_source_code(ztos("<string>"), ztos("'x"));
+  SourceCode code = new_source_code(ztos("<string>"), ztos("'x"));
   code.errors.fs = es;
   Lexer l = new_lexer(code);
   ASSERT(peek_and_consume(&l).t == T_ILLEGAL);

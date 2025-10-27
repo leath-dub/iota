@@ -7,8 +7,8 @@
 
 typedef struct {
   string keyword;
-  Tok_Kind type;
-} Keyword_Binding;
+  TokKind type;
+} KeywordBinding;
 
 string tok_to_string[TOK_KIND_COUNT] = {
 #define KEYWORD(...)
@@ -18,7 +18,7 @@ string tok_to_string[TOK_KIND_COUNT] = {
 #undef KEYWORD
 };
 
-static const Keyword_Binding keyword_to_kind[] = {
+static const KeywordBinding keyword_to_kind[] = {
 #define TOKEN(...)
 #define KEYWORD(NAME, REPR) {ZTOS(REPR), T_##NAME},
     EACH_TOKEN
@@ -26,9 +26,9 @@ static const Keyword_Binding keyword_to_kind[] = {
 #undef TOKEN
 };
 static const u32 keyword_to_kind_count =
-    sizeof(keyword_to_kind) / sizeof(Keyword_Binding);
+    sizeof(keyword_to_kind) / sizeof(KeywordBinding);
 
-static Tok new_tok(Lexer *l, Tok_Kind t, u32 len) {
+static Tok new_tok(Lexer *l, TokKind t, u32 len) {
   Tok r = (Tok){
       .t = t,
       .text = t != T_EOF ? substr(l->source.text, l->cursor, l->cursor + len)
@@ -56,7 +56,7 @@ tok:
   }
 }
 
-Lexer new_lexer(Source_Code source) {
+Lexer new_lexer(SourceCode source) {
   Lexer l = {
       .source = source,
       .cursor = 0,
@@ -195,7 +195,7 @@ Tok lex_peek(Lexer *l) {
       }
       string id_text = substr(l->source.text, l->cursor, l->cursor + len);
       for (u32 i = 0; i < keyword_to_kind_count; i++) {
-        Keyword_Binding b = keyword_to_kind[i];
+        KeywordBinding b = keyword_to_kind[i];
         if (id_text.len == b.keyword.len &&
             strncmp(id_text.data, b.keyword.data, b.keyword.len) == 0) {
           return new_tok(l, b.type, len);

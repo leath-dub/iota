@@ -4,7 +4,7 @@
 #include "../common/common.h"
 #include "../lex/lex.h"
 
-typedef u32 Node_ID;
+typedef u32 NodeID;
 
 // There are a bunch of places where we need to do something for every AST node
 // type:
@@ -18,93 +18,85 @@ typedef u32 Node_ID;
 // For these reasons, The weird and arcane trick known as "X macro" is used
 // below (see here for more: info https://en.wikipedia.org/wiki/X_macro).
 
-#define EACH_NODE                                                         \
-  USE(Source_File, SOURCE_FILE, "source_file")                            \
-  USE(Imports, IMPORTS, "imports")                                        \
-  USE(Declarations, DECLARATIONS, "declarations")                         \
-  USE(Import, IMPORT, "import")                                           \
-  USE(Declaration, DECLARATION, "declaration")                            \
-  USE(Variable_Declaration, VARIABLE_DECLARATION, "variable_declaration") \
-  USE(Function_Declaration, FUNCTION_DECLARATION, "function_declaration") \
-  USE(Type_Parameter_List, TYPE_PARAMETER_LIST, "type_parameter_list")    \
-  USE(Struct_Declaration, STRUCT_DECLARATION, "struct_declaration")       \
-  USE(Struct_Body, STRUCT_BODY, "struct_body")                            \
-  USE(Enum_Declaration, ENUM_DECLARATION, "enum_declaration")             \
-  USE(Error_Declaration, ERROR_DECLARATION, "error_declaration")          \
-  USE(Union_Declaration, UNION_DECLARATION, "union_declaration")          \
-  USE(Variable_Binding, VARIABLE_BINDING, "variable_binding")             \
-  USE(Destructure_Tuple, DESTRUCTURE_TUPLE, "destructure_tuple")          \
-  USE(Destructure_Struct, DESTRUCTURE_STRUCT, "destructure_struct")       \
-  USE(Destructure_Union, DESTRUCTURE_UNION, "destructure_union")          \
-  USE(Binding, BINDING, "binding")                                        \
-  USE(Binding_List, BINDING_LIST, "binding_list")                         \
-  USE(Aliased_Binding, ALIASED_BINDING, "aliased_binding")                \
-  USE(Aliased_Binding_List, ALIASED_BINDING_LIST, "aliased_binding_list") \
-  USE(Function_Parameter_List, FUNCTION_PARAMETER_LIST,                   \
-      "function_parameter_list")                                          \
-  USE(Function_Parameter, FUNCTION_PARAMETER, "function_parameter")       \
-  USE(Type_List, TYPE_LIST, "type_list")                                  \
-  USE(Field_List, FIELD_LIST, "field_list")                               \
-  USE(Field, FIELD, "field")                                              \
-  USE(Identifier_List, IDENTIFIER_LIST, "identifier_list")                \
-  USE(Error_List, ERROR_LIST, "error_list")                               \
-  USE(Error, ERROR, "error")                                              \
-  USE(Statement, STATEMENT, "statement")                                  \
-  USE(If_Statement, IF_STATEMENT, "if_statement")                         \
-  USE(Condition, CONDITION, "condition")                                  \
-  USE(Union_Tag_Condition, UNION_TAG_CONDITION, "union_tag_condition")    \
-  USE(Return_Statement, RETURN_STATEMENT, "return_statement")             \
-  USE(Defer_Statement, DEFER_STATEMENT, "defer_statement")                \
-  USE(Compound_Statement, COMPOUND_STATEMENT, "compound_statement")       \
-  USE(Else, ELSE, "else")                                                 \
-  USE(Type, TYPE, "type")                                                 \
-  USE(Builtin_Type, BUILTIN_TYPE, "builtin_type")                         \
-  USE(Collection_Type, COLLECTION_TYPE, "collection_type")                \
-  USE(Struct_Type, STRUCT_TYPE, "struct_type")                            \
-  USE(Union_Type, UNION_TYPE, "union_type")                               \
-  USE(Enum_Type, ENUM_TYPE, "enum_type")                                  \
-  USE(Error_Type, ERROR_TYPE, "error_type")                               \
-  USE(Pointer_Type, POINTER_TYPE, "pointer_type")                         \
-  USE(Function_Type, FUNCTION_TYPE, "function_type")                      \
-  USE(Scoped_Identifier, SCOPED_IDENTIFIER, "scoped_identifier")          \
-  USE(Expression, EXPRESSION, "expression")                               \
-  USE(Basic_Expression, BASIC_EXPRESSION, "basic_expression")             \
-  USE(Parenthesized_Expression, PARENTHESIZED_EXPRESSION,                 \
-      "parenthesized_expression")                                         \
-  USE(Composite_Literal_Expression, COMPOSITE_LITERAL_EXPRESSION,         \
-      "composite_literal_expression")                                     \
-  USE(Postfix_Expression, POSTFIX_EXPRESSION, "postfix_expression")       \
-  USE(Function_Call_Expression, FUNCTION_CALL_EXPRESSION,                 \
-      "function_call_expression")                                         \
-  USE(Initializer_List, INITIALIZER_LIST, "initializer_list")             \
-  USE(Field_Access_Expression, FIELD_ACCESS_EXPRESSION,                   \
-      "field_access_expression")                                          \
-  USE(Array_Access_Expression, ARRAY_ACCESS_EXPRESSION,                   \
-      "array_access_expression")                                          \
-  USE(Unary_Expression, UNARY_EXPRESSION, "unary_expression")             \
-  USE(Binary_Expression, BINARY_EXPRESSION, "binary_expression")          \
-  USE(Braced_Literal, BRACED_LITERAL, "braced_literal")                   \
+#define EACH_NODE                                      \
+  USE(SourceFile, SOURCE_FILE, "source_file")          \
+  USE(Imports, IMPORTS, "imports")                     \
+  USE(Decls, DECLS, "decls")                           \
+  USE(Import, IMPORT, "import")                        \
+  USE(Decl, DECL, "decl")                              \
+  USE(VarDecl, VAR_DECL, "var_decl")                   \
+  USE(FnDecl, FN_DECL, "fn_decl")                      \
+  USE(TypeParams, TYPE_PARAMS, "type_params")          \
+  USE(StructDecl, STRUCT_DECL, "struct_decl")          \
+  USE(StructBody, STRUCT_BODY, "struct_body")          \
+  USE(EnumDecl, ENUM_DECL, "enum_decl")                \
+  USE(ErrDecl, ERR_DECL, "err_decl")                   \
+  USE(UnionDecl, UNION_DECL, "union_decl")             \
+  USE(VarBinding, VAR_BINDING, "var_binding")          \
+  USE(UnpackTuple, UNPACK_TUPLE, "unpack_tuple")       \
+  USE(UnpackStruct, UNPACK_STRUCT, "unpack_struct")    \
+  USE(UnpackUnion, UNPACK_UNION, "unpack_union")       \
+  USE(Binding, BINDING, "binding")                     \
+  USE(Bindings, BINDINGS, "bindings")                  \
+  USE(AliasBinding, ALIAS_BINDING, "alias_binding")    \
+  USE(AliasBindings, ALIAS_BINDINGS, "alias_bindings") \
+  USE(FnParams, FN_PARAMS, "fn_params")                \
+  USE(FnParam, FN_PARAM, "fn_param")                   \
+  USE(Types, TYPES, "types")                           \
+  USE(Fields, FIELDS, "fields")                        \
+  USE(Field, FIELD, "field")                           \
+  USE(Idents, IDENTS, "idents")                        \
+  USE(Errs, ERRS, "errs")                              \
+  USE(Err, ERR, "err")                                 \
+  USE(Stmt, STMT, "stmt")                              \
+  USE(IfStmt, IF_STMT, "if_stmt")                      \
+  USE(Cond, COND, "cond")                              \
+  USE(UnionTagCond, UNION_TAG_COND, "union_tag_cond")  \
+  USE(ReturnStmt, RETURN_STMT, "return_stmt")          \
+  USE(DeferStmt, DEFER_STATEMENT, "defer_stmt")        \
+  USE(CompStmt, COMP_STMT, "comp_stmt")                \
+  USE(Else, ELSE, "else")                              \
+  USE(Type, TYPE, "type")                              \
+  USE(BuiltinType, BUILTIN_TYPE, "builtin_type")       \
+  USE(CollType, COLL_TYPE, "coll_type")                \
+  USE(StructType, STRUCT_TYPE, "struct_type")          \
+  USE(UnionType, UNION_TYPE, "union_type")             \
+  USE(EnumType, ENUM_TYPE, "enum_type")                \
+  USE(ErrType, ERR_TYPE, "err_type")                   \
+  USE(PtrType, PTR_TYPE, "ptr_type")                   \
+  USE(FnType, FN_TYPE, "fn_type")                      \
+  USE(ScopedIdent, SCOPED_IDENT, "scoped_ident")       \
+  USE(Expr, EXPR, "expr")                              \
+  USE(Atom, ATOM, "atom")                              \
+  USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
+  USE(FnCall, FN_CALL, "fn_call")                      \
+  USE(Init, INIT, "init")                              \
+  USE(FieldAccess, FIELD_ACCESS, "field_access")       \
+  USE(CollAccess, COLL_ACCESS, "coll_access")          \
+  USE(UnaryExpr, UNARY_EXPR, "unary_expr")             \
+  USE(BinExpr, BIN_EXPR, "bin_expr")                   \
+  USE(BracedLit, BRACED_LIT, "braced_lit")             \
   USE(Index, INDEX, "index")
 
 #define USE(NODE, ...) struct NODE;
 EACH_NODE
 #undef USE
 
-struct Source_File {
-  Node_ID id;
+struct SourceFile {
+  NodeID id;
   struct Imports *imports;
-  struct Declarations *declarations;
+  struct Decls *decls;
 };
 
 struct Imports {
-  Node_ID id;
+  NodeID id;
   u32 len;
   u32 cap;
   struct Import **items;
 };
 
 struct Import {
-  Node_ID id;
+  NodeID id;
   bool aliased;
   struct {
     Tok alias;
@@ -112,484 +104,469 @@ struct Import {
   Tok import_name;
 };
 
-struct Declarations {
-  Node_ID id;
+struct Decls {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Declaration **items;
+  struct Decl **items;
 };
 
 typedef enum {
-  DECLARATION_VARIABLE,
-  DECLARATION_FUNCTION,
-  DECLARATION_STRUCT,
-  DECLARATION_ENUM,
-  DECLARATION_ERROR,
-  DECLARATION_UNION,
-} Declaration_Kind;
+  DECL_VAR,
+  DECL_FN,
+  DECL_STRUCT,
+  DECL_ENUM,
+  DECL_ERR,
+  DECL_UNION,
+} DeclKind;
 
-struct Declaration {
-  Node_ID id;
-  Declaration_Kind t;
+struct Decl {
+  NodeID id;
+  DeclKind t;
   union {
-    struct Variable_Declaration *variable_declaration;
-    struct Function_Declaration *function_declaration;
-    struct Struct_Declaration *struct_declaration;
-    struct Enum_Declaration *enum_declaration;
-    struct Error_Declaration *error_declaration;
-    struct Union_Declaration *union_declaration;
+    struct VarDecl *var_decl;
+    struct FnDecl *fn_decl;
+    struct StructDecl *struct_decl;
+    struct EnumDecl *enum_decl;
+    struct ErrDecl *err_decl;
+    struct UnionDecl *union_decl;
   };
 };
 
-struct Variable_Declaration {
-  Node_ID id;
+struct VarDecl {
+  NodeID id;
   Tok classifier;  // let or mut
-  struct Variable_Binding *binding;
+  struct VarBinding *binding;
   struct Type *type;  // nullable
   struct {
     Tok assign_token;
-    struct Expression *expression;
+    struct Expr *expr;
     bool ok;
   } init;
 };
 
 typedef enum {
-  VARIABLE_BINDING_BASIC,
-  VARIABLE_BINDING_DESTRUCTURE_TUPLE,
-  VARIABLE_BINDING_DESTRUCTURE_STRUCT,
-  VARIABLE_BINDING_DESTRUCTURE_UNION,
-} Variable_Binding_Kind;
+  VAR_BINDING_BASIC,
+  VAR_BINDING_UNPACK_TUPLE,
+  VAR_BINDING_UNPACK_STRUCT,
+  VAR_BINDING_UNPACK_UNION,
+} VarBindingKind;
 
-struct Variable_Binding {
-  Node_ID id;
-  Variable_Binding_Kind t;
+struct VarBinding {
+  NodeID id;
+  VarBindingKind t;
   union {
     Tok basic;
-    struct Destructure_Tuple *destructure_tuple;
-    struct Destructure_Struct *destructure_struct;
-    struct Destructure_Union *destructure_union;
+    struct UnpackTuple *unpack_tuple;
+    struct UnpackStruct *unpack_struct;
+    struct UnpackUnion *unpack_union;
   };
 };
 
-struct Aliased_Binding {
-  Node_ID id;
+struct AliasBinding {
+  NodeID id;
   struct Binding *binding;
   MAYBE(Tok) alias;
 };
 
-struct Aliased_Binding_List {
-  Node_ID id;
+struct AliasBindings {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Aliased_Binding **items;
+  struct AliasBinding **items;
 };
 
 struct Binding {
-  Node_ID id;
-  Tok identifier;
-  Tok reference;  // could be a '*' meaning the binding is a reference
+  NodeID id;
+  Tok ident;
+  Tok ref;  // could be a '*' meaning the binding is a reference
 };
 
-struct Binding_List {
-  Node_ID id;
+struct Bindings {
+  NodeID id;
   u32 len;
   u32 cap;
   struct Binding **items;
 };
 
-struct Destructure_Tuple {
-  Node_ID id;
-  struct Binding_List *bindings;
+struct UnpackTuple {
+  NodeID id;
+  struct Bindings *bindings;
 };
 
-struct Destructure_Struct {
-  Node_ID id;
-  struct Aliased_Binding_List *bindings;
+struct UnpackStruct {
+  NodeID id;
+  struct AliasBindings *bindings;
 };
 
-struct Destructure_Union {
-  Node_ID id;
+struct UnpackUnion {
+  NodeID id;
   Tok tag;
   struct Binding *binding;
 };
 
-struct Function_Declaration {
-  Node_ID id;
-  Tok identifier;
-  MAYBE(struct Type_Parameter_List *) type_params;
-  struct Function_Parameter_List *parameters;
+struct FnDecl {
+  NodeID id;
+  Tok ident;
+  MAYBE(struct TypeParams *) type_params;
+  struct FnParams *params;
   MAYBE(struct Type *) return_type;
-  struct Compound_Statement *body;
+  struct CompStmt *body;
 };
 
-struct Function_Parameter_List {
-  Node_ID id;
+struct FnParams {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Function_Parameter **items;
+  struct FnParam **items;
 };
 
-struct Function_Parameter {
-  Node_ID id;
-  struct Variable_Binding *binding;
+struct FnParam {
+  NodeID id;
+  struct VarBinding *binding;
   struct Type *type;
   bool variadic;
 };
 
-struct Type_Parameter_List {
-  Node_ID id;
-  struct Type_List *types;
+struct TypeParams {
+  NodeID id;
+  struct Types *types;
 };
 
-struct Struct_Declaration {
-  Node_ID id;
-  Tok identifier;
-  MAYBE(struct Type_Parameter_List *) type_params;
-  struct Struct_Body *body;
+struct StructDecl {
+  NodeID id;
+  Tok ident;
+  MAYBE(struct TypeParams *) type_params;
+  struct StructBody *body;
 };
 
-struct Struct_Body {
-  Node_ID id;
+struct StructBody {
+  NodeID id;
   bool tuple_like;
   union {
-    struct Type_List *type_list;
-    struct Field_List *field_list;
+    struct Types *types;
+    struct Fields *fields;
   };
 };
 
-struct Field_List {
-  Node_ID id;
+struct Fields {
+  NodeID id;
   u32 len;
   u32 cap;
   struct Field **items;
 };
 
 struct Field {
-  Node_ID id;
-  Tok identifier;
+  NodeID id;
+  Tok ident;
   struct Type *type;
 };
 
-struct Enum_Declaration {
-  Node_ID id;
-  Tok identifier;
-  struct Identifier_List *enumerators;
+struct EnumDecl {
+  NodeID id;
+  Tok ident;
+  struct Idents *alts;
 };
 
-struct Identifier_List {
-  Node_ID id;
+struct Idents {
+  NodeID id;
   u32 len;
   u32 cap;
   Tok *items;
 };
 
-struct Error_Declaration {
-  Node_ID id;
-  Tok identifier;
-  struct Error_List *errors;
+struct ErrDecl {
+  NodeID id;
+  Tok ident;
+  struct Errs *errs;
 };
 
-struct Error_List {
-  Node_ID id;
+struct Errs {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Error **items;
+  struct Err **items;
 };
 
-struct Error {
-  Node_ID id;
+struct Err {
+  NodeID id;
   bool embedded;  // e.g. !Foo
-  struct Scoped_Identifier *scoped_identifier;
+  struct ScopedIdent *scoped_ident;
 };
 
-struct Union_Declaration {
-  Node_ID id;
-  Tok identifier;
-  MAYBE(struct Type_Parameter_List *) type_params;
-  struct Field_List *fields;
+struct UnionDecl {
+  NodeID id;
+  Tok ident;
+  MAYBE(struct TypeParams *) type_params;
+  struct Fields *fields;
 };
 
 typedef enum {
-  STATEMENT_DECLARATION,
-  STATEMENT_IF,
-  STATEMENT_RETURN,
-  STATEMENT_COMPOUND,
-  STATEMENT_EXPRESSION,
-} Statement_Kind;
+  STMT_DECL,
+  STMT_IF,
+  STMT_RETURN,
+  STMT_COMP,
+  STMT_EXPR,
+} StmtKind;
 
-struct Statement {
-  Node_ID id;
-  Statement_Kind t;
+struct Stmt {
+  NodeID id;
+  StmtKind t;
   union {
-    struct Declaration *declaration;
-    struct If_Statement *if_statement;
-    struct Return_Statement *return_statement;
-    struct Defer_Statement *defer_statement;
-    struct Compound_Statement *compound_statement;
-    struct Expression *expression;
+    struct Decl *decl;
+    struct IfStmt *if_stmt;
+    struct ReturnStmt *return_stmt;
+    struct Defer_Statement *defer_stmt;
+    struct CompStmt *comp_stmt;
+    struct Expr *expr;
   };
 };
 
-struct If_Statement {
-  Node_ID id;
-  struct Condition *condition;
-  struct Compound_Statement *true_branch;
+struct IfStmt {
+  NodeID id;
+  struct Cond *cond;
+  struct CompStmt *true_branch;
   MAYBE(struct Else *) else_branch;
 };
 
 typedef enum {
-  CONDITION_UNION_TAG,
-  CONDITION_EXPRESSION,
-} Condition_Kind;
+  COND_UNION_TAG,
+  COND_EXPR,
+} CondKind;
 
-struct Condition {
-  Node_ID id;
-  Condition_Kind t;
+struct Cond {
+  NodeID id;
+  CondKind t;
   union {
-    struct Union_Tag_Condition *union_tag;
-    struct Expression *expression;
+    struct UnionTagCond *union_tag;
+    struct Expr *expr;
   };
 };
 
-struct Union_Tag_Condition {
-  Node_ID id;
+struct UnionTagCond {
+  NodeID id;
   Tok classifier;  // let or mut
-  struct Destructure_Union *trigger;
+  struct UnpackUnion *trigger;
   Tok assign_token;
-  struct Expression *expression;
+  struct Expr *expr;
 };
 
 typedef enum {
   ELSE_IF,
-  ELSE_COMPOUND,
-} Else_Kind;
+  ELSE_COMP,
+} ElseKind;
 
 struct Else {
-  Node_ID id;
-  Else_Kind t;
+  NodeID id;
+  ElseKind t;
   union {
-    struct If_Statement *if_statement;
-    struct Compound_Statement *compound_statement;
+    struct IfStmt *if_stmt;
+    struct CompStmt *comp_stmt;
   };
 };
 
-struct Return_Statement {
-  Node_ID id;
-  struct Expr *expression;  // nullable
+struct ReturnStmt {
+  NodeID id;
+  MAYBE(struct Expr *) expr;
 };
 
-struct Defer_Statement {
-  Node_ID id;
-  struct Statement *statement;
+struct DeferStmt {
+  NodeID id;
+  struct Stmt *stmt;
 };
 
-struct Compound_Statement {
-  Node_ID id;
+struct CompStmt {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Statement **items;
+  struct Stmt **items;
 };
 
 typedef enum {
   TYPE_BUILTIN,
-  TYPE_COLLECTION,
+  TYPE_COLL,
   TYPE_STRUCT,
   TYPE_UNION,
   TYPE_ENUM,
-  TYPE_ERROR,
-  TYPE_POINTER,
-  TYPE_FUNCTION,
-  TYPE_SCOPED_IDENTIFIER,
-} Type_Kind;
+  TYPE_ERR,
+  TYPE_PTR,
+  TYPE_FN,
+  TYPE_SCOPED_IDENT,
+} TypeKind;
 
 struct Type {
-  Node_ID id;
-  Type_Kind t;
+  NodeID id;
+  TypeKind t;
   union {
-    struct Builtin_Type *builtin_type;
-    struct Collection_Type *collection_type;
-    struct Struct_Type *struct_type;
-    struct Union_Type *union_type;
-    struct Enum_Type *enum_type;
-    struct Error_Type *error_type;
-    struct Pointer_Type *pointer_type;
-    struct Function_Type *function_type;
-    struct Scoped_Identifier *scoped_identifier;
+    struct BuiltinType *builtin_type;
+    struct CollType *coll_type;
+    struct StructType *struct_type;
+    struct UnionType *union_type;
+    struct EnumType *enum_type;
+    struct ErrType *err_type;
+    struct PtrType *ptr_type;
+    struct FnType *fn_type;
+    struct ScopedIdent *scoped_ident;
   };
 };
 
-struct Builtin_Type {
-  Node_ID id;
+struct BuiltinType {
+  NodeID id;
   Tok token;  // just stores the keyword token
 };
 
-struct Collection_Type {
-  Node_ID id;
-  MAYBE(struct Expression *) index_expression;
+struct CollType {
+  NodeID id;
+  MAYBE(struct Expr *) index_expr;
   struct Type *element_type;
 };
 
-struct Struct_Type {
-  Node_ID id;
-  MAYBE(struct Type_Parameter_List *) type_params;
-  struct Struct_Body *body;
+struct StructType {
+  NodeID id;
+  MAYBE(struct TypeParams *) type_params;
+  struct StructBody *body;
 };
 
-struct Type_List {
-  Node_ID id;
+struct Types {
+  NodeID id;
   u32 len;
   u32 cap;
   struct Type **items;
 };
 
-struct Union_Type {
-  Node_ID id;
-  MAYBE(struct Type_Parameter_List *) type_params;
-  struct Field_List *fields;
+struct UnionType {
+  NodeID id;
+  MAYBE(struct TypeParams *) type_params;
+  struct Fields *fields;
 };
 
-struct Enum_Type {
-  Node_ID id;
-  struct Identifier_List *enumerators;
+struct EnumType {
+  NodeID id;
+  struct Idents *alts;
 };
 
-struct Error_Type {
-  Node_ID id;
-  struct Error_List *errors;
+struct ErrType {
+  NodeID id;
+  struct Errs *errs;
 };
 
-struct Pointer_Type {
-  Node_ID id;
+struct PtrType {
+  NodeID id;
   Tok classifier;  // let or mut
-  struct Type *referenced_type;
+  struct Type *ref_type;
 };
 
-struct Function_Type {
-  Node_ID id;
-  struct Type_List *parameters;
+struct FnType {
+  NodeID id;
+  struct Types *params;
   MAYBE(struct Type *) return_type;
 };
 
-struct Scoped_Identifier {
-  Node_ID id;
+struct ScopedIdent {
+  NodeID id;
   u32 cap;
   u32 len;
   Tok *items;
 };
 
 typedef enum {
-  EXPRESSION_BASIC,
-  EXPRESSION_PARENTHESIZED,
-  EXPRESSION_COMPOSITE_LITERAL,
-  EXPRESSION_POSTFIX,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_FIELD_ACCESS,
-  EXPRESSION_ARRAY_ACCESS,
-  EXPRESSION_UNARY,
-  EXPRESSION_BINARY,
-} Expression_Kind;
+  EXPR_ATOM,
+  EXPR_POSTFIX,
+  EXPR_FN_CALL,
+  EXPR_FIELD_ACCESS,
+  EXPR_COLL_ACCESS,
+  EXPR_UNARY,
+  EXPR_BIN,
+} ExprKind;
 
-struct Expression {
-  Node_ID id;
-  Expression_Kind t;
+struct Expr {
+  NodeID id;
+  ExprKind t;
   union {
-    struct Basic_Expression *basic_expression;
-    struct Parenthesized_Expression *parenthesized_expression;
-    struct Composite_Literal_Expression *composite_literal_expression;
-    struct Postfix_Expression *postfix_expression;
-    struct Function_Call_Expression *function_call_expression;
-    struct Field_Access_Expression *field_access_expression;
-    struct Array_Access_Expression *array_access_expression;
-    struct Unary_Expression *unary_expression;
-    struct Binary_Expression *binary_expression;
+    struct Atom *atom;
+    struct PostfixExpr *postfix_expr;
+    struct FnCall *fn_call;
+    struct FieldAccess *field_access;
+    struct CollAccess *coll_access;
+    struct UnaryExpr *unary_expr;
+    struct BinExpr *bin_expr;
   };
 };
 
 typedef enum {
-  BASIC_EXPRESSION_TOKEN,
-  BASIC_EXPRESSION_BRACED_LIT,
-} Basic_Expression_Kind;
+  ATOM_TOKEN,
+  ATOM_BRACED_LIT,
+} AtomKind;
 
-struct Basic_Expression {
-  Node_ID id;
-  Basic_Expression_Kind t;
+struct Atom {
+  NodeID id;
+  AtomKind t;
   union {
     Tok token;  // Stores: identifier, number, string, enum, nil
-    struct Braced_Literal *braced_lit;
+    struct BracedLit *braced_lit;
   };
 };
 
-struct Braced_Literal {
-  Node_ID id;
+struct BracedLit {
+  NodeID id;
   MAYBE(struct Type *) type;
-  struct Initializer_List *initializer;
+  struct Init *init;
 };
 
-struct Parenthesized_Expression {
-  Node_ID id;
-  struct Expression *inner_expression;
+struct FnCall {
+  NodeID id;
+  struct Expr *lvalue;
+  struct Init *args;
 };
 
-struct Composite_Literal_Expression {
-  Node_ID id;
-  MAYBE(struct Type *) explicit_type;
-  struct Expression *value;
-};
-
-struct Function_Call_Expression {
-  Node_ID id;
-  struct Expression *lvalue;
-  struct Initializer_List *arguments;
-};
-
-struct Initializer_List {
-  Node_ID id;
+struct Init {
+  NodeID id;
   u32 len;
   u32 cap;
-  struct Expression **items;
+  struct Expr **items;
 };
 
-struct Postfix_Expression {
-  Node_ID id;
-  struct Expression *inner_expression;
+struct PostfixExpr {
+  NodeID id;
+  struct Expr *sub_expr;
   Tok op;
 };
 
-struct Field_Access_Expression {
-  Node_ID id;
-  struct Expression *lvalue;
+struct FieldAccess {
+  NodeID id;
+  struct Expr *lvalue;
   Tok field;
 };
 
-struct Array_Access_Expression {
-  Node_ID id;
-  struct Expression *lvalue;
+struct CollAccess {
+  NodeID id;
+  struct Expr *lvalue;
   struct Index *index;
 };
 
 typedef enum {
   INDEX_SINGLE,
   INDEX_RANGE,
-} Index_Kind;
+} IndexKind;
 
 struct Index {
-  Node_ID id;
-  Index_Kind t;
-  MAYBE(struct Expression *) start;
-  MAYBE(struct Expression *) end;
+  NodeID id;
+  IndexKind t;
+  MAYBE(struct Expr *) start;
+  MAYBE(struct Expr *) end;
 };
 
-struct Unary_Expression {
-  Node_ID id;
+struct UnaryExpr {
+  NodeID id;
   Tok op;
-  struct Expression *inner_expression;
+  struct Expr *sub_expr;
 };
 
-struct Binary_Expression {
-  Node_ID id;
+struct BinExpr {
+  NodeID id;
   Tok op;
-  struct Expression *left;
-  struct Expression *right;
+  struct Expr *left;
+  struct Expr *right;
 };
 
 #define USE(NODE, ...) typedef struct NODE NODE;
@@ -601,83 +578,83 @@ typedef enum {
   EACH_NODE
 #undef USE
       NODE_KIND_COUNT,
-} Node_Kind;
+} NodeKind;
 
 typedef enum {
   NFLAG_NONE = 0,
   NFLAG_ERROR = 1,
-} Node_Flag;
+} NodeFlag;
 
 typedef struct {
-  Node_Flag *items;
+  NodeFlag *items;
   u32 cap;
   u32 len;
-} Node_Flags;
+} NodeFlags;
 
 typedef struct {
   const char **items;
   u32 cap;
   u32 len;
-} Node_Names;
+} NodeNames;
 
 typedef enum {
   CHILD_TOKEN,
   CHILD_NODE,
-} Child_Kind;
+} ChildKind;
 
 typedef struct {
-  Child_Kind t;
+  ChildKind t;
   union {
     Tok token;
-    Node_ID id;
+    NodeID id;
   };
   MAYBE(const char *) name;
-} Node_Child;
+} NodeChild;
 
 typedef struct {
-  Node_Child *items;
+  NodeChild *items;
   u32 cap;
   u32 len;
-} Node_Children;
+} NodeChildren;
 
 typedef struct {
-  Node_Children *items;
+  NodeChildren *items;
   u32 cap;
   u32 len;
-} Node_Trees;
+} NodeTrees;
 
 typedef struct {
-  Node_ID next_id;
-  Node_Flags flags;
-  Node_Trees trees;
-  Node_Names names;
-} Node_Metadata;
+  NodeID next_id;
+  NodeFlags flags;
+  NodeTrees trees;
+  NodeNames names;
+} NodeMetadata;
 
-const char *node_kind_name(Node_Kind kind);
+const char *node_kind_name(NodeKind kind);
 
-Node_Metadata new_node_metadata(void);
-void node_metadata_free(Node_Metadata *m);
-void *new_node(Node_Metadata *m, Arena *a, Node_Kind kind);
-void add_node_flags(Node_Metadata *m, Node_ID id, Node_Flag flags);
-bool has_error(Node_Metadata *m, void *node);
+NodeMetadata new_node_metadata(void);
+void node_metadata_free(NodeMetadata *m);
+void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
+void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags);
+bool has_error(NodeMetadata *m, void *node);
 
-void add_child(Node_Metadata *m, Node_ID id, Node_Child child);
-Node_Child child_token(Tok token);
-Node_Child child_token_named(const char *name, Tok token);
-Node_Child child_node(Node_ID node);
-Node_Child child_node_named(const char *name, Node_ID node);
+void add_child(NodeMetadata *m, NodeID id, NodeChild child);
+NodeChild child_token(Tok token);
+NodeChild child_token_named(const char *name, Tok token);
+NodeChild child_node(NodeID node);
+NodeChild child_node_named(const char *name, NodeID node);
 
-const char *get_node_name(Node_Metadata *m, Node_ID id);
-Node_Children *get_node_children(Node_Metadata *m, Node_ID id);
-Node_Child *last_child(Node_Metadata *m, Node_ID id);
+const char *get_node_name(NodeMetadata *m, NodeID id);
+NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
+NodeChild *last_child(NodeMetadata *m, NodeID id);
 
 typedef struct {
   FILE *fs;
   u32 indent_level;
   u8 indent_width;
-  Node_Metadata *meta;
-} Tree_Dump_Ctx;
+  NodeMetadata *meta;
+} TreeDumpCtx;
 
-void tree_dump(Tree_Dump_Ctx *ctx, Node_ID id);
+void tree_dump(TreeDumpCtx *ctx, NodeID id);
 
 #endif

@@ -6,12 +6,12 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='x'
               }
           }
@@ -27,17 +27,17 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='x'
               }
             type {
               builtin_type {
-                name='u32'
+                'u32'
               }
             }
           }
@@ -53,18 +53,18 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
+              var_binding {
                 name='x'
               }
             value:
-              expression {
-                basic_expression {
-                  atom='10'
+              expr {
+                atom {
+                  '10'
                 }
               }
           }
@@ -80,12 +80,12 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='mut'
             binding:
-              variable_binding {
+              var_binding {
                 name='x'
               }
           }
@@ -101,29 +101,29 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
-                destructure_struct {
-                  aliased_binding_list {
-                    aliased_binding {
+              var_binding {
+                unpack_struct {
+                  alias_bindings {
+                    alias_binding {
                       binding {
                         kind='*'
                         name='px'
                       }
                       alias='x'
                     }
-                    aliased_binding {
+                    alias_binding {
                       binding {
                         kind='*'
                         name='py'
                       }
                       alias='y'
                     }
-                    aliased_binding {
+                    alias_binding {
                       binding {
                         name='meta'
                       }
@@ -144,14 +144,14 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
-                destructure_tuple {
-                  binding_list {
+              var_binding {
+                unpack_tuple {
+                  bindings {
                     binding {
                       kind='*'
                       name='px'
@@ -178,13 +178,13 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          variable_declaration {
+      decls {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
-                destructure_union {
+              var_binding {
+                unpack_union {
                   tag='ok'
                   binding {
                     name='foo'
@@ -193,12 +193,12 @@ syntax_test(
               }
           }
         }
-        declaration {
-          variable_declaration {
+        decl {
+          var_decl {
             kind='let'
             binding:
-              variable_binding {
-                destructure_union {
+              var_binding {
+                unpack_union {
                   tag='err'
                   binding {
                     kind='*'
@@ -224,16 +224,16 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          struct_declaration {
+      decls {
+        decl {
+          struct_decl {
             struct_body {
-              field_list {
+              fields {
                 field {
                   name='x'
                   type {
                     builtin_type {
-                      name='f32'
+                      'f32'
                     }
                   }
                 }
@@ -241,7 +241,7 @@ syntax_test(
                   name='y'
                   type {
                     builtin_type {
-                      name='f32'
+                      'f32'
                     }
                   }
                 }
@@ -267,11 +267,11 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          enum_declaration {
+      decls {
+        decl {
+          enum_decl {
             name='Direction'
-            identifier_list {
+            idents {
               'north'
               'south'
               'east'
@@ -296,23 +296,23 @@ syntax_test(
     expected="""
     source_file {
       imports {}
-      declarations {
-        declaration {
-          error_declaration {
-            error_list {
-              error {
-                scoped_identifier {
+      decls {
+        decl {
+          err_decl {
+            errs {
+              err {
+                scoped_ident {
                   'Missing_Semicolon'
                 }
               }
-              error {
-                scoped_identifier {
+              err {
+                scoped_ident {
                   'Unmatched_Quote'
                 }
               }
-              error {
+              err {
                 kind='!'
-                scoped_identifier {
+                scoped_ident {
                   'IO_Error'
                 }
               }

@@ -6,14 +6,14 @@
 
 int main(void) {
   string source = ztos("let _ = @foo++; let foo = 10;");
-  Source_Code code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos("<string>"), source);
 
-  Parse_Context pc = new_parse_context(code);
+  ParseCtx pc = new_parse_ctx(code);
 
-  Source_File *sf = source_file(&pc);
+  SourceFile *sf = source_file(&pc);
   (void)sf;
 
-  Tree_Dump_Ctx dump_ctx = {
+  TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
   tree_dump(&dump_ctx, sf->id);
   //
@@ -23,5 +23,5 @@ int main(void) {
   // DUMP(&out, &pc, sf, source_file);
 
   source_code_free(&code);
-  parse_context_free(&pc);
+  parse_ctx_free(&pc);
 }

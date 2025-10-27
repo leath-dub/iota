@@ -5,14 +5,14 @@
 #include <stdbool.h>
 #include <string.h>
 
-void errorf(Source_Code code, const char *fmt, ...) {
+void errorf(SourceCode code, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   vfprintf(code.errors.fs, fmt, args);
   va_end(args);
 }
 
-void reportf(Source_Code code, u32 at, const char *fmt, ...) {
+void reportf(SourceCode code, u32 at, const char *fmt, ...) {
   Position pos = line_and_column(code.lines, at);
   string path = code.file_path;
   string line = line_of(code, at);
@@ -47,8 +47,8 @@ static Lines new_lines(string text) {
   return lines;
 }
 
-Source_Code new_source_code(string file_path, string text) {
-  return (Source_Code){
+SourceCode new_source_code(string file_path, string text) {
+  return (SourceCode){
       .file_path = file_path,
       .lines = new_lines(text),
       .text = text,
@@ -75,7 +75,7 @@ Position line_and_column(Lines lines, u32 offset) {
   };
 }
 
-string line_of(Source_Code code, u32 offset) {
+string line_of(SourceCode code, u32 offset) {
   Position pos = line_and_column(code.lines, offset);
   u32 line_start = code.lines.items[pos.line - 1];
   u32 line_end;
@@ -87,7 +87,7 @@ string line_of(Source_Code code, u32 offset) {
   return substr(code.text, line_start, line_end);
 }
 
-void source_code_free(Source_Code *code) {
+void source_code_free(SourceCode *code) {
   if (code->lines.items != NULL) {
     free(code->lines.items);
   }

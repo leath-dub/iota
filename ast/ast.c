@@ -2,8 +2,8 @@
 
 #include <assert.h>
 
-Node_Metadata new_node_metadata(void) {
-  return (Node_Metadata){
+NodeMetadata new_node_metadata(void) {
+  return (NodeMetadata){
       .next_id = 0,
       .flags =
           {
@@ -26,13 +26,13 @@ Node_Metadata new_node_metadata(void) {
   };
 }
 
-void node_metadata_free(Node_Metadata *m) {
+void node_metadata_free(NodeMetadata *m) {
   if (m->flags.items != NULL) {
     free(m->flags.items);
   }
   if (m->trees.items != NULL) {
     for (u32 id = 0; id < m->trees.len; id++) {
-      Node_Children *children = get_node_children(m, id);
+      NodeChildren *children = get_node_children(m, id);
       free(children->items);
     }
     free(m->trees.items);
@@ -42,47 +42,47 @@ void node_metadata_free(Node_Metadata *m) {
   }
 }
 
-void add_node_flags(Node_Metadata *m, Node_ID id, Node_Flag flags) {
+void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags) {
   m->flags.items[id] |= flags;
 }
 
-bool has_error(Node_Metadata *m, void *node) {
+bool has_error(NodeMetadata *m, void *node) {
   assert(node != NULL);
-  Node_ID *id = node;
+  NodeID *id = node;
   return m->flags.items[*id] & NFLAG_ERROR;
 }
 
-void add_child(Node_Metadata *m, Node_ID id, Node_Child child) {
-  Node_Children *children = &m->trees.items[id];
+void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
+  NodeChildren *children = &m->trees.items[id];
   APPEND(children, child);
 }
 
-Node_Child child_token(Tok token) {
-  return (Node_Child){
+NodeChild child_token(Tok token) {
+  return (NodeChild){
       .t = CHILD_TOKEN,
       .token = token,
       .name.ok = false,
   };
 }
 
-Node_Child child_token_named(const char *name, Tok token) {
-  return (Node_Child){
+NodeChild child_token_named(const char *name, Tok token) {
+  return (NodeChild){
       .t = CHILD_TOKEN,
       .token = token,
       .name = {.value = name, .ok = true},
   };
 }
 
-Node_Child child_node(Node_ID id) {
-  return (Node_Child){
+NodeChild child_node(NodeID id) {
+  return (NodeChild){
       .t = CHILD_NODE,
       .id = id,
       .name.ok = false,
   };
 }
 
-Node_Child child_node_named(const char *name, Node_ID id) {
-  return (Node_Child){
+NodeChild child_node_named(const char *name, NodeID id) {
+  return (NodeChild){
       .t = CHILD_NODE,
       .id = id,
       .name = {.value = name, .ok = true},
@@ -100,38 +100,38 @@ typedef struct {
 typedef struct {
   const char *name;
   Layout layout;
-} Node_Descriptor;
+} NodeDescriptor;
 
-static Node_Descriptor node_descriptors[];
+static NodeDescriptor node_descriptors[];
 
-const char *node_kind_name(Node_Kind kind) {
+const char *node_kind_name(NodeKind kind) {
   return node_descriptors[kind].name;
 }
 
-void *new_node(Node_Metadata *m, Arena *a, Node_Kind kind) {
+void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
   Layout layout = node_descriptors[kind].layout;
-  Node_ID *r = arena_alloc(a, layout.size, layout.align);
+  NodeID *r = arena_alloc(a, layout.size, layout.align);
   APPEND(&m->flags, 0);
   APPEND(&m->names, node_kind_name(kind));
-  APPEND(&m->trees, (Node_Children){.len = 0, .cap = 0, .items = NULL});
+  APPEND(&m->trees, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
   *r = m->next_id++;
   return r;
 }
 
-const char *get_node_name(Node_Metadata *m, Node_ID id) {
+const char *get_node_name(NodeMetadata *m, NodeID id) {
   return *AT(m->names, id);
 }
 
-Node_Children *get_node_children(Node_Metadata *m, Node_ID id) {
+NodeChildren *get_node_children(NodeMetadata *m, NodeID id) {
   return AT(m->trees, id);
 }
 
-Node_Child *last_child(Node_Metadata *m, Node_ID id) {
-  Node_Children *children = AT(m->trees, id);
+NodeChild *last_child(NodeMetadata *m, NodeID id) {
+  NodeChildren *children = AT(m->trees, id);
   return AT(*children, children->len - 1);
 }
 
-static Node_Descriptor node_descriptors[NODE_KIND_COUNT] = {
+static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
 #define USE(TYPE, UPPER_NAME, REPR) \
   [NODE_##UPPER_NAME] = {REPR, LAYOUT_OF(TYPE)},
     EACH_NODE

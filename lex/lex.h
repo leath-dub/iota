@@ -79,12 +79,12 @@ typedef enum {
 #undef TOKEN
 #undef KEYWORD
       TOK_KIND_COUNT,
-} Tok_Kind;
+} TokKind;
 
 extern string tok_to_string[TOK_KIND_COUNT];
 
 typedef struct {
-  Tok_Kind t;
+  TokKind t;
   string text;
   u32 offset;
   union {
@@ -94,12 +94,12 @@ typedef struct {
 } Tok;
 
 typedef struct {
-  Source_Code source;
+  SourceCode source;
   u32 cursor;
   Tok lookahead;  // is set every time `lex_peek` is called
 } Lexer;
 
-Lexer new_lexer(Source_Code source);
+Lexer new_lexer(SourceCode source);
 Tok lex_peek(Lexer *l);
 void lex_consume(Lexer *l);
 

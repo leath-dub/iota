@@ -22,15 +22,15 @@ string read_all(FILE *fs) {
 
 int main(void) {
   string text = read_all(stdin);
-  Source_Code code = new_source_code(ztos("<stdin>"), text);
-  Parse_Context pc = new_parse_context(code);
-  Source_File *file = source_file(&pc);
+  SourceCode code = new_source_code(ztos("<stdin>"), text);
+  ParseCtx pc = new_parse_ctx(code);
+  SourceFile *file = source_file(&pc);
 
-  Tree_Dump_Ctx dump_ctx = {
+  TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
   tree_dump(&dump_ctx, file->id);
 
-  parse_context_free(&pc);
+  parse_ctx_free(&pc);
   source_code_free(&code);
   fflush(dump_ctx.fs);
   free(text.data);

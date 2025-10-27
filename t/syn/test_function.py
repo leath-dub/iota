@@ -13,25 +13,25 @@ multi_paramf = Template("$name.. $param_type")
 expectedf = Template("""
   source_file {
     imports {}
-    declarations {
-      declaration {
-        function_declaration {
+    decls {
+      decl {
+        fn_decl {
           name='$name'
 $body
-          compound_statement {}
+          comp_stmt {}
         }
       }
     }
   }
 """)
 
-expected_paramf = Template("""function_parameter {
-  variable_binding {
+expected_paramf = Template("""fn_param {
+  var_binding {
     name='$name'
   }$kind
   type {
     builtin_type {
-      name='$param_type'
+      '$param_type'
     }
   }
 }""")
@@ -81,11 +81,11 @@ class FunDef:
         self.for_each_param(lambda is_variadic: params.append(generate_param(is_variadic)))
 
         params_txt = textwrap.indent("\n".join(params), "  ")
-        params_txt = f"function_parameter_list {{\n{params_txt}\n}}"
+        params_txt = f"fn_params {{\n{params_txt}\n}}"
 
         return_type = self.return_type
         if len(self.return_type) != 0:
-            return_type = f"type {{\n  builtin_type {{\n    name='{self.return_type}'\n  }}\n}}"
+            return_type = f"type {{\n  builtin_type {{\n    '{self.return_type}'\n  }}\n}}"
 
         body = "\n".join((params_txt, return_type))
         body = textwrap.indent(body, "  " * 5).rstrip()

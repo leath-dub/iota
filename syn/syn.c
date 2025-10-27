@@ -11,49 +11,49 @@
 
 typedef struct {
   void *node;
-  Node_ID parent;
+  NodeID parent;
   bool root;
-} Node_Context;
+} NodeCtx;
 
-static void *make_node(Parse_Context *c, Node_Kind kind) {
+static void *make_node(ParseCtx *c, NodeKind kind) {
   return new_node(&c->meta, &c->arena, kind);
 }
 
-static void *attr(Parse_Context *c, const char *name, void *node) {
-  Node_Child *child = last_child(&c->meta, c->current);
+static void *attr(ParseCtx *c, const char *name, void *node) {
+  NodeChild *child = last_child(&c->meta, c->current);
   child->name.ok = true;
   child->name.value = name;
   return node;
 }
 
-static Tok token_attr(Parse_Context *c, const char *name, Tok tok) {
+static Tok token_attr(ParseCtx *c, const char *name, Tok tok) {
   add_child(&c->meta, c->current, child_token_named(name, tok));
   return tok;
 }
 
-static Tok token_attr_anon(Parse_Context *c, Tok tok) {
+static Tok token_attr_anon(ParseCtx *c, Tok tok) {
   add_child(&c->meta, c->current, child_token(tok));
   return tok;
 }
 
-static Node_Context begin_node(Parse_Context *c, void *node) {
-  Node_Context ctx = {
+static NodeCtx begin_node(ParseCtx *c, void *node) {
+  NodeCtx ctx = {
       .root = false,
       .node = node,
       .parent = c->current,
   };
-  c->current = *(Node_ID *)ctx.node;
+  c->current = *(NodeID *)ctx.node;
   return ctx;
 }
 
-static Node_Context start_node(Parse_Context *c, Node_Kind kind) {
+static NodeCtx start_node(ParseCtx *c, NodeKind kind) {
   return begin_node(c, make_node(c, kind));
 }
 
-static void set_current_node(Parse_Context *c, Node_ID id) { c->current = id; }
+static void set_current_node(ParseCtx *c, NodeID id) { c->current = id; }
 
-static void *end_node(Parse_Context *c, Node_Context ctx) {
-  assert(*(Node_ID *)ctx.node == c->current);
+static void *end_node(ParseCtx *c, NodeCtx ctx) {
+  assert(*(NodeID *)ctx.node == c->current);
   if (!ctx.root) {
     add_child(&c->meta, ctx.parent, child_node(c->current));
     set_current_node(c, ctx.parent);
@@ -63,28 +63,24 @@ static void *end_node(Parse_Context *c, Node_Context ctx) {
   return ctx.node;
 }
 
-Parse_Context new_parse_context(Source_Code code) {
-  return (Parse_Context){
+ParseCtx new_parse_ctx(SourceCode code) {
+  return (ParseCtx){
       .lex = new_lexer(code),
       .arena = new_arena(),
       .current = 0,
   };
 }
 
-void parse_context_free(Parse_Context *c) {
+void parse_ctx_free(ParseCtx *c) {
   node_metadata_free(&c->meta);
   arena_free(&c->arena);
 }
 
-static Parse_State set_marker(Parse_Context *c) {
-  return (Parse_State){c->lex};
-}
+static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
 
-static void backtrack(Parse_Context *c, Parse_State marker) {
-  c->lex = marker.lex;
-}
+static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex; }
 
-static Tok tnext(Parse_Context *c) {
+static Tok tnext(ParseCtx *c) {
   Tok tok;
   do {
     lex_consume(&c->lex);
@@ -93,20 +89,20 @@ static Tok tnext(Parse_Context *c) {
   return tok;
 }
 
-static void next(Parse_Context *c) { (void)tnext(c); }
+static void next(ParseCtx *c) { (void)tnext(c); }
 
-static Tok consume(Parse_Context *c) {
+static Tok consume(ParseCtx *c) {
   Tok tok = lex_peek(&c->lex);
   next(c);
   return tok;
 }
 
-Tok at(Parse_Context *c) { return lex_peek(&c->lex); }
+Tok at(ParseCtx *c) { return lex_peek(&c->lex); }
 
 /*static*/
-bool looking_at(Parse_Context *c, Tok_Kind t) { return at(c).t == t; }
+bool looking_at(ParseCtx *c, TokKind t) { return at(c).t == t; }
 
-bool one_of(Tok_Kind t, Toks toks) {
+bool one_of(TokKind t, Toks toks) {
   for (u32 i = 0; i < toks.len; i++) {
     if (t == toks.items[i]) {
       return true;
@@ -116,7 +112,7 @@ bool one_of(Tok_Kind t, Toks toks) {
 }
 
 /*static*/
-void advance(Parse_Context *c, Toks toks) {
+void advance(ParseCtx *c, Toks toks) {
   for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
     if (one_of(tok.t, toks)) {
       return;
@@ -125,7 +121,7 @@ void advance(Parse_Context *c, Toks toks) {
 }
 
 /*static*/
-void expected(Parse_Context *c, Node_ID in, const char *msg) {
+void expected(ParseCtx *c, NodeID in, const char *msg) {
   Tok tok = lex_peek(&c->lex);
   reportf(c->lex.source, c->lex.cursor, "syntax error: expected %s, found %s",
           msg, tok_to_string[tok.t].data);
@@ -133,7 +129,7 @@ void expected(Parse_Context *c, Node_ID in, const char *msg) {
 }
 
 /*static*/
-bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
+bool expect(ParseCtx *c, NodeID in, TokKind t) {
   Tok tok = lex_peek(&c->lex);
   bool match = tok.t == t;
   if (!match) {
@@ -144,11 +140,11 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
   return match;
 }
 
-#define DECLARE_FOLLOW_SET(name, ...)                             \
-  static const Tok_Kind _FOLLOW_##name##_ITEMS[] = {__VA_ARGS__}; \
-  static const Toks FOLLOW_##name = {                             \
-      .items = (Tok_Kind *)&_FOLLOW_##name##_ITEMS,               \
-      .len = sizeof(_FOLLOW_##name##_ITEMS) / sizeof(Tok_Kind),   \
+#define DECLARE_FOLLOW_SET(name, ...)                            \
+  static const TokKind _FOLLOW_##name##_ITEMS[] = {__VA_ARGS__}; \
+  static const Toks FOLLOW_##name = {                            \
+      .items = (TokKind *)&_FOLLOW_##name##_ITEMS,               \
+      .len = sizeof(_FOLLOW_##name##_ITEMS) / sizeof(TokKind),   \
   };
 
 // TODO: maybe we need to be more dynamic with sync tokens
@@ -157,35 +153,35 @@ bool expect(Parse_Context *c, Node_ID in, Tok_Kind t) {
 // I really fucking hope it was worth the effort.
 DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM,
                    T_ERROR, T_UNION, T_TYPE, T_USE)
-DECLARE_FOLLOW_SET(DECLARATION, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
+DECLARE_FOLLOW_SET(DECL, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION)
-DECLARE_FOLLOW_SET(VARIABLE_BINDING, T_SCLN, T_EQ)
+DECLARE_FOLLOW_SET(VAR_BINDING, T_SCLN, T_EQ)
 DECLARE_FOLLOW_SET(BINDING, T_COMMA, T_RPAR)
-DECLARE_FOLLOW_SET(ALIASED_BINDING, T_COMMA, T_RBRC)
+DECLARE_FOLLOW_SET(ALIAS_BINDING, T_COMMA, T_RBRC)
 DECLARE_FOLLOW_SET(TYPE, T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ)
-DECLARE_FOLLOW_SET(IDENTIFIER_LIST, T_RBRC)
-DECLARE_FOLLOW_SET(ERROR_LIST, T_RBRC)
-DECLARE_FOLLOW_SET(ERROR, T_COMMA, T_RBRC)
+DECLARE_FOLLOW_SET(IDENTS, T_RBRC)
+DECLARE_FOLLOW_SET(ERRS, T_RBRC)
+DECLARE_FOLLOW_SET(ERR, T_COMMA, T_RBRC)
 DECLARE_FOLLOW_SET(FIELD, T_IDENT, T_RBRC)
-DECLARE_FOLLOW_SET(STATEMENT_LIST, T_LBRC)
-DECLARE_FOLLOW_SET(STATEMENT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
+DECLARE_FOLLOW_SET(STMTS, T_LBRC)
+DECLARE_FOLLOW_SET(STMT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
                    T_UNION, T_LBRC /*, TODO FIRST(expression) */)
-DECLARE_FOLLOW_SET(BASIC_EXPRESSION, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ,
-                   T_EQEQ, T_NEQ, T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
+DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
+                   T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
 // TODO: once we have an automated tool
 // DECLARE_FOLLOW_SET(EXPRESSION, ?)
 
-Source_File *source_file(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_SOURCE_FILE);
+SourceFile *source_file(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
   nc.root = true;
-  Source_File *n = nc.node;
+  SourceFile *n = nc.node;
   n->imports = imports(c);
-  n->declarations = declarations(c);
+  n->decls = decls(c);
   return end_node(c, nc);
 }
 
-Imports *imports(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_IMPORTS);
+Imports *imports(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_IMPORTS);
   Imports *n = nc.node;
   while (looking_at(c, T_IMPORT)) {
     APPEND(n, import(c));
@@ -194,8 +190,8 @@ Imports *imports(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Import *import(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_IMPORT);
+Import *import(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_IMPORT);
   Import *n = nc.node;
   assert(expect(c, n->id, T_IMPORT));
   if (looking_at(c, T_IDENT)) {
@@ -208,75 +204,75 @@ Import *import(Parse_Context *c) {
     advance(c, FOLLOW_IMPORT);
     return end_node(c, nc);
   }
-  n->import_name = import_name;
+  n->import_name = token_attr(c, "module", import_name);
   return end_node(c, nc);
 }
 
-Declarations *declarations(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_DECLARATIONS);
-  Declarations *n = nc.node;
+Decls *decls(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_DECLS);
+  Decls *n = nc.node;
   while (!looking_at(c, T_EOF)) {
-    APPEND(n, declaration(c));
+    APPEND(n, decl(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Declaration *declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_DECLARATION);
-  Declaration *n = nc.node;
+Decl *decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_DECL);
+  Decl *n = nc.node;
   switch (at(c).t) {
     case T_LET:
     case T_MUT:
-      n->t = DECLARATION_VARIABLE;
-      n->variable_declaration = variable_declaration(c);
+      n->t = DECL_VAR;
+      n->var_decl = var_decl(c);
       break;
     case T_FUN:
-      n->t = DECLARATION_FUNCTION;
-      n->function_declaration = function_declaration(c);
+      n->t = DECL_FN;
+      n->fn_decl = fn_decl(c);
       break;
     case T_STRUCT:
-      n->t = DECLARATION_STRUCT;
-      n->struct_declaration = struct_declaration(c);
+      n->t = DECL_STRUCT;
+      n->struct_decl = struct_decl(c);
       break;
     case T_ENUM:
-      n->t = DECLARATION_ENUM;
-      n->enum_declaration = enum_declaration(c);
+      n->t = DECL_ENUM;
+      n->enum_decl = enum_decl(c);
       break;
     case T_ERROR:
-      n->t = DECLARATION_ERROR;
-      n->error_declaration = error_declaration(c);
+      n->t = DECL_ERR;
+      n->err_decl = err_decl(c);
       break;
     default:
       expected(c, n->id, "start of declaration");
-      advance(c, FOLLOW_DECLARATION);
+      advance(c, FOLLOW_DECL);
       break;
   }
   return end_node(c, nc);
 }
 
-Struct_Declaration *struct_declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_STRUCT_DECLARATION);
-  Struct_Declaration *n = nc.node;
+StructDecl *struct_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_STRUCT_DECL);
+  StructDecl *n = nc.node;
   assert(consume(c).t == T_STRUCT);
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->identifier = name;
-  n->body = struct_body(c, FOLLOW_DECLARATION);
+  n->ident = name;
+  n->body = struct_body(c, FOLLOW_DECL);
   return end_node(c, nc);
 }
 
-Struct_Body *struct_body(Parse_Context *c, Toks follow) {
-  Node_Context nc = start_node(c, NODE_STRUCT_BODY);
-  Struct_Body *n = nc.node;
+StructBody *struct_body(ParseCtx *c, Toks follow) {
+  NodeCtx nc = start_node(c, NODE_STRUCT_BODY);
+  StructBody *n = nc.node;
   switch (at(c).t) {
     case T_LBRC:
       next(c);
       n->tuple_like = false;
-      n->field_list = field_list(c);
+      n->fields = fields(c);
       if (!expect(c, n->id, T_RBRC)) {
         advance(c, follow);
         return end_node(c, nc);
@@ -285,7 +281,7 @@ Struct_Body *struct_body(Parse_Context *c, Toks follow) {
     case T_LPAR:
       next(c);
       n->tuple_like = true;
-      n->type_list = type_list(c);
+      n->types = types(c);
       if (!expect(c, n->id, T_RPAR)) {
         advance(c, follow);
         return end_node(c, nc);
@@ -299,57 +295,57 @@ Struct_Body *struct_body(Parse_Context *c, Toks follow) {
   return end_node(c, nc);
 }
 
-Enum_Declaration *enum_declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ENUM_DECLARATION);
-  Enum_Declaration *n = nc.node;
+EnumDecl *enum_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ENUM_DECL);
+  EnumDecl *n = nc.node;
   assert(consume(c).t == T_ENUM);
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->identifier = token_attr(c, "name", name);
+  n->ident = token_attr(c, "name", name);
   if (!expect(c, n->id, T_LBRC)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->enumerators = identifier_list(c);
+  n->alts = idents(c);
   if (!expect(c, n->id, T_RBRC)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
   return end_node(c, nc);
 }
 
-Error_Declaration *error_declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ERROR_DECLARATION);
-  Error_Declaration *n = nc.node;
+ErrDecl *err_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ERR_DECL);
+  ErrDecl *n = nc.node;
   assert(consume(c).t == T_ERROR);
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->identifier = name;
+  n->ident = name;
   if (!expect(c, n->id, T_LBRC)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->errors = error_list(c);
+  n->errs = errs(c);
   if (!expect(c, n->id, T_RBRC)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
   return end_node(c, nc);
 }
 
-Variable_Declaration *variable_declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_VARIABLE_DECLARATION);
-  Variable_Declaration *n = nc.node;
+VarDecl *var_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_VAR_DECL);
+  VarDecl *n = nc.node;
   Tok classifier = at(c);
   assert(classifier.t == T_MUT || classifier.t == T_LET);
   n->classifier = token_attr(c, "kind", consume(c));
-  n->binding = attr(c, "binding", variable_binding(c));
+  n->binding = attr(c, "binding", var_binding(c));
   if (!looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
     // Must have a type
     n->type = type(c);
@@ -357,81 +353,81 @@ Variable_Declaration *variable_declaration(Parse_Context *c) {
   if (looking_at(c, T_EQ)) {
     n->init.ok = true;
     n->init.assign_token = consume(c);
-    n->init.expression = attr(c, "value", expression(c, TOKS(T_SCLN)));
+    n->init.expr = attr(c, "value", expr(c, TOKS(T_SCLN)));
   }
   if (!expect(c, n->id, T_SCLN)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
   return end_node(c, nc);
 }
 
-Variable_Binding *variable_binding(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_VARIABLE_BINDING);
-  Variable_Binding *n = nc.node;
+VarBinding *var_binding(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_VAR_BINDING);
+  VarBinding *n = nc.node;
   switch (at(c).t) {
     case T_LPAR:
-      n->t = VARIABLE_BINDING_DESTRUCTURE_TUPLE;
-      n->destructure_tuple = destructure_tuple(c, FOLLOW_VARIABLE_BINDING);
+      n->t = VAR_BINDING_UNPACK_TUPLE;
+      n->unpack_tuple = unpack_tuple(c, FOLLOW_VAR_BINDING);
       break;
     case T_LBRC:
-      n->t = VARIABLE_BINDING_DESTRUCTURE_STRUCT;
-      n->destructure_struct = destructure_struct(c, FOLLOW_VARIABLE_BINDING);
+      n->t = VAR_BINDING_UNPACK_STRUCT;
+      n->unpack_struct = unpack_struct(c, FOLLOW_VAR_BINDING);
       break;
     case T_IDENT: {
       Tok name = consume(c);
       if (looking_at(c, T_LPAR)) {
         next(c);
-        n->t = VARIABLE_BINDING_DESTRUCTURE_UNION;
+        n->t = VAR_BINDING_UNPACK_UNION;
         {
-          Node_Context destr_ctx = start_node(c, NODE_DESTRUCTURE_UNION);
-          n->destructure_union = destr_ctx.node;
-          n->destructure_union->tag = token_attr(c, "tag", name);
-          n->destructure_union->binding = binding(c);
+          NodeCtx destr_ctx = start_node(c, NODE_UNPACK_UNION);
+          n->unpack_union = destr_ctx.node;
+          n->unpack_union->tag = token_attr(c, "tag", name);
+          n->unpack_union->binding = binding(c);
           (void)end_node(c, destr_ctx);
         }
         if (!expect(c, n->id, T_RPAR)) {
-          advance(c, FOLLOW_VARIABLE_BINDING);
+          advance(c, FOLLOW_VAR_BINDING);
           return end_node(c, nc);
         }
         return end_node(c, nc);
       }
-      n->t = VARIABLE_BINDING_BASIC;
+      n->t = VAR_BINDING_BASIC;
       n->basic = token_attr(c, "name", name);
       break;
     }
     default:
       expected(c, n->id, "a variable binding");
-      advance(c, FOLLOW_VARIABLE_BINDING);
+      advance(c, FOLLOW_VAR_BINDING);
       break;
   }
   return end_node(c, nc);
 }
 
-Binding *binding(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_BINDING);
+Binding *binding(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_BINDING);
   Binding *n = nc.node;
   if (looking_at(c, T_STAR)) {
-    n->reference = token_attr(c, "kind", consume(c));
+    n->ref = token_attr(c, "kind", consume(c));
   }
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
     advance(c, FOLLOW_BINDING);
     return end_node(c, nc);
   }
-  n->identifier = token_attr(c, "name", name);
+  n->ident = token_attr(c, "name", name);
   return end_node(c, nc);
 }
 
-Aliased_Binding *aliased_binding(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ALIASED_BINDING);
-  Aliased_Binding *n = nc.node;
+AliasBinding *alias_binding(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ALIAS_BINDING);
+  AliasBinding *n = nc.node;
   n->binding = binding(c);
   if (looking_at(c, T_EQ)) {
     next(c);
     Tok name = at(c);
     if (!expect(c, n->id, T_IDENT)) {
-      advance(c, FOLLOW_ALIASED_BINDING);
+      advance(c, FOLLOW_ALIAS_BINDING);
       return end_node(c, nc);
     }
     n->alias.ok = true;
@@ -440,14 +436,14 @@ Aliased_Binding *aliased_binding(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Destructure_Struct *destructure_struct(Parse_Context *c, Toks follow) {
-  Node_Context nc = start_node(c, NODE_DESTRUCTURE_STRUCT);
-  Destructure_Struct *n = nc.node;
+UnpackStruct *unpack_struct(ParseCtx *c, Toks follow) {
+  NodeCtx nc = start_node(c, NODE_UNPACK_STRUCT);
+  UnpackStruct *n = nc.node;
   if (!expect(c, n->id, T_LBRC)) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  n->bindings = aliased_binding_list(c, T_RBRC);
+  n->bindings = alias_bindings(c, T_RBRC);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, follow);
     return end_node(c, nc);
@@ -455,14 +451,14 @@ Destructure_Struct *destructure_struct(Parse_Context *c, Toks follow) {
   return end_node(c, nc);
 }
 
-Destructure_Tuple *destructure_tuple(Parse_Context *c, Toks follow) {
-  Node_Context nc = start_node(c, NODE_DESTRUCTURE_TUPLE);
-  Destructure_Tuple *n = nc.node;
+UnpackTuple *unpack_tuple(ParseCtx *c, Toks follow) {
+  NodeCtx nc = start_node(c, NODE_UNPACK_TUPLE);
+  UnpackTuple *n = nc.node;
   if (!expect(c, n->id, T_LPAR)) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  n->bindings = binding_list(c, T_RPAR);
+  n->bindings = bindings(c, T_RPAR);
   if (!expect(c, n->id, T_RPAR)) {
     advance(c, follow);
     return end_node(c, nc);
@@ -470,25 +466,25 @@ Destructure_Tuple *destructure_tuple(Parse_Context *c, Toks follow) {
   return end_node(c, nc);
 }
 
-Aliased_Binding_List *aliased_binding_list(Parse_Context *c, Tok_Kind end) {
-  Node_Context nc = start_node(c, NODE_ALIASED_BINDING_LIST);
-  Aliased_Binding_List *n = nc.node;
-  APPEND(n, aliased_binding(c));
+AliasBindings *alias_bindings(ParseCtx *c, TokKind end) {
+  NodeCtx nc = start_node(c, NODE_ALIAS_BINDINGS);
+  AliasBindings *n = nc.node;
+  APPEND(n, alias_binding(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, end)) {
       break;
     }
-    APPEND(n, aliased_binding(c));
+    APPEND(n, alias_binding(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Binding_List *binding_list(Parse_Context *c, Tok_Kind end) {
-  Node_Context nc = start_node(c, NODE_BINDING_LIST);
-  Binding_List *n = nc.node;
+Bindings *bindings(ParseCtx *c, TokKind end) {
+  NodeCtx nc = start_node(c, NODE_BINDINGS);
+  Bindings *n = nc.node;
   APPEND(n, binding(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
@@ -502,57 +498,57 @@ Binding_List *binding_list(Parse_Context *c, Tok_Kind end) {
   return end_node(c, nc);
 }
 
-Function_Declaration *function_declaration(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FUNCTION_DECLARATION);
-  Function_Declaration *n = nc.node;
+FnDecl *fn_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FN_DECL);
+  FnDecl *n = nc.node;
   assert(consume(c).t == T_FUN);
   // TODO type parameters
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->identifier = token_attr(c, "name", name);
+  n->ident = token_attr(c, "name", name);
   if (!expect(c, n->id, T_LPAR)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
-  n->parameters = function_parameter_list(c);
+  n->params = fn_params(c);
   if (!expect(c, n->id, T_RPAR)) {
-    advance(c, FOLLOW_DECLARATION);
+    advance(c, FOLLOW_DECL);
     return end_node(c, nc);
   }
   if (!looking_at(c, T_LBRC)) {
     n->return_type.ok = true;
     n->return_type.value = type(c);
   }
-  n->body = compound_statement(c);
+  n->body = comp_stmt(c);
   return end_node(c, nc);
 }
 
-Function_Parameter_List *function_parameter_list(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FUNCTION_PARAMETER_LIST);
-  Function_Parameter_List *n = nc.node;
+FnParams *fn_params(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FN_PARAMS);
+  FnParams *n = nc.node;
   if (looking_at(c, T_RPAR)) {
     return end_node(c, nc);
   }
-  APPEND(n, function_parameter(c));
+  APPEND(n, fn_param(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, T_RPAR)) {
       break;
     }
-    APPEND(n, function_parameter(c));
+    APPEND(n, fn_param(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Function_Parameter *function_parameter(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FUNCTION_PARAMETER);
-  Function_Parameter *n = nc.node;
-  n->binding = variable_binding(c);
+FnParam *fn_param(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FN_PARAM);
+  FnParam *n = nc.node;
+  n->binding = var_binding(c);
   if (looking_at(c, T_DOTDOT)) {
     token_attr(c, "kind", at(c));
     next(c);
@@ -562,9 +558,9 @@ Function_Parameter *function_parameter(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Statement *statement(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_STATEMENT);
-  Statement *n = nc.node;
+Stmt *stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_STMT);
+  Stmt *n = nc.node;
   switch (at(c).t) {
     case T_FUN:
     case T_LET:
@@ -573,12 +569,12 @@ Statement *statement(Parse_Context *c) {
     case T_ENUM:
     case T_ERROR:
     case T_UNION:
-      n->t = STATEMENT_DECLARATION;
-      n->declaration = declaration(c);
+      n->t = STMT_DECL;
+      n->decl = decl(c);
       break;
     case T_LBRC:
-      n->t = STATEMENT_COMPOUND;
-      n->compound_statement = compound_statement(c);
+      n->t = STMT_COMP;
+      n->comp_stmt = comp_stmt(c);
       break;
     // case T_IF:
     //   n->t = STATEMENT_IF;
@@ -587,10 +583,10 @@ Statement *statement(Parse_Context *c) {
     // case T_WHILE:
     //   break;
     default:
-      n->t = STATEMENT_EXPRESSION;
-      n->expression = expression(c, TOKS(T_SCLN));
+      n->t = STMT_EXPR;
+      n->expr = expr(c, TOKS(T_SCLN));
       if (!expect(c, n->id, T_SCLN)) {
-        advance(c, FOLLOW_STATEMENT);
+        advance(c, FOLLOW_STMT);
         return end_node(c, nc);
       }
       break;
@@ -598,27 +594,27 @@ Statement *statement(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Compound_Statement *compound_statement(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_COMPOUND_STATEMENT);
-  Compound_Statement *n = nc.node;
+CompStmt *comp_stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_COMP_STMT);
+  CompStmt *n = nc.node;
   if (!expect(c, n->id, T_LBRC)) {
-    advance(c, FOLLOW_STATEMENT_LIST);
+    advance(c, FOLLOW_STMTS);
     return end_node(c, nc);
   }
   while (!looking_at(c, T_RBRC)) {
     if (looking_at(c, T_EOF)) {
       expected(c, n->id, "a statement");
-      advance(c, FOLLOW_STATEMENT);
+      advance(c, FOLLOW_STMT);
       break;
     }
-    APPEND(n, statement(c));
+    APPEND(n, stmt(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   next(c);
   return end_node(c, nc);
 }
 
-static bool starts_type(Tok_Kind t) {
+static bool starts_type(TokKind t) {
   switch (t) {
     case T_S8:
     case T_U8:
@@ -647,8 +643,8 @@ static bool starts_type(Tok_Kind t) {
   }
 }
 
-Type *type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_TYPE);
+Type *type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_TYPE);
   Type *n = nc.node;
   switch (at(c).t) {
     case T_S8:
@@ -665,17 +661,17 @@ Type *type(Parse_Context *c) {
     case T_STRING:
     case T_ANY: {
       {
-        Node_Context builtin_ctx = start_node(c, NODE_BUILTIN_TYPE);
-        Builtin_Type *builtin_type = builtin_ctx.node;
-        builtin_type->token = token_attr(c, "name", consume(c));
+        NodeCtx builtin_ctx = start_node(c, NODE_BUILTIN_TYPE);
+        BuiltinType *builtin_type = builtin_ctx.node;
+        builtin_type->token = token_attr_anon(c, consume(c));
         n->t = TYPE_BUILTIN;
         n->builtin_type = end_node(c, builtin_ctx);
       }
       break;
     }
     case T_LBRK:
-      n->t = TYPE_COLLECTION;
-      n->collection_type = collection_type(c);
+      n->t = TYPE_COLL;
+      n->coll_type = coll_type(c);
       break;
     case T_STRUCT:
       n->t = TYPE_STRUCT;
@@ -690,20 +686,20 @@ Type *type(Parse_Context *c) {
       n->enum_type = enum_type(c);
       break;
     case T_ERROR:
-      n->t = TYPE_ERROR;
-      n->error_type = error_type(c);
+      n->t = TYPE_ERR;
+      n->err_type = err_type(c);
       break;
     case T_STAR:
-      n->t = TYPE_POINTER;
-      n->pointer_type = pointer_type(c);
+      n->t = TYPE_PTR;
+      n->ptr_type = ptr_type(c);
       break;
     case T_FUN:
-      n->t = TYPE_FUNCTION;
-      n->function_type = function_type(c);
+      n->t = TYPE_FN;
+      n->fn_type = fn_type(c);
       break;
     case T_IDENT:
-      n->t = TYPE_SCOPED_IDENTIFIER;
-      n->scoped_identifier = scoped_identifier(c, FOLLOW_TYPE);
+      n->t = TYPE_SCOPED_IDENT;
+      n->scoped_ident = scoped_ident(c, FOLLOW_TYPE);
       break;
     default:
       expected(c, n->id, "a type");
@@ -713,9 +709,9 @@ Type *type(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Collection_Type *collection_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_COLLECTION_TYPE);
-  Collection_Type *n = nc.node;
+CollType *coll_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_COLL_TYPE);
+  CollType *n = nc.node;
   assert(consume(c).t == T_LBRK);
   // For empty index, e.g.: []u32
   if (looking_at(c, T_RBRK)) {
@@ -723,8 +719,8 @@ Collection_Type *collection_type(Parse_Context *c) {
     n->element_type = type(c);
     return end_node(c, nc);
   }
-  n->index_expression.ok = true;
-  n->index_expression.value = expression(c, TOKS(T_RBRK));
+  n->index_expr.ok = true;
+  n->index_expr.value = expr(c, TOKS(T_RBRK));
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -733,17 +729,17 @@ Collection_Type *collection_type(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Struct_Type *struct_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_STRUCT_TYPE);
-  Struct_Type *n = nc.node;
+StructType *struct_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_STRUCT_TYPE);
+  StructType *n = nc.node;
   assert(consume(c).t == T_STRUCT);
   n->body = struct_body(c, FOLLOW_TYPE);
   return end_node(c, nc);
 }
 
-Field_List *field_list(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FIELD_LIST);
-  Field_List *n = nc.node;
+Fields *fields(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FIELDS);
+  Fields *n = nc.node;
   if (looking_at(c, T_RBRC)) {
     return end_node(c, nc);
   }
@@ -760,22 +756,22 @@ Field_List *field_list(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Field *field(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FIELD);
+Field *field(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FIELD);
   Field *n = nc.node;
   Tok tok = at(c);
   if (!expect(c, n->id, T_IDENT)) {
     advance(c, FOLLOW_FIELD);
     return end_node(c, nc);
   }
-  n->identifier = token_attr(c, "name", tok);
+  n->ident = token_attr(c, "name", tok);
   n->type = type(c);
   return end_node(c, nc);
 }
 
-Type_List *type_list(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_TYPE_LIST);
-  Type_List *n = nc.node;
+Types *types(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_TYPES);
+  Types *n = nc.node;
   if (looking_at(c, T_RPAR)) {
     return end_node(c, nc);
   }
@@ -792,15 +788,15 @@ Type_List *type_list(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Union_Type *union_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_UNION_TYPE);
-  Union_Type *n = nc.node;
+UnionType *union_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_UNION_TYPE);
+  UnionType *n = nc.node;
   assert(consume(c).t == T_UNION);
   if (!expect(c, n->id, T_LBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->fields = field_list(c);
+  n->fields = fields(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -808,15 +804,15 @@ Union_Type *union_type(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Enum_Type *enum_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ENUM_TYPE);
-  Enum_Type *n = nc.node;
+EnumType *enum_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ENUM_TYPE);
+  EnumType *n = nc.node;
   assert(consume(c).t == T_ENUM);
   if (!expect(c, n->id, T_LBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->enumerators = identifier_list(c);
+  n->alts = idents(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -824,15 +820,15 @@ Enum_Type *enum_type(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Error_Type *error_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ERROR_TYPE);
-  Error_Type *n = nc.node;
+ErrType *err_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ERR_TYPE);
+  ErrType *n = nc.node;
   assert(consume(c).t == T_ERROR);
   if (!expect(c, n->id, T_LBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->errors = error_list(c);
+  n->errs = errs(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -840,13 +836,13 @@ Error_Type *error_type(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Identifier_List *identifier_list(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_IDENTIFIER_LIST);
-  Identifier_List *n = nc.node;
+Idents *idents(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_IDENTS);
+  Idents *n = nc.node;
   bool start = true;
   while (!looking_at(c, T_RBRC)) {
     if (!start && !expect(c, n->id, T_COMMA)) {
-      advance(c, FOLLOW_IDENTIFIER_LIST);
+      advance(c, FOLLOW_IDENTS);
       return end_node(c, nc);
     }
     // Ignore trailing comma
@@ -855,7 +851,7 @@ Identifier_List *identifier_list(Parse_Context *c) {
     }
     Tok identifier = at(c);
     if (!expect(c, n->id, T_IDENT)) {
-      advance(c, FOLLOW_IDENTIFIER_LIST);
+      advance(c, FOLLOW_IDENTS);
       return end_node(c, nc);
     }
     APPEND(n, token_attr_anon(c, identifier));
@@ -865,57 +861,57 @@ Identifier_List *identifier_list(Parse_Context *c) {
   return end_node(c, nc);
 }
 
-Error_List *error_list(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ERROR_LIST);
-  Error_List *n = nc.node;
+Errs *errs(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ERRS);
+  Errs *n = nc.node;
   bool start = true;
   while (!looking_at(c, T_RBRC)) {
     if (!start && !expect(c, n->id, T_COMMA)) {
-      advance(c, FOLLOW_ERROR_LIST);
+      advance(c, FOLLOW_ERRS);
       return end_node(c, nc);
     }
     // Ignore trailing comma
     if (looking_at(c, T_RBRC)) {
       break;
     }
-    APPEND(n, error(c));
+    APPEND(n, err(c));
     start = false;
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
 }
 
-Error *error(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_ERROR);
-  Error *n = nc.node;
+Err *err(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ERR);
+  Err *n = nc.node;
   if (looking_at(c, T_BANG)) {
     n->embedded = true;
     token_attr(c, "kind", consume(c));
   }
-  n->scoped_identifier = scoped_identifier(c, FOLLOW_ERROR);
+  n->scoped_ident = scoped_ident(c, FOLLOW_ERR);
   return end_node(c, nc);
 }
 
-Pointer_Type *pointer_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_POINTER_TYPE);
-  Pointer_Type *n = nc.node;
+PtrType *ptr_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_PTR_TYPE);
+  PtrType *n = nc.node;
   assert(consume(c).t == T_STAR);
   if (looking_at(c, T_MUT)) {
     n->classifier = consume(c);
   }
-  n->referenced_type = type(c);
+  n->ref_type = type(c);
   return end_node(c, nc);
 }
 
-Function_Type *function_type(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_FUNCTION_TYPE);
-  Function_Type *n = nc.node;
+FnType *fn_type(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_FN_TYPE);
+  FnType *n = nc.node;
   assert(consume(c).t == T_FUN);
   if (!expect(c, n->id, T_LPAR)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
   }
-  n->parameters = type_list(c);
+  n->params = types(c);
   if (!expect(c, n->id, T_RPAR)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -930,9 +926,9 @@ Function_Type *function_type(Parse_Context *c) {
 // Some rules that are used in many contexts take a follow set from the
 // caller. This improves the error recovery as it has more context of what
 // it should be syncing on than just "whatever can follow is really common rule"
-Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
-  Node_Context nc = start_node(c, NODE_SCOPED_IDENTIFIER);
-  Scoped_Identifier *n = nc.node;
+ScopedIdent *scoped_ident(ParseCtx *c, Toks follow) {
+  NodeCtx nc = start_node(c, NODE_SCOPED_IDENT);
+  ScopedIdent *n = nc.node;
   Tok identifier = at(c);
   if (!expect(c, n->id, T_IDENT)) {
     advance(c, follow);
@@ -952,22 +948,22 @@ Scoped_Identifier *scoped_identifier(Parse_Context *c, Toks follow) {
   return end_node(c, nc);
 }
 
-Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim) {
-  Node_Context nc = start_node(c, NODE_INITIALIZER_LIST);
-  Initializer_List *n = nc.node;
+Init *init(ParseCtx *c, TokKind delim) {
+  NodeCtx nc = start_node(c, NODE_INIT);
+  Init *n = nc.node;
   // No items in list, just return
   if (looking_at(c, delim)) {
     return end_node(c, nc);
   }
   Toks follow_item = TOKS(T_COMMA, delim);
-  APPEND(n, expression(c, follow_item));
+  APPEND(n, expr(c, follow_item));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, delim)) {
       break;
     }
-    APPEND(n, expression(c, follow_item));
+    APPEND(n, expr(c, follow_item));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
@@ -976,7 +972,7 @@ Initializer_List *initializer_list(Parse_Context *c, Tok_Kind delim) {
 // Helpful resource for pratt parser:
 // https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
 
-static bool is_prefix_op(Tok_Kind t) {
+static bool is_prefix_op(TokKind t) {
   switch (t) {
     case T_AMP:
     case T_INC:
@@ -989,7 +985,7 @@ static bool is_prefix_op(Tok_Kind t) {
   }
 }
 
-static bool is_infix_op(Tok_Kind t) {
+static bool is_infix_op(TokKind t) {
   switch (t) {
     case T_PLUS:
     case T_MINUS:
@@ -1009,7 +1005,7 @@ static bool is_infix_op(Tok_Kind t) {
   }
 }
 
-static bool is_postfix_op(Tok_Kind t) {
+static bool is_postfix_op(TokKind t) {
   switch (t) {
     case T_DOT:
     case T_LPAR:
@@ -1059,8 +1055,8 @@ static const Power binding_power_of[PREC_COUNT] = {
     [PREC_ASSIGNMENT] = {2, 1},
 };
 
-static Index *index(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_INDEX);
+static Index *index(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_INDEX);
   Index *n = nc.node;
   assert(consume(c).t == T_LBRK);
 
@@ -1074,20 +1070,20 @@ static Index *index(Parse_Context *c) {
       // Although it is not technically correct to have
       // ';' as a "valid" delimiter, it is used here to prevent
       // spurious errors caused by unmatched '['
-      n->end.value = expression(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = expr(c, TOKS(T_RBRK, T_SCLN));
       n->end.ok = true;
     }
     goto delim;
   }
 
-  n->start.value = expression(c, TOKS(T_RBRK, T_CLN, T_SCLN));
+  n->start.value = expr(c, TOKS(T_RBRK, T_CLN, T_SCLN));
   n->start.ok = true;
 
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
     token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
-      n->end.value = expression(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = expr(c, TOKS(T_RBRK, T_SCLN));
       n->end.ok = true;
     }
     goto delim;
@@ -1096,82 +1092,82 @@ static Index *index(Parse_Context *c) {
 delim:
   if (!expect(c, n->id, T_RBRK)) {
     // TODO: change to FOLLOW_EXPRESSION
-    advance(c, FOLLOW_BASIC_EXPRESSION);
+    advance(c, FOLLOW_ATOM);
   }
 
   return end_node(c, nc);
 }
 
-static Node_Context parse_postfix(Parse_Context *c, Expression *lhs) {
-  Node_Context expr_ctx = start_node(c, NODE_EXPRESSION);
-  Expression *expr = expr_ctx.node;
+static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
+  NodeCtx expr_ctx = start_node(c, NODE_EXPR);
+  Expr *expr = expr_ctx.node;
 
   switch (at(c).t) {
     case T_LBRK: {
-      Node_Context access_ctx = start_node(c, NODE_ARRAY_ACCESS_EXPRESSION);
-      Array_Access_Expression *access = access_ctx.node;
+      NodeCtx access_ctx = start_node(c, NODE_COLL_ACCESS);
+      CollAccess *access = access_ctx.node;
 
-      Node_Context lhs_ctx = begin_node(c, lhs);
+      NodeCtx lhs_ctx = begin_node(c, lhs);
       access->lvalue = end_node(c, lhs_ctx);
       access->index = index(c);
 
-      expr->t = EXPRESSION_ARRAY_ACCESS;
-      expr->array_access_expression = end_node(c, access_ctx);
+      expr->t = EXPR_COLL_ACCESS;
+      expr->coll_access = end_node(c, access_ctx);
       break;
     }
     case T_LPAR: {
-      Node_Context call_ctx = start_node(c, NODE_FUNCTION_CALL_EXPRESSION);
-      Function_Call_Expression *call = call_ctx.node;
+      NodeCtx call_ctx = start_node(c, NODE_FN_CALL);
+      FnCall *call = call_ctx.node;
 
-      Node_Context lhs_ctx = begin_node(c, lhs);
+      NodeCtx lhs_ctx = begin_node(c, lhs);
       call->lvalue = end_node(c, lhs_ctx);
 
       if (!expect(c, call->id, T_LPAR)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_call_expr;
       }
 
-      call->arguments = attr(c, "args", initializer_list(c, T_RPAR));
+      call->args = attr(c, "args", init(c, T_RPAR));
 
       if (!expect(c, call->id, T_RPAR)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
       }
 
     yield_call_expr:
-      expr->t = EXPRESSION_FUNCTION_CALL;
-      expr->function_call_expression = end_node(c, call_ctx);
+      expr->t = EXPR_FN_CALL;
+      expr->fn_call = end_node(c, call_ctx);
       break;
     }
     case T_DOT: {
-      Node_Context access_ctx = start_node(c, NODE_FIELD_ACCESS_EXPRESSION);
-      Field_Access_Expression *access = access_ctx.node;
+      NodeCtx access_ctx = start_node(c, NODE_FIELD_ACCESS);
+      FieldAccess *access = access_ctx.node;
 
-      Node_Context lhs_ctx = begin_node(c, lhs);
+      NodeCtx lhs_ctx = begin_node(c, lhs);
       access->lvalue = attr(c, "lvalue", end_node(c, lhs_ctx));
 
       next(c);
       Tok field = at(c);
       if (!expect(c, access->id, T_IDENT)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_access_expr;
       }
       access->field = token_attr(c, "field", field);
 
     yield_access_expr:
-      expr->t = EXPRESSION_FIELD_ACCESS;
-      expr->field_access_expression = end_node(c, access_ctx);
+      expr->t = EXPR_FIELD_ACCESS;
+      expr->field_access = end_node(c, access_ctx);
       break;
     }
     default: {
-      Node_Context postfix_ctx = start_node(c, NODE_POSTFIX_EXPRESSION);
-      Postfix_Expression *postfix = postfix_ctx.node;
+      NodeCtx postfix_ctx = start_node(c, NODE_POSTFIX_EXPR);
+      PostfixExpr *postfix = postfix_ctx.node;
 
       postfix->op = token_attr(c, "op", consume(c));
-      Node_Context lhs_ctx = begin_node(c, lhs);
-      postfix->inner_expression = end_node(c, lhs_ctx);
+      NodeCtx lhs_ctx = begin_node(c, lhs);
+      postfix->sub_expr = end_node(c, lhs_ctx);
 
-      expr->t = EXPRESSION_POSTFIX;
-      expr->postfix_expression = end_node(c, postfix_ctx);
+      expr->t = EXPR_POSTFIX;
+      expr->postfix_expr = end_node(c, postfix_ctx);
     }
   }
 
@@ -1183,7 +1179,7 @@ typedef struct {
   bool ok;
 } Maybe_Power;
 
-static Maybe_Power infix_binding_power(Tok_Kind op) {
+static Maybe_Power infix_bpow(TokKind op) {
   switch (op) {
     case T_PLUS:
     case T_MINUS:
@@ -1210,7 +1206,7 @@ static Maybe_Power infix_binding_power(Tok_Kind op) {
   }
 }
 
-static Maybe_Power prefix_binding_power(Tok_Kind op) {
+static Maybe_Power prefix_bpow(TokKind op) {
   switch (op) {
     case T_AMP:
     case T_INC:
@@ -1223,7 +1219,7 @@ static Maybe_Power prefix_binding_power(Tok_Kind op) {
   }
 }
 
-static Maybe_Power postfix_binding_power(Tok_Kind op) {
+static Maybe_Power postfix_bpow(TokKind op) {
   switch (op) {
     case T_DOT:
     case T_LPAR:
@@ -1237,19 +1233,18 @@ static Maybe_Power postfix_binding_power(Tok_Kind op) {
   }
 }
 
-static Node_Context expression_power(Parse_Context *c, u32 min_pow,
-                                     Toks delim) {
-  Node_Context lhs_ctx = start_node(c, NODE_EXPRESSION);
-  Expression *lhs = lhs_ctx.node;
+static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
+  NodeCtx lhs_ctx = start_node(c, NODE_EXPR);
+  Expr *lhs = lhs_ctx.node;
 
   Tok tok = at(c);
 
   if (is_prefix_op(tok.t)) {
-    Node_Context unary_ctx = start_node(c, NODE_UNARY_EXPRESSION);
-    Unary_Expression *unary_expr = unary_ctx.node;
+    NodeCtx unary_ctx = start_node(c, NODE_UNARY_EXPR);
+    UnaryExpr *unary_expr = unary_ctx.node;
 
     Power pow;
-    Maybe_Power maybe_pow = prefix_binding_power(tok.t);
+    Maybe_Power maybe_pow = prefix_bpow(tok.t);
     if (!maybe_pow.ok) {
       expected(c, unary_expr->id, "valid prefix operator");
       pow = (Power){0, 0};
@@ -1258,18 +1253,17 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
     }
 
     unary_expr->op = token_attr(c, "op", consume(c));
-    unary_expr->inner_expression =
-        end_node(c, expression_power(c, pow.right, delim));
+    unary_expr->sub_expr = end_node(c, expr_with_bpow(c, pow.right, delim));
 
-    lhs->t = EXPRESSION_UNARY;
-    lhs->unary_expression = end_node(c, unary_ctx);
+    lhs->t = EXPR_UNARY;
+    lhs->unary_expr = end_node(c, unary_ctx);
   } else {
     if (tok.t == T_LPAR) {
       next(c);
       Toks new_delim;
       new_delim.len = delim.len;
-      new_delim.items = malloc((delim.len + 1) * sizeof(Tok_Kind));
-      memcpy(new_delim.items, delim.items, delim.len * sizeof(Tok_Kind));
+      new_delim.items = malloc((delim.len + 1) * sizeof(TokKind));
+      memcpy(new_delim.items, delim.items, delim.len * sizeof(TokKind));
       if (!one_of(T_RPAR, delim)) {
         new_delim.len = delim.len + 1;
         new_delim.items[delim.len] = T_RPAR;
@@ -1278,7 +1272,7 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
       // TODO: this effectively leaks an expression allocated in the arena
       // maybe we can just free the node here before recursing
       set_current_node(c, lhs_ctx.parent);
-      lhs_ctx = expression_power(c, 0, new_delim);
+      lhs_ctx = expr_with_bpow(c, 0, new_delim);
       lhs = lhs_ctx.node;
       free(new_delim.items);
 
@@ -1290,8 +1284,8 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
         return lhs_ctx;
       }
     } else {
-      lhs->t = EXPRESSION_BASIC;
-      lhs->basic_expression = basic_expression(c);
+      lhs->t = EXPR_ATOM;
+      lhs->atom = atom(c);
     }
   }
 
@@ -1304,10 +1298,10 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
     }
     if (!is_infix_op(op.t) && !is_postfix_op(op.t)) {
       expected(c, lhs->id, "an infix or postfix operator");
-      advance(c, FOLLOW_BASIC_EXPRESSION);
+      advance(c, FOLLOW_ATOM);
     }
 
-    Maybe_Power maybe_pow = postfix_binding_power(op.t);
+    Maybe_Power maybe_pow = postfix_bpow(op.t);
     if (maybe_pow.ok) {
       Power pow = maybe_pow.pow;
       if (pow.left < min_pow) {
@@ -1321,7 +1315,7 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
       continue;
     }
 
-    maybe_pow = infix_binding_power(op.t);
+    maybe_pow = infix_bpow(op.t);
     if (!maybe_pow.ok) {
       break;
     }
@@ -1332,7 +1326,7 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
 
     // Really sorry if someone is coming here to understand this code.
     // There is a bit of gymnastics here to make sure the implicit child-parent
-    // relationships maintained by the Node_Context system are correct.
+    // relationships maintained by the NodeCtx system are correct.
     //
     // The below code needs to make sure that the current lhs is not added as
     // a child of the current parent (stored in lhs_ctx.parent). It should
@@ -1340,21 +1334,21 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
     // descendant of current parent.
     set_current_node(c, lhs_ctx.parent);
 
-    Node_Context new_expr_ctx = start_node(c, NODE_EXPRESSION);
-    Expression *new_expr = new_expr_ctx.node;
+    NodeCtx new_expr_ctx = start_node(c, NODE_EXPR);
+    Expr *new_expr = new_expr_ctx.node;
 
-    Node_Context bin_ctx = start_node(c, NODE_BINARY_EXPRESSION);
-    Binary_Expression *bin_expr = bin_ctx.node;
+    NodeCtx bin_ctx = start_node(c, NODE_BIN_EXPR);
+    BinExpr *bin_expr = bin_ctx.node;
 
     bin_expr->op = token_attr(c, "op", op);
-    Node_Context old_lhs_ctx = begin_node(c, lhs);
+    NodeCtx old_lhs_ctx = begin_node(c, lhs);
     bin_expr->left = attr(c, "left", end_node(c, old_lhs_ctx));
     next(c);
     bin_expr->right =
-        attr(c, "right", end_node(c, expression_power(c, pow.right, delim)));
+        attr(c, "right", end_node(c, expr_with_bpow(c, pow.right, delim)));
 
-    new_expr->t = EXPRESSION_BINARY;
-    new_expr->binary_expression = end_node(c, bin_ctx);
+    new_expr->t = EXPR_BIN;
+    new_expr->bin_expr = end_node(c, bin_ctx);
 
     lhs = new_expr;
     lhs_ctx = new_expr_ctx;
@@ -1363,20 +1357,20 @@ static Node_Context expression_power(Parse_Context *c, u32 min_pow,
   return lhs_ctx;
 }
 
-Expression *expression(Parse_Context *c, Toks delim) {
-  return end_node(c, expression_power(c, 0, delim));
+Expr *expr(ParseCtx *c, Toks delim) {
+  return end_node(c, expr_with_bpow(c, 0, delim));
 }
 
-Basic_Expression *basic_expression(Parse_Context *c) {
-  Node_Context nc = start_node(c, NODE_BASIC_EXPRESSION);
-  Basic_Expression *n = nc.node;
+Atom *atom(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_ATOM);
+  Atom *n = nc.node;
   Tok first = at(c);
   if (starts_type(at(c).t)) {
-    Node_Context lit_ctx = start_node(c, NODE_BRACED_LITERAL);
-    Braced_Literal *braced_lit = lit_ctx.node;
+    NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
+    BracedLit *braced_lit = lit_ctx.node;
 
     braced_lit->type.ok = true;
-    Parse_State marker = set_marker(c);
+    ParseState marker = set_marker(c);
     braced_lit->type.value = type(c);
 
     if (first.t == T_IDENT && !looking_at(c, T_LBRC)) {
@@ -1384,25 +1378,25 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       // a '{'. This means that the identifier should be just
       // the token itself as the basic expression
       backtrack(c, marker);
-      n->t = BASIC_EXPRESSION_TOKEN;
+      n->t = ATOM_TOKEN;
       c->current = n->id;
-      n->token = token_attr(c, "atom", consume(c));
+      n->token = token_attr_anon(c, consume(c));
       return end_node(c, nc);
     }
 
     if (!expect(c, braced_lit->id, T_LBRC)) {
-      advance(c, FOLLOW_BASIC_EXPRESSION);
-      n->t = BASIC_EXPRESSION_BRACED_LIT;
+      advance(c, FOLLOW_ATOM);
+      n->t = ATOM_BRACED_LIT;
       n->braced_lit = end_node(c, lit_ctx);
       return end_node(c, nc);
     }
 
-    braced_lit->initializer = initializer_list(c, T_RBRC);
+    braced_lit->init = init(c, T_RBRC);
     if (!expect(c, braced_lit->id, T_RBRC)) {
-      advance(c, FOLLOW_BASIC_EXPRESSION);
+      advance(c, FOLLOW_ATOM);
     }
 
-    n->t = BASIC_EXPRESSION_BRACED_LIT;
+    n->t = ATOM_BRACED_LIT;
     n->braced_lit = end_node(c, lit_ctx);
     return end_node(c, nc);
   }
@@ -1410,11 +1404,11 @@ Basic_Expression *basic_expression(Parse_Context *c) {
     case T_CONS: {
       next(c);
 
-      Node_Context lit_ctx = start_node(c, NODE_BRACED_LITERAL);
-      Braced_Literal *braced_lit = lit_ctx.node;
+      NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
+      BracedLit *braced_lit = lit_ctx.node;
 
       if (!expect(c, braced_lit->id, T_LPAR)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_braced_lit;
       }
 
@@ -1422,39 +1416,39 @@ Basic_Expression *basic_expression(Parse_Context *c) {
       braced_lit->type.value = type(c);
 
       if (!expect(c, braced_lit->id, T_RPAR)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_braced_lit;
       }
 
       if (!expect(c, braced_lit->id, T_LBRC)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_braced_lit;
       }
 
-      braced_lit->initializer = initializer_list(c, T_RBRC);
+      braced_lit->init = init(c, T_RBRC);
 
       if (!expect(c, braced_lit->id, T_RBRC)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
         goto yield_braced_lit;
       }
 
     yield_braced_lit:
-      n->t = BASIC_EXPRESSION_BRACED_LIT;
+      n->t = ATOM_BRACED_LIT;
       n->braced_lit = end_node(c, lit_ctx);
       return end_node(c, nc);
     }
     case T_LBRC: {
       next(c);
 
-      Node_Context lit_ctx = start_node(c, NODE_BRACED_LITERAL);
-      Braced_Literal *braced_lit = lit_ctx.node;
+      NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
+      BracedLit *braced_lit = lit_ctx.node;
 
-      braced_lit->initializer = initializer_list(c, T_RBRC);
-      n->t = BASIC_EXPRESSION_BRACED_LIT;
+      braced_lit->init = init(c, T_RBRC);
+      n->t = ATOM_BRACED_LIT;
       n->braced_lit = end_node(c, lit_ctx);
 
       if (!expect(c, n->id, T_RBRC)) {
-        advance(c, FOLLOW_BASIC_EXPRESSION);
+        advance(c, FOLLOW_ATOM);
       }
 
       return end_node(c, nc);
@@ -1462,14 +1456,14 @@ Basic_Expression *basic_expression(Parse_Context *c) {
     case T_NUM:
     case T_CHAR:
     case T_STR:
-      n->t = BASIC_EXPRESSION_TOKEN;
-      n->token = token_attr(c, "atom", consume(c));
+      n->t = ATOM_TOKEN;
+      n->token = token_attr_anon(c, consume(c));
       return end_node(c, nc);
     default:
       break;
   }
 
-  expected(c, n->id, "a basic expression");
-  advance(c, FOLLOW_BASIC_EXPRESSION);
+  expected(c, n->id, "an atom");
+  advance(c, FOLLOW_ATOM);
   return end_node(c, nc);
 }

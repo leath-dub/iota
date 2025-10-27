@@ -2,15 +2,15 @@
 
 #include "ast.h"
 
-static void indent(Tree_Dump_Ctx *ctx) { ctx->indent_level++; }
+static void indent(TreeDumpCtx *ctx) { ctx->indent_level++; }
 
-static void deindent(Tree_Dump_Ctx *ctx) {
+static void deindent(TreeDumpCtx *ctx) {
   assert(ctx->indent_level != 0);
   ctx->indent_level--;
 }
 
-void tree_dump(Tree_Dump_Ctx *ctx, Node_ID id) {
-  const Node_Children *children = get_node_children(ctx->meta, id);
+void tree_dump(TreeDumpCtx *ctx, NodeID id) {
+  const NodeChildren *children = get_node_children(ctx->meta, id);
 
   if (ctx->meta->flags.items[id] & NFLAG_ERROR) {
     fprintf(ctx->fs, "%*s%s(error!) {", ctx->indent_level * ctx->indent_width,
@@ -24,7 +24,7 @@ void tree_dump(Tree_Dump_Ctx *ctx, Node_ID id) {
   }
 
   for (u32 i = 0; i < children->len; i++) {
-    Node_Child child = children->items[i];
+    NodeChild child = children->items[i];
     indent(ctx);
     switch (child.t) {
       case CHILD_NODE:
