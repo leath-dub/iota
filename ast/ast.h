@@ -68,6 +68,7 @@ typedef u32 NodeID;
   USE(ScopedIdent, SCOPED_IDENT, "scoped_ident")       \
   USE(Expr, EXPR, "expr")                              \
   USE(Atom, ATOM, "atom")                              \
+  USE(Designator, DESIGNATOR, "designator")            \
   USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
   USE(FnCall, FN_CALL, "fn_call")                      \
   USE(Init, INIT, "init")                              \
@@ -149,7 +150,6 @@ typedef enum {
   VAR_BINDING_BASIC,
   VAR_BINDING_UNPACK_TUPLE,
   VAR_BINDING_UNPACK_STRUCT,
-  VAR_BINDING_UNPACK_UNION,
 } VarBindingKind;
 
 struct VarBinding {
@@ -159,7 +159,6 @@ struct VarBinding {
     Tok basic;
     struct UnpackTuple *unpack_tuple;
     struct UnpackStruct *unpack_struct;
-    struct UnpackUnion *unpack_union;
   };
 };
 
@@ -496,6 +495,7 @@ struct Expr {
 typedef enum {
   ATOM_TOKEN,
   ATOM_BRACED_LIT,
+  ATOM_DESIGNATOR,
 } AtomKind;
 
 struct Atom {
@@ -503,8 +503,15 @@ struct Atom {
   AtomKind t;
   union {
     Tok token;  // Stores: identifier, number, string, enum, nil
+    struct Designator *designator;
     struct BracedLit *braced_lit;
   };
+};
+
+struct Designator {
+  NodeID id;
+  Tok ident;
+  MAYBE(struct Init *) init;
 };
 
 struct BracedLit {

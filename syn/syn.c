@@ -373,16 +373,8 @@ VarBinding *parse_var_binding(ParseCtx *c) {
       n->unpack_struct = parse_unpack_struct(c, FOLLOW_VAR_BINDING);
       break;
     case T_IDENT: {
-      ParseState at_ident = set_marker(c);
-      Tok name = consume(c);
-      if (looking_at(c, T_LPAR)) {
-        backtrack(c, at_ident);
-        n->t = VAR_BINDING_UNPACK_UNION;
-        n->unpack_union = parse_unpack_union(c, FOLLOW_VAR_BINDING);
-        break;
-      }
       n->t = VAR_BINDING_BASIC;
-      n->basic = token_attr(c, "name", name);
+      n->basic = token_attr(c, "name", consume(c));
       break;
     }
     default:
@@ -665,8 +657,13 @@ Cond *parse_cond(ParseCtx *c) {
       break;
     default:
       n->t = COND_EXPR;
-      n->expr = parse_expr(c, TOKS(T_LBRC));
+      n->expr = parse_expr(c, TOKS(T_SCLN));
       break;
+  }
+  if (!expect(c, n->id, T_SCLN)) {
+    // TODO: add follow set
+    advance(c, TOKS(T_LBRC));
+    return end_node(c, nc);
   }
   return end_node(c, nc);
 }
@@ -1487,40 +1484,38 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
   }
 }
 
+Designator *parse_designator(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_DESIGNATOR);
+  Designator *n = nc.node;
+  Tok ident = at(c);
+  assert(consume(c).t == T_IDENT);
+  n->ident = token_attr_anon(c, ident);
+  if (looking_at(c, T_LBRC)) {
+    next(c);
+    n->init.ok = true;
+    n->init.value = parse_init(c, T_RBRC);
+    if (!expect(c, n->id, T_RBRC)) {
+      advance(c, FOLLOW_ATOM);
+    }
+  }
+  return end_node(c, nc);
+}
+
 Atom *parse_atom(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ATOM);
   Atom *n = nc.node;
-  Tok first = at(c);
+  // Handle first as IDENT is also the start of a type
+  if (looking_at(c, T_IDENT)) {
+    n->t = ATOM_DESIGNATOR;
+    n->designator = parse_designator(c);
+    return end_node(c, nc);
+  }
   if (starts_type(at(c).t)) {
     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
     BracedLit *braced_lit = lit_ctx.node;
 
     braced_lit->type.ok = true;
-    ParseState marker = set_marker(c);
     braced_lit->type.value = parse_type(c);
-
-    if (first.t == T_IDENT) {
-      if (!looking_at(c, T_DOT)) {
-        // The first token was an identifier and we don't have
-        // a '.'. This means that the identifier should be just
-        // the token itself as the basic expression
-        backtrack(c, marker);
-        n->t = ATOM_TOKEN;
-        c->current = n->id;
-        set_atom_token(c, n);
-        return end_node(c, nc);
-      }
-      // When '.' is specified, if the next token is '{' it means the identifier
-      // was for the purposes of defining a compound literal.
-      next(c);
-      if (!looking_at(c, T_LBRC)) {
-        backtrack(c, marker);
-        n->t = ATOM_TOKEN;
-        c->current = n->id;
-        set_atom_token(c, n);
-        return end_node(c, nc);
-      }
-    }
 
     if (!expect(c, braced_lit->id, T_LBRC)) {
       advance(c, FOLLOW_ATOM);
@@ -1545,18 +1540,8 @@ Atom *parse_atom(ParseCtx *c) {
       NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
       BracedLit *braced_lit = lit_ctx.node;
 
-      if (!expect(c, braced_lit->id, T_LPAR)) {
-        advance(c, FOLLOW_ATOM);
-        goto yield_braced_lit;
-      }
-
       braced_lit->type.ok = true;
       braced_lit->type.value = parse_type(c);
-
-      if (!expect(c, braced_lit->id, T_RPAR)) {
-        advance(c, FOLLOW_ATOM);
-        goto yield_braced_lit;
-      }
 
       if (!expect(c, braced_lit->id, T_LBRC)) {
         advance(c, FOLLOW_ATOM);

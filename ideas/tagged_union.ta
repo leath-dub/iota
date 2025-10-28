@@ -25,3 +25,21 @@ if let f, ok = some_fun(); ok {
 
 if mut point(*p) = mp; p.0 == 10 {
 }
+
+let ok(*x) = foo() else e {
+  return e;
+}
+
+let x = foo() else err(e) {
+  return e;
+}
+
+let x = foo() else None(y) {
+  return x;
+}
+
+let root = syn.parse_source_file(&parse_ctx) else Err(_) as e {
+  return e;
+}
+
+// x is ok
