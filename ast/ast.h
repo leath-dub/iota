@@ -510,7 +510,7 @@ struct Atom {
 
 struct Designator {
   NodeID id;
-  Tok ident;
+  struct ScopedIdent *ident;
   MAYBE(struct Init *) init;
 };
 

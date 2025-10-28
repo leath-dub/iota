@@ -2,7 +2,7 @@ syntax_test(
     name="if_statement_basic",
     source="""
     fun _() {
-        if foo {}
+        if foo; {}
     }
     """,
     expected="""
@@ -19,7 +19,11 @@ syntax_test(
                   cond {
                     expr {
                       atom {
-                        ident='foo'
+                        designator {
+                          scoped_ident {
+                            'foo'
+                          }
+                        }
                       }
                     }
                   }

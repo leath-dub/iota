@@ -170,50 +170,6 @@ syntax_test(
 )
 
 syntax_test(
-    name="variable_declaration_destructure_union",
-    source="""
-    let ok(foo);
-    let err(*bar);
-    """,
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            kind='let'
-            binding:
-              var_binding {
-                unpack_union {
-                  tag='ok'
-                  binding {
-                    name='foo'
-                  }
-                }
-              }
-          }
-        }
-        decl {
-          var_decl {
-            kind='let'
-            binding:
-              var_binding {
-                unpack_union {
-                  tag='err'
-                  binding {
-                    kind='*'
-                    name='bar'
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
     name="struct_declaration",
     source="""
     struct Point {

@@ -5,14 +5,12 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos(
-      "if u32 {}; {\n"
-      "}\n");
+  string source = ztos("let _ = Foo.Bar.baz{ 10 };");
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
 
-  IfStmt *root = parse_if_stmt(&pc);
+  SourceFile *root = parse_source_file(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};

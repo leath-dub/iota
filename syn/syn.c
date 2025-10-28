@@ -1487,9 +1487,8 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
 Designator *parse_designator(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_DESIGNATOR);
   Designator *n = nc.node;
-  Tok ident = at(c);
-  assert(consume(c).t == T_IDENT);
-  n->ident = token_attr_anon(c, ident);
+  assert(at(c).t == T_IDENT);
+  n->ident = parse_scoped_ident(c, TOKS(T_LBRC));
   if (looking_at(c, T_LBRC)) {
     next(c);
     n->init.ok = true;
