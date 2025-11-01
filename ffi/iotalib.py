@@ -35,4 +35,4 @@ class IotaLib:
             case Node.TYPE:
                 return self.parse_with(self.lib.parse_type, src);
             case Node.EXPR:
-                return self.parse_with(self.lib.parse_expr, src, delim=True);
+                return self.parse_with(self.lib.parse_expr, src);

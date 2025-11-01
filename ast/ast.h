@@ -177,7 +177,8 @@ struct AliasBindings {
 struct Binding {
   NodeID id;
   Tok ident;
-  Tok ref;  // could be a '*' meaning the binding is a reference
+  MAYBE(Tok) ref;  // could be a '*' meaning the binding is a reference
+  MAYBE(Tok) mod;
 };
 
 struct Bindings {

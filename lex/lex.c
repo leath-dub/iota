@@ -102,6 +102,8 @@ Tok lex_peek(Lexer *l) {
         return new_tok(l, T_SCOPE, 2);
       }
       return new_tok(l, T_CLN, 1);
+    case '?':
+      return new_tok(l, T_QUEST, 1);
     case ',':
       return new_tok(l, T_COMMA, 1);
     case '=': {

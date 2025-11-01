@@ -11,6 +11,7 @@
   TOKEN(CMNT, "<comment>")                  \
   TOKEN(SYNTHESIZED, "<synthesized token>") \
   TOKEN(ILLEGAL, "<illegal token>")         \
+  TOKEN(EMPTY_STRING, "''")                 \
   TOKEN(LBRK, "'['")                        \
   TOKEN(RBRK, "']'")                        \
   TOKEN(LPAR, "'('")                        \
@@ -22,6 +23,7 @@
   TOKEN(SCOPE, "'::'")                      \
   TOKEN(COMMA, "','")                       \
   TOKEN(BANG, "'!'")                        \
+  TOKEN(QUEST, "'?'")                       \
   TOKEN(DOT, "'.'")                         \
   TOKEN(DOTDOT, "'..'")                     \
   TOKEN(PLUS, "'+'")                        \

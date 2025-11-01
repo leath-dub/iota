@@ -165,9 +165,8 @@ DECLARE_FOLLOW_SET(STMT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
                    T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
                    T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
-DECLARE_FOLLOW_SET(UNION_TAG_COND, T_LBRC)
-// TODO: once we have an automated tool
-// DECLARE_FOLLOW_SET(EXPRESSION, ?)
+DECLARE_FOLLOW_SET(UNION_TAG_COND, T_SCLN)
+DECLARE_FOLLOW_SET(EXPR, T_SCLN, T_RBRK, T_COMMA)
 
 SourceFile *parse_source_file(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
@@ -347,7 +346,7 @@ VarDecl *parse_var_decl(ParseCtx *c) {
   if (looking_at(c, T_EQ)) {
     n->init.ok = true;
     n->init.assign_token = consume(c);
-    n->init.expr = attr(c, "value", parse_expr(c, TOKS(T_SCLN)));
+    n->init.expr = attr(c, "value", parse_expr(c));
   }
   if (!expect(c, n->id, T_SCLN)) {
     advance(c, FOLLOW_DECL);
@@ -385,7 +384,12 @@ Binding *parse_binding(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_BINDING);
   Binding *n = nc.node;
   if (looking_at(c, T_STAR)) {
-    n->ref = token_attr(c, "kind", consume(c));
+    n->ref.ok = true;
+    n->ref.value = token_attr(c, "kind", consume(c));
+    if (looking_at(c, T_RO)) {
+      n->mod.ok = true;
+      n->mod.value = token_attr(c, "modifier", consume(c));
+    }
   }
   Tok name = at(c);
   if (!expect(c, n->id, T_IDENT)) {
@@ -584,7 +588,7 @@ Stmt *parse_stmt(ParseCtx *c) {
     //   break;
     default:
       n->t = STMT_EXPR;
-      n->expr = parse_expr(c, TOKS(T_SCLN));
+      n->expr = parse_expr(c);
       if (!expect(c, n->id, T_SCLN)) {
         advance(c, FOLLOW_STMT);
         return end_node(c, nc);
@@ -651,7 +655,7 @@ Cond *parse_cond(ParseCtx *c) {
       break;
     default:
       n->t = COND_EXPR;
-      n->expr = parse_expr(c, TOKS(T_SCLN));
+      n->expr = parse_expr(c);
       break;
   }
   if (!expect(c, n->id, T_SCLN)) {
@@ -676,7 +680,7 @@ UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
     return end_node(c, nc);
   }
   n->assign_token = assign_token;
-  n->expr = parse_expr(c, FOLLOW_UNION_TAG_COND);
+  n->expr = parse_expr(c);
 
   return end_node(c, nc);
 }
@@ -764,6 +768,7 @@ Type *parse_type(ParseCtx *c) {
       n->t = TYPE_FN;
       n->fn_type = parse_fn_type(c);
       break;
+    case T_SCOPE:
     case T_IDENT:
       n->t = TYPE_SCOPED_IDENT;
       n->scoped_ident = parse_scoped_ident(c, FOLLOW_TYPE);
@@ -787,7 +792,7 @@ CollType *parse_coll_type(ParseCtx *c) {
     return end_node(c, nc);
   }
   n->index_expr.ok = true;
-  n->index_expr.value = parse_expr(c, TOKS(T_RBRK));
+  n->index_expr.value = parse_expr(c);
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -1001,12 +1006,21 @@ FnType *parse_fn_type(ParseCtx *c) {
 ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
   NodeCtx nc = start_node(c, NODE_SCOPED_IDENT);
   ScopedIdent *n = nc.node;
-  Tok identifier = at(c);
+  if (looking_at(c, T_SCOPE)) {
+    Tok empty_str = {
+        .t = T_EMPTY_STRING,
+        .text = ZTOS(""),
+        .offset = at(c).offset,
+    };
+    APPEND(n, token_attr_anon(c, empty_str));
+    next(c);  // skip the '::'
+  }
+  Tok ident = at(c);
   if (!expect(c, n->id, T_IDENT)) {
     advance(c, follow);
     return end_node(c, nc);
   }
-  APPEND(n, token_attr_anon(c, identifier));
+  APPEND(n, token_attr_anon(c, ident));
   while (looking_at(c, T_SCOPE)) {
     ParseState at_dot = set_marker(c);
     next(c);
@@ -1033,15 +1047,14 @@ Init *parse_init(ParseCtx *c, TokKind delim) {
   if (looking_at(c, delim)) {
     return end_node(c, nc);
   }
-  Toks follow_item = TOKS(T_COMMA, delim);
-  APPEND(n, parse_expr(c, follow_item));
+  APPEND(n, parse_expr(c));
   while (looking_at(c, T_COMMA)) {
     next(c);
     // Ignore trailing comma
     if (looking_at(c, delim)) {
       break;
     }
-    APPEND(n, parse_expr(c, follow_item));
+    APPEND(n, parse_expr(c));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);
@@ -1090,10 +1103,16 @@ static bool is_postfix_op(TokKind t) {
     case T_LBRK:
     case T_INC:
     case T_DEC:
+    case T_BANG:
+    case T_QUEST:
       return true;
     default:
       return false;
   }
+}
+
+static bool is_op(TokKind t) {
+  return is_prefix_op(t) || is_infix_op(t) || is_postfix_op(t);
 }
 
 typedef struct {
@@ -1148,20 +1167,20 @@ static Index *index(ParseCtx *c) {
       // Although it is not technically correct to have
       // ';' as a "valid" delimiter, it is used here to prevent
       // spurious errors caused by unmatched '['
-      n->end.value = parse_expr(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = parse_expr(c);
       n->end.ok = true;
     }
     goto delim;
   }
 
-  n->start.value = parse_expr(c, TOKS(T_RBRK, T_CLN, T_SCLN));
+  n->start.value = parse_expr(c);
   n->start.ok = true;
 
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
     token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
-      n->end.value = parse_expr(c, TOKS(T_RBRK, T_SCLN));
+      n->end.value = parse_expr(c);
       n->end.ok = true;
     }
     goto delim;
@@ -1304,6 +1323,8 @@ static Maybe_Power postfix_bpow(TokKind op) {
     case T_LBRK:
     case T_INC:
     case T_DEC:
+    case T_BANG:
+    case T_QUEST:
       return (Maybe_Power){binding_power_of[PREC_POSTFIX], true};
     default:
       return (Maybe_Power){.ok = false};
@@ -1311,7 +1332,7 @@ static Maybe_Power postfix_bpow(TokKind op) {
   }
 }
 
-static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
+static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow) {
   NodeCtx lhs_ctx = start_node(c, NODE_EXPR);
   Expr *lhs = lhs_ctx.node;
 
@@ -1331,34 +1352,25 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
     }
 
     unary_expr->op = token_attr(c, "op", consume(c));
-    unary_expr->sub_expr = end_node(c, expr_with_bpow(c, pow.right, delim));
+    unary_expr->sub_expr = end_node(c, expr_with_bpow(c, pow.right));
 
     lhs->t = EXPR_UNARY;
     lhs->unary_expr = end_node(c, unary_ctx);
   } else {
     if (tok.t == T_LPAR) {
       next(c);
-      Toks new_delim;
-      new_delim.len = delim.len;
-      new_delim.items = malloc((delim.len + 1) * sizeof(TokKind));
-      memcpy(new_delim.items, delim.items, delim.len * sizeof(TokKind));
-      if (!one_of(T_RPAR, delim)) {
-        new_delim.len = delim.len + 1;
-        new_delim.items[delim.len] = T_RPAR;
-      }
 
       // TODO: this effectively leaks an expression allocated in the arena
       // maybe we can just free the node here before recursing
       set_current_node(c, lhs_ctx.parent);
-      lhs_ctx = expr_with_bpow(c, 0, new_delim);
+      lhs_ctx = expr_with_bpow(c, 0);
       lhs = lhs_ctx.node;
-      free(new_delim.items);
 
       if (!expect(c, lhs->id, T_RPAR)) {
-        advance(c, delim);
+        advance(c, FOLLOW_EXPR);
         return lhs_ctx;
       }
-      if (one_of(at(c).t, delim)) {
+      if (!is_op(at(c).t)) {
         return lhs_ctx;
       }
     } else {
@@ -1369,14 +1381,8 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
 
   while (true) {
     Tok op = at(c);
-    // TODO: do we need explicit delimiters or should we just return if we don't
-    // see a infix or postfix operator?
-    if (one_of(op.t, delim)) {
-      break;
-    }
     if (!is_infix_op(op.t) && !is_postfix_op(op.t)) {
-      expected(c, lhs->id, "an infix or postfix operator");
-      advance(c, FOLLOW_ATOM);
+      break;
     }
 
     Maybe_Power maybe_pow = postfix_bpow(op.t);
@@ -1423,7 +1429,7 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
     bin_expr->left = attr(c, "left", end_node(c, old_lhs_ctx));
     next(c);
     bin_expr->right =
-        attr(c, "right", end_node(c, expr_with_bpow(c, pow.right, delim)));
+        attr(c, "right", end_node(c, expr_with_bpow(c, pow.right)));
 
     new_expr->t = EXPR_BIN;
     new_expr->bin_expr = end_node(c, bin_ctx);
@@ -1435,7 +1441,7 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow, Toks delim) {
   return lhs_ctx;
 }
 
-Expr *parse_expr(ParseCtx *c, Toks delim) {
+Expr *parse_expr(ParseCtx *c) {
   // HACK to allow calling parse_expr as a root node,
   // we force the root constraint (node_ctx.parent == parse_ctx.current), if
   // the parent before calling `expr_with_bpow` was root (id=0).
@@ -1443,7 +1449,7 @@ Expr *parse_expr(ParseCtx *c, Toks delim) {
   // This is needed as expressions are the exception in that node id 0 can
   // actually become a child of higher id node.
   NodeID parent = c->current;
-  NodeCtx ctx = expr_with_bpow(c, 0, delim);
+  NodeCtx ctx = expr_with_bpow(c, 0);
   if (parent == 0) {
     ctx.parent = c->current;
   }
@@ -1480,7 +1486,7 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
 Designator *parse_designator(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_DESIGNATOR);
   Designator *n = nc.node;
-  assert(at(c).t == T_IDENT);
+  assert(at(c).t == T_IDENT || at(c).t == T_SCOPE);
   n->ident = parse_scoped_ident(c, TOKS(T_LBRC));
   if (looking_at(c, T_LBRC)) {
     next(c);
@@ -1497,7 +1503,7 @@ Atom *parse_atom(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_ATOM);
   Atom *n = nc.node;
   // Handle first as IDENT is also the start of a type
-  if (looking_at(c, T_IDENT)) {
+  if (looking_at(c, T_IDENT) || looking_at(c, T_SCOPE)) {
     n->t = ATOM_DESIGNATOR;
     n->designator = parse_designator(c);
     return end_node(c, nc);
