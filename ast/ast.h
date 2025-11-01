@@ -50,6 +50,7 @@ typedef u32 NodeID;
   USE(Err, ERR, "err")                                 \
   USE(Stmt, STMT, "stmt")                              \
   USE(IfStmt, IF_STMT, "if_stmt")                      \
+  USE(WhileStmt, WHILE_STMT, "while_stmt")             \
   USE(Cond, COND, "cond")                              \
   USE(UnionTagCond, UNION_TAG_COND, "union_tag_cond")  \
   USE(ReturnStmt, RETURN_STMT, "return_stmt")          \
@@ -303,6 +304,7 @@ struct UnionDecl {
 typedef enum {
   STMT_DECL,
   STMT_IF,
+  STMT_WHILE,
   STMT_RETURN,
   STMT_COMP,
   STMT_EXPR,
@@ -314,6 +316,7 @@ struct Stmt {
   union {
     struct Decl *decl;
     struct IfStmt *if_stmt;
+    struct WhileStmt *while_stmt;
     struct ReturnStmt *return_stmt;
     struct Defer_Statement *defer_stmt;
     struct CompStmt *comp_stmt;
@@ -326,6 +329,12 @@ struct IfStmt {
   struct Cond *cond;
   struct CompStmt *true_branch;
   MAYBE(struct Else *) else_branch;
+};
+
+struct WhileStmt {
+  NodeID id;
+  struct Cond *cond;
+  struct CompStmt *true_branch;
 };
 
 typedef enum {

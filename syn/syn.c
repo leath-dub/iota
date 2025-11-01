@@ -166,7 +166,7 @@ DECLARE_FOLLOW_SET(STMT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
 DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
                    T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
 DECLARE_FOLLOW_SET(UNION_TAG_COND, T_SCLN)
-DECLARE_FOLLOW_SET(EXPR, T_SCLN, T_RBRK, T_COMMA)
+DECLARE_FOLLOW_SET(EXPR, T_SCLN, T_RBRK, T_COMMA, T_RPAR)
 
 SourceFile *parse_source_file(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
@@ -588,8 +588,10 @@ Stmt *parse_stmt(ParseCtx *c) {
       n->t = STMT_RETURN;
       n->return_stmt = parse_return_stmt(c);
       break;
-    // case T_WHILE:
-    //   break;
+    case T_WHILE:
+      n->t = STMT_RETURN;
+      n->while_stmt = parse_while_stmt(c);
+      break;
     default:
       n->t = STMT_EXPR;
       n->expr = parse_expr(c);
@@ -632,6 +634,15 @@ IfStmt *parse_if_stmt(ParseCtx *c) {
     n->else_branch.ok = true;
     n->else_branch.value = parse_else(c);
   }
+  return end_node(c, nc);
+}
+
+WhileStmt *parse_while_stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_WHILE_STMT);
+  WhileStmt *n = nc.node;
+  assert(consume(c).t == T_WHILE);
+  n->cond = parse_cond(c);
+  n->true_branch = parse_comp_stmt(c);
   return end_node(c, nc);
 }
 
@@ -1208,8 +1219,7 @@ static Index *index(ParseCtx *c) {
 
 delim:
   if (!expect(c, n->id, T_RBRK)) {
-    // TODO: change to FOLLOW_EXPRESSION
-    advance(c, FOLLOW_ATOM);
+    advance(c, FOLLOW_EXPR);
   }
 
   return end_node(c, nc);
@@ -1541,7 +1551,13 @@ Atom *parse_atom(ParseCtx *c) {
       n->braced_lit = end_node(c, lit_ctx);
       return end_node(c, nc);
     }
-
+    // TODO: try parse a compound statement if `parse_init` fails
+    // if that is successful, suggest that the user missed a `;` after
+    // expression. e.g.:
+    //
+    // if foo {
+    //       ^
+    //       ; Did you mean to put a semicolon here?
     braced_lit->init = parse_init(c, T_RBRC);
     if (!expect(c, braced_lit->id, T_RBRC)) {
       advance(c, FOLLOW_ATOM);

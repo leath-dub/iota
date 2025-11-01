@@ -5,12 +5,13 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("return cons u32 { 10 };");
+  string source = ztos("if foo; { return 10; }");
+
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
 
-  Stmt *root = parse_stmt(&pc);
+  IfStmt *root = parse_if_stmt(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};

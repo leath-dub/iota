@@ -23,6 +23,30 @@ syntax_test(
 )
 
 syntax_test(
+    name="while_statement_basic",
+    source="while foo; {}",
+    expected="""
+    stmt {
+      while_stmt {
+        cond {
+          expr {
+            atom {
+              designator {
+                scoped_ident {
+                  'foo'
+                }
+              }
+            }
+          }
+        }
+        comp_stmt {}
+      }
+    }
+    """,
+    node="STMT",
+)
+
+syntax_test(
     name="return_statement_basic",
     source="return x + 12;",
     expected="""
