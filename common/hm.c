@@ -88,7 +88,7 @@ Entry *__hm_ensure(MapHead *map, string key, usize value_size) {
 
 bool hm_contains(void *head, string key) {
   MapHead *map = head;
-  u32 hash = fnv1a(key) % map->entries.len;
+  u64 hash = fnv1a(key) % map->entries.len;
   Entry *it = map->entries.items[hash];
   while (it != NULL) {
     if (streql(key, it->key)) {
