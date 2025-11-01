@@ -121,6 +121,9 @@ Tok lex_peek(Lexer *l) {
       if (ahead(l, '-')) {
         return new_tok(l, T_DEC, 2);
       }
+      if (ahead(l, '>')) {
+        return new_tok(l, T_ARROW, 2);
+      }
       return new_tok(l, T_MINUS, 1);
     case '*':
       return new_tok(l, T_STAR, 1);

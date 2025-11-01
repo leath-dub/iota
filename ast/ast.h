@@ -51,6 +51,10 @@ typedef u32 NodeID;
   USE(Stmt, STMT, "stmt")                              \
   USE(IfStmt, IF_STMT, "if_stmt")                      \
   USE(WhileStmt, WHILE_STMT, "while_stmt")             \
+  USE(CasePatt, CASE_PATT, "case_patt")                \
+  USE(CaseBranch, CASE_BRANCH, "case_branch")          \
+  USE(CaseBranches, CASE_BRANCHES, "case_branches")    \
+  USE(CaseStmt, CASE_STMT, "case_stmt")                \
   USE(Cond, COND, "cond")                              \
   USE(UnionTagCond, UNION_TAG_COND, "union_tag_cond")  \
   USE(ReturnStmt, RETURN_STMT, "return_stmt")          \
@@ -305,6 +309,7 @@ typedef enum {
   STMT_DECL,
   STMT_IF,
   STMT_WHILE,
+  STMT_CASE,
   STMT_RETURN,
   STMT_COMP,
   STMT_EXPR,
@@ -317,6 +322,7 @@ struct Stmt {
     struct Decl *decl;
     struct IfStmt *if_stmt;
     struct WhileStmt *while_stmt;
+    struct CaseStmt *case_stmt;
     struct ReturnStmt *return_stmt;
     struct Defer_Statement *defer_stmt;
     struct CompStmt *comp_stmt;
@@ -335,6 +341,44 @@ struct WhileStmt {
   NodeID id;
   struct Cond *cond;
   struct CompStmt *true_branch;
+};
+
+typedef enum {
+  CASE_PATT_LIT,
+  CASE_PATT_NAME,
+  CASE_PATT_DEFAULT,
+} CasePattKind;
+
+struct CasePatt {
+  NodeID id;
+  CasePattKind t;
+  union {
+    Tok lit;
+    Tok default_;
+    struct {
+      struct ScopedIdent *ident;
+      MAYBE(struct Binding *) binding;
+    } name;
+  };
+};
+
+struct CaseBranch {
+  NodeID id;
+  struct CasePatt *patt;
+  struct Stmt *action;
+};
+
+struct CaseBranches {
+  NodeID id;
+  u32 len;
+  u32 cap;
+  struct CaseBranch **items;
+};
+
+struct CaseStmt {
+  NodeID id;
+  struct Expr *expr;
+  struct CaseBranches *branches;
 };
 
 typedef enum {

@@ -74,9 +74,9 @@ void parse_ctx_free(ParseCtx *c) {
   arena_free(&c->arena);
 }
 
-static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
-
-static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex; }
+// static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
+// static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex;
+// }
 
 static Tok tnext(ParseCtx *c) {
   Tok tok;
@@ -167,6 +167,8 @@ DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
                    T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
 DECLARE_FOLLOW_SET(UNION_TAG_COND, T_SCLN)
 DECLARE_FOLLOW_SET(EXPR, T_SCLN, T_RBRK, T_COMMA, T_RPAR)
+DECLARE_FOLLOW_SET(CASE_BRANCH, T_NUM, T_STR, T_CHAR, T_IDENT, T_SCOPE, T_RBRC)
+DECLARE_FOLLOW_SET(CASE_PATT, T_ARROW)
 
 SourceFile *parse_source_file(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
@@ -592,6 +594,10 @@ Stmt *parse_stmt(ParseCtx *c) {
       n->t = STMT_RETURN;
       n->while_stmt = parse_while_stmt(c);
       break;
+    case T_CASE:
+      n->t = STMT_CASE;
+      n->case_stmt = parse_case_stmt(c);
+      break;
     default:
       n->t = STMT_EXPR;
       n->expr = parse_expr(c);
@@ -614,7 +620,6 @@ CompStmt *parse_comp_stmt(ParseCtx *c) {
   while (!looking_at(c, T_RBRC)) {
     if (looking_at(c, T_EOF)) {
       expected(c, n->id, "a statement");
-      advance(c, FOLLOW_STMT);
       break;
     }
     APPEND(n, parse_stmt(c));
@@ -643,6 +648,81 @@ WhileStmt *parse_while_stmt(ParseCtx *c) {
   assert(consume(c).t == T_WHILE);
   n->cond = parse_cond(c);
   n->true_branch = parse_comp_stmt(c);
+  return end_node(c, nc);
+}
+
+CasePatt *parse_case_patt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_CASE_PATT);
+  CasePatt *n = nc.node;
+  switch (at(c).t) {
+    case T_NUM:
+    case T_STR:
+    case T_CHAR:
+      n->t = CASE_PATT_LIT;
+      n->lit = token_attr(c, "lit", consume(c));
+      break;
+    case T_ELSE:
+      n->t = CASE_PATT_DEFAULT;
+      n->default_ = token_attr_anon(c, consume(c));
+      break;
+    default:
+      n->t = CASE_PATT_NAME;
+      n->name.ident = parse_scoped_ident(c, TOKS(T_LPAR, T_ARROW));
+      if (looking_at(c, T_LPAR)) {
+        next(c);
+        n->name.binding.ok = true;
+        n->name.binding.value = parse_binding(c);
+        if (!expect(c, n->id, T_RPAR)) {
+          advance(c, FOLLOW_CASE_PATT);
+          return end_node(c, nc);
+        }
+      }
+      break;
+  }
+  return end_node(c, nc);
+}
+
+CaseBranch *parse_case_branch(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_CASE_BRANCH);
+  CaseBranch *n = nc.node;
+  n->patt = parse_case_patt(c);
+  if (!expect(c, n->id, T_ARROW)) {
+    advance(c, FOLLOW_CASE_BRANCH);
+    return end_node(c, nc);
+  }
+  n->action = parse_stmt(c);
+  return end_node(c, nc);
+}
+
+CaseBranches *parse_case_branches(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_CASE_BRANCHES);
+  CaseBranches *n = nc.node;
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, FOLLOW_STMT);
+    return end_node(c, nc);
+  }
+  while (!looking_at(c, T_RBRC)) {
+    if (looking_at(c, T_EOF)) {
+      expected(c, n->id, "a case branch");
+      break;
+    }
+    APPEND(n, parse_case_branch(c));
+  }
+  arena_own(&c->arena, n->items, n->cap);
+  next(c);
+  return end_node(c, nc);
+}
+
+CaseStmt *parse_case_stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_CASE_STMT);
+  CaseStmt *n = nc.node;
+  assert(consume(c).t == T_CASE);
+  n->expr = parse_expr(c);
+  if (!expect(c, n->id, T_SCLN)) {
+    advance(c, FOLLOW_STMT);
+    return end_node(c, nc);
+  }
+  n->branches = parse_case_branches(c);
   return end_node(c, nc);
 }
 
@@ -1053,19 +1133,13 @@ ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
   }
   APPEND(n, token_attr_anon(c, ident));
   while (looking_at(c, T_SCOPE)) {
-    ParseState at_dot = set_marker(c);
     next(c);
-    Tok identifier = at(c);
-    // Stop on '{' to allow for <ident>.{ syntax
-    if (looking_at(c, T_LBRC)) {
-      backtrack(c, at_dot);
-      break;
-    }
+    Tok ident = at(c);
     if (!expect(c, n->id, T_IDENT)) {
       advance(c, follow);
       return end_node(c, nc);
     }
-    APPEND(n, token_attr_anon(c, identifier));
+    APPEND(n, token_attr_anon(c, ident));
   }
   arena_own(&c->arena, n->items, n->cap);
   return end_node(c, nc);

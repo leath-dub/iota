@@ -38,6 +38,7 @@
   TOKEN(PERC, "'%'")                        \
   TOKEN(INC, "'++'")                        \
   TOKEN(DEC, "'--'")                        \
+  TOKEN(ARROW, "'->'")                      \
   TOKEN(CHAR, "character")                  \
   TOKEN(STR, "string")                      \
   TOKEN(NUM, "number")                      \
@@ -48,9 +49,10 @@
   KEYWORD(RO, "ro")                         \
   KEYWORD(FUN, "fun")                       \
   KEYWORD(IF, "if")                         \
+  KEYWORD(WHILE, "while")                   \
+  KEYWORD(CASE, "case")                     \
   KEYWORD(ELSE, "else")                     \
   KEYWORD(FOR, "for")                       \
-  KEYWORD(WHILE, "while")                   \
   KEYWORD(DEFER, "defer")                   \
   KEYWORD(STRUCT, "struct")                 \
   KEYWORD(UNION, "union")                   \
