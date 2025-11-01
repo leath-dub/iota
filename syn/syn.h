@@ -56,6 +56,7 @@ UnpackTuple *parse_unpack_tuple(ParseCtx *c, Toks follow);
 UnpackUnion *parse_unpack_union(ParseCtx *c, Toks follow);
 Stmt *parse_stmt(ParseCtx *c);
 IfStmt *parse_if_stmt(ParseCtx *c);
+ReturnStmt *parse_return_stmt(ParseCtx *c);
 Else *parse_else(ParseCtx *c);
 Cond *parse_cond(ParseCtx *c);
 UnionTagCond *parse_union_tag_cond(ParseCtx *c);

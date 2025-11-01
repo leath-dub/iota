@@ -71,6 +71,7 @@
   KEYWORD(F32, "f32")                       \
   KEYWORD(F64, "f64")                       \
   KEYWORD(BOOL, "bool")                     \
+  KEYWORD(RETURN, "return")                 \
   KEYWORD(STRING, "string")                 \
   KEYWORD(ANY, "any")                       \
   KEYWORD(CONS, "cons")

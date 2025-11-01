@@ -584,6 +584,10 @@ Stmt *parse_stmt(ParseCtx *c) {
       n->t = STMT_IF;
       n->if_stmt = parse_if_stmt(c);
       break;
+    case T_RETURN:
+      n->t = STMT_RETURN;
+      n->return_stmt = parse_return_stmt(c);
+      break;
     // case T_WHILE:
     //   break;
     default:
@@ -627,6 +631,22 @@ IfStmt *parse_if_stmt(ParseCtx *c) {
   if (looking_at(c, T_ELSE)) {
     n->else_branch.ok = true;
     n->else_branch.value = parse_else(c);
+  }
+  return end_node(c, nc);
+}
+
+ReturnStmt *parse_return_stmt(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_RETURN_STMT);
+  ReturnStmt *n = nc.node;
+  assert(consume(c).t == T_RETURN);
+  if (looking_at(c, T_SCLN)) {
+    return end_node(c, nc);
+  }
+  n->expr.ok = true;
+  n->expr.value = parse_expr(c);
+  if (!expect(c, n->id, T_SCLN)) {
+    advance(c, FOLLOW_STMT);
+    return end_node(c, nc);
   }
   return end_node(c, nc);
 }

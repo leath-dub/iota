@@ -5,7 +5,7 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("if let Ok(*ro x) = foo(); {}");
+  string source = ztos("return cons u32 { 10 };");
   SourceCode code = new_source_code(ztos("<string>"), source);
 
   ParseCtx pc = new_parse_ctx(code);
