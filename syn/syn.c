@@ -1007,7 +1007,7 @@ ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
     return end_node(c, nc);
   }
   APPEND(n, token_attr_anon(c, identifier));
-  while (looking_at(c, T_DOT)) {
+  while (looking_at(c, T_SCOPE)) {
     ParseState at_dot = set_marker(c);
     next(c);
     Tok identifier = at(c);

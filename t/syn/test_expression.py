@@ -932,7 +932,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_scoped_ident",
-    source="let _ = Foo.Bar.baz{ 10 };",
+    source="let _ = Foo::Bar::baz{ 10 };",
     expected="""
     source_file {
       imports {}

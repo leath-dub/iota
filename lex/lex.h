@@ -19,6 +19,7 @@
   TOKEN(RBRC, "'}'")                        \
   TOKEN(SCLN, "';'")                        \
   TOKEN(CLN, "':'")                         \
+  TOKEN(SCOPE, "'::'")                      \
   TOKEN(COMMA, "','")                       \
   TOKEN(BANG, "'!'")                        \
   TOKEN(DOT, "'.'")                         \
