@@ -42,6 +42,7 @@
   KEYWORD(NOT, "not")                       \
   KEYWORD(AND, "and")                       \
   KEYWORD(OR, "or")                         \
+  KEYWORD(RO, "ro")                         \
   KEYWORD(FUN, "fun")                       \
   KEYWORD(IF, "if")                         \
   KEYWORD(ELSE, "else")                     \
@@ -52,7 +53,6 @@
   KEYWORD(UNION, "union")                   \
   KEYWORD(ENUM, "enum")                     \
   KEYWORD(LET, "let")                       \
-  KEYWORD(MUT, "mut")                       \
   KEYWORD(TYPE, "type")                     \
   KEYWORD(IMPORT, "import")                 \
   KEYWORD(ERROR, "error")                   \

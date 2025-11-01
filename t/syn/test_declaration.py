@@ -9,7 +9,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='x'
@@ -30,7 +29,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='x'
@@ -56,7 +54,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='x'
@@ -75,27 +72,6 @@ syntax_test(
 )
 
 syntax_test(
-    name="variable_declaration_mut",
-    source="mut x;",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            kind='mut'
-            binding:
-              var_binding {
-                name='x'
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
     name="variable_declaration_destructure_struct",
     source="let { *px = x, *py = y, meta };",
     expected="""
@@ -104,7 +80,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 unpack_struct {
@@ -147,7 +122,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 unpack_tuple {

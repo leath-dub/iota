@@ -5,6 +5,8 @@ class Node(Enum):
     SOURCE_FILE = auto()
     IF_STMT = auto()
     EXPR = auto()
+    STMT = auto()
+    TYPE = auto()
 
 class IotaLib:
     lib: ctypes.CDLL
@@ -28,5 +30,9 @@ class IotaLib:
                 return self.parse_with(self.lib.parse_source_file, src);
             case Node.IF_STMT:
                 return self.parse_with(self.lib.parse_if_stmt, src);
+            case Node.STMT:
+                return self.parse_with(self.lib.parse_stmt, src);
+            case Node.TYPE:
+                return self.parse_with(self.lib.parse_type, src);
             case Node.EXPR:
                 return self.parse_with(self.lib.parse_expr, src, delim=True);

@@ -136,7 +136,6 @@ struct Decl {
 
 struct VarDecl {
   NodeID id;
-  Tok classifier;  // let or mut
   struct VarBinding *binding;
   struct Type *type;  // nullable
   struct {
@@ -344,7 +343,6 @@ struct Cond {
 
 struct UnionTagCond {
   NodeID id;
-  Tok classifier;  // let or mut
   struct UnpackUnion *trigger;
   Tok assign_token;
   struct Expr *expr;
@@ -451,7 +449,7 @@ struct ErrType {
 
 struct PtrType {
   NodeID id;
-  Tok classifier;  // let or mut
+  MAYBE(Tok) ro;
   struct Type *ref_type;
 };
 

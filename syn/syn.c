@@ -149,10 +149,9 @@ bool expect(ParseCtx *c, NodeID in, TokKind t) {
 
 // These were manually calculated by looking at the tree-sitter grammar.
 // I really fucking hope it was worth the effort.
-DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM,
-                   T_ERROR, T_UNION, T_TYPE, T_USE)
-DECLARE_FOLLOW_SET(DECL, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
-                   T_UNION)
+DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
+                   T_UNION, T_TYPE, T_USE)
+DECLARE_FOLLOW_SET(DECL, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION)
 DECLARE_FOLLOW_SET(VAR_BINDING, T_SCLN, T_EQ)
 DECLARE_FOLLOW_SET(BINDING, T_COMMA, T_RPAR)
 DECLARE_FOLLOW_SET(ALIAS_BINDING, T_COMMA, T_RBRC)
@@ -162,8 +161,8 @@ DECLARE_FOLLOW_SET(ERRS, T_RBRC)
 DECLARE_FOLLOW_SET(ERR, T_COMMA, T_RBRC)
 DECLARE_FOLLOW_SET(FIELD, T_IDENT, T_RBRC)
 DECLARE_FOLLOW_SET(STMTS, T_LBRC)
-DECLARE_FOLLOW_SET(STMT, T_LET, T_MUT, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
-                   T_UNION, T_LBRC /*, TODO FIRST(expression) */)
+DECLARE_FOLLOW_SET(STMT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
+                   T_LBRC /*, TODO FIRST(expression) */)
 DECLARE_FOLLOW_SET(ATOM, T_PLUS, T_MINUS, T_STAR, T_SLASH, T_EQ, T_EQEQ, T_NEQ,
                    T_AND, T_OR, T_RBRK, T_SCLN, T_RBRC)
 DECLARE_FOLLOW_SET(UNION_TAG_COND, T_LBRC)
@@ -221,7 +220,6 @@ Decl *parse_decl(ParseCtx *c) {
   Decl *n = nc.node;
   switch (at(c).t) {
     case T_LET:
-    case T_MUT:
       n->t = DECL_VAR;
       n->var_decl = parse_var_decl(c);
       break;
@@ -340,9 +338,7 @@ ErrDecl *parse_err_decl(ParseCtx *c) {
 VarDecl *parse_var_decl(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_VAR_DECL);
   VarDecl *n = nc.node;
-  Tok classifier = at(c);
-  assert(classifier.t == T_MUT || classifier.t == T_LET);
-  n->classifier = token_attr(c, "kind", consume(c));
+  assert(consume(c).t == T_LET);
   n->binding = attr(c, "binding", parse_var_binding(c));
   if (!looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
     // Must have a type
@@ -569,7 +565,6 @@ Stmt *parse_stmt(ParseCtx *c) {
   switch (at(c).t) {
     case T_FUN:
     case T_LET:
-    case T_MUT:
     case T_STRUCT:
     case T_ENUM:
     case T_ERROR:
@@ -651,7 +646,6 @@ Cond *parse_cond(ParseCtx *c) {
   Cond *n = nc.node;
   switch (at(c).t) {
     case T_LET:
-    case T_MUT:
       n->t = COND_UNION_TAG;
       n->union_tag = parse_union_tag_cond(c);
       break;
@@ -672,10 +666,8 @@ UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_UNION_TAG_COND);
   UnionTagCond *n = nc.node;
 
-  Tok classifier = at(c);
-  assert(classifier.t == T_MUT || classifier.t == T_LET);
+  assert(consume(c).t == T_LET);
 
-  n->classifier = token_attr(c, "kind", consume(c));
   n->trigger = parse_unpack_union(c, FOLLOW_UNION_TAG_COND);
 
   Tok assign_token = at(c);
@@ -975,8 +967,9 @@ PtrType *parse_ptr_type(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_PTR_TYPE);
   PtrType *n = nc.node;
   assert(consume(c).t == T_STAR);
-  if (looking_at(c, T_MUT)) {
-    n->classifier = consume(c);
+  if (looking_at(c, T_RO)) {
+    n->ro.ok = true;
+    n->ro.value = token_attr(c, "modifier", consume(c));
   }
   n->ref_type = parse_type(c);
   return end_node(c, nc);

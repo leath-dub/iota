@@ -127,7 +127,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -181,7 +180,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -237,7 +235,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -280,7 +277,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -323,7 +319,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -373,7 +368,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -410,7 +404,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -457,7 +450,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -516,7 +508,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -578,7 +569,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -655,7 +645,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -805,7 +794,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -832,7 +820,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -859,7 +846,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -886,7 +872,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -917,7 +902,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -955,7 +939,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -995,7 +978,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1061,7 +1043,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1108,7 +1089,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1169,7 +1149,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1229,7 +1208,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1269,7 +1247,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1320,7 +1297,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1413,7 +1389,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'
@@ -1456,7 +1431,6 @@ syntax_test(
       decls {
         decl {
           var_decl {
-            kind='let'
             binding:
               var_binding {
                 name='_'

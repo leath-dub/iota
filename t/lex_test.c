@@ -18,7 +18,7 @@ Tok peek_and_consume(Lexer *l) {
 void test_basic(void) {
   string source = ztos(
       "fun main() {\n"
-      "	mut x = 10;\n"
+      "	let x = 10;\n"
       "	let y = x * 12;\n"
       "	let x' = x;\n"
       "	x = 40;\n"
@@ -28,7 +28,7 @@ void test_basic(void) {
       "		// do that\n"
       "	}\n"
       "       let c = 'x';\n"
-      "       let msg = \"Hello, world\";\n"
+      "       let msg ro = \"Hello, world\";\n"
       "}");
   SourceCode code = new_source_code(ztos("<string>"), source);
   Lexer l = new_lexer(code);
@@ -40,7 +40,7 @@ void test_basic(void) {
 
   ASSERT(peek_and_consume(&l).t == T_LBRC);
 
-  ASSERT(peek_and_consume(&l).t == T_MUT);
+  ASSERT(peek_and_consume(&l).t == T_LET);
   ASSERT(peek_and_consume(&l).t == T_IDENT);
   ASSERT(peek_and_consume(&l).t == T_EQ);
   ASSERT(peek_and_consume(&l).t == T_NUM);
@@ -85,6 +85,7 @@ void test_basic(void) {
 
   ASSERT(peek_and_consume(&l).t == T_LET);
   ASSERT(peek_and_consume(&l).t == T_IDENT);
+  ASSERT(peek_and_consume(&l).t == T_RO);
   ASSERT(peek_and_consume(&l).t == T_EQ);
   ASSERT(peek_and_consume(&l).t == T_STR);
   ASSERT(peek_and_consume(&l).t == T_SCLN);
