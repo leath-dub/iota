@@ -136,7 +136,6 @@ typedef struct Entry {
 
 typedef struct {
   Entry **items;
-  u32 cap;
   u32 len;
 } Entries;
 

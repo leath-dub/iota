@@ -18,7 +18,7 @@ static u64 fnv1a(string s) {
 MapHead __new_map(usize slots) {
   void *entries_data = calloc(slots, sizeof(Entry *));
   return (MapHead){
-      .entries = (Entries){.items = entries_data, .cap = slots, .len = slots},
+      .entries = (Entries){.items = entries_data, .len = slots},
       .arena = new_arena(),
       .value_count = 0,
   };
