@@ -8,7 +8,7 @@
 void errorf(SourceCode code, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  vfprintf(code.errors.fs, fmt, args);
+  vfprintf(code.error_stream, fmt, args);
   va_end(args);
 }
 
@@ -20,20 +20,20 @@ void reportf(SourceCode code, u32 at, const char *fmt, ...) {
   if (line.data[line.len - 1] == '\n') {
     line.len -= 1;
   }
-  fprintf(code.errors.fs, "%.*s:%d:%d:", path.len, path.data, pos.line,
+  fprintf(code.error_stream, "%.*s:%d:%d:", path.len, path.data, pos.line,
           pos.column);
   va_list args;
   va_start(args, fmt);
-  fprintf(code.errors.fs, " ");
-  vfprintf(code.errors.fs, fmt, args);
-  fprintf(code.errors.fs, "\n");
+  fprintf(code.error_stream, " ");
+  vfprintf(code.error_stream, fmt, args);
+  fprintf(code.error_stream, "\n");
   va_end(args);
   static char fbuf[1024];
   snprintf(fbuf, sizeof(fbuf), " %d |", pos.line);
   u32 flen = strlen(fbuf);
-  fprintf(code.errors.fs, "%s %.*s\n", fbuf, line.len, line.data);
+  fprintf(code.error_stream, "%s %.*s\n", fbuf, line.len, line.data);
   snprintf(fbuf, sizeof(fbuf), "%*s|", flen - 1, " ");
-  fprintf(code.errors.fs, "%s %*s^\n", fbuf, pos.column - 1, "");
+  fprintf(code.error_stream, "%s %*s^\n", fbuf, pos.column - 1, "");
 }
 
 static Lines new_lines(string text) {
@@ -52,10 +52,7 @@ SourceCode new_source_code(string file_path, string text) {
       .file_path = file_path,
       .lines = new_lines(text),
       .text = text,
-      .errors =
-          (Errors){
-              .fs = stderr,
-          },
+      .error_stream = stderr,
   };
 }
 
@@ -91,5 +88,60 @@ void source_code_free(SourceCode *code) {
   if (code->lines.items != NULL) {
     free(code->lines.items);
   }
+  if (code->errors.items != NULL) {
+    free(code->errors.items);
+  }
   memset(code, 0, sizeof(*code));
+}
+
+void raise_error(SourceCode *code, Error error) {
+  APPEND(&code->errors, error);
+}
+
+void raise_syntax_error(SourceCode *code, SyntaxError error) {
+  APPEND(&code->errors, (Error){
+                            .t = ERROR_SYNTAX,
+                            .syntax_error = error,
+                        });
+}
+
+void raise_lexical_error(SourceCode *code, LexicalError error) {
+  APPEND(&code->errors, (Error){
+                            .t = ERROR_LEXICAL,
+                            .lexical_error = error,
+                        });
+}
+
+void report_error(SourceCode code, Error error) {
+  switch (error.t) {
+    case ERROR_SYNTAX: {
+      SyntaxError syntax_error = error.syntax_error;
+      reportf(code, syntax_error.at, "syntax error: expected %s, found %s",
+              syntax_error.expected, syntax_error.got);
+      break;
+    }
+    case ERROR_LEXICAL: {
+      LexicalError lexical_error = error.lexical_error;
+      switch (lexical_error.t) {
+        case LEXICAL_ERROR_INVALID_CHAR:
+          reportf(code, lexical_error.at, "invalid character '%c'",
+                  lexical_error.invalid_char);
+          break;
+        case LEXICAL_ERROR_TEXT:
+          reportf(code, lexical_error.at, "%s", lexical_error.text);
+          break;
+        default:
+          break;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+void report_all_errors(SourceCode code) {
+  for (u32 i = 0; i < code.errors.len; i++) {
+    report_error(code, code.errors.items[i]);
+  }
 }

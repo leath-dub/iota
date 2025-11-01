@@ -20,6 +20,8 @@ class IotaLib:
 
     def parse_with(self, fn, src: str, delim: bool = False) -> str:
         rbuf = self.lib.ffi_parse(fn, src.encode("UTF-8"), delim)
+        if not rbuf:
+            raise Exception("parser reported errors")
         ast = ctypes.cast(rbuf, ctypes.c_char_p).value
         self.lib.free(rbuf)
         return ast.decode()

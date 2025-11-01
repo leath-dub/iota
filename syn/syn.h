@@ -30,7 +30,7 @@ typedef struct {
 
 void check_allocs(void);
 
-ParseCtx new_parse_ctx(SourceCode code);
+ParseCtx new_parse_ctx(SourceCode *code);
 void parse_ctx_free(ParseCtx *c);
 
 SourceFile *parse_source_file(ParseCtx *c);

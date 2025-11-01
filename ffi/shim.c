@@ -13,7 +13,7 @@ typedef NodeID *(*ParseFnDelim)(ParseCtx *, Toks toks);
 char *ffi_parse(void *parse_fn, const char *srcz, bool delim) {
   string src = ztos((char *)srcz);
   SourceCode code = new_source_code(ztos("<string>"), src);
-  ParseCtx ctx = new_parse_ctx(code);
+  ParseCtx ctx = new_parse_ctx(&code);
 
   NodeID *root;
   if (delim) {
@@ -22,6 +22,12 @@ char *ffi_parse(void *parse_fn, const char *srcz, bool delim) {
   } else {
     ParseFn parse_fn_nodelim = (ParseFn)parse_fn;
     root = parse_fn_nodelim(&ctx);
+  }
+
+  if (code.errors.len != 0) {
+    report_all_errors(code);
+    fflush(code.error_stream);
+    return NULL;
   }
 
   char *buf = NULL;

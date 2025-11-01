@@ -61,7 +61,7 @@ static void *end_node(ParseCtx *c, NodeCtx ctx) {
   return ctx.node;
 }
 
-ParseCtx new_parse_ctx(SourceCode code) {
+ParseCtx new_parse_ctx(SourceCode *code) {
   return (ParseCtx){
       .lex = new_lexer(code),
       .arena = new_arena(),
@@ -109,8 +109,7 @@ bool one_of(TokKind t, Toks toks) {
   return false;
 }
 
-/*static*/
-void advance(ParseCtx *c, Toks toks) {
+static void advance(ParseCtx *c, Toks toks) {
   for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
     if (one_of(tok.t, toks)) {
       return;
@@ -118,16 +117,17 @@ void advance(ParseCtx *c, Toks toks) {
   }
 }
 
-/*static*/
-void expected(ParseCtx *c, NodeID in, const char *msg) {
+static void expected(ParseCtx *c, NodeID in, const char *msg) {
   Tok tok = lex_peek(&c->lex);
-  reportf(c->lex.source, c->lex.cursor, "syntax error: expected %s, found %s",
-          msg, tok_to_string[tok.t].data);
+  raise_syntax_error(c->lex.source, (SyntaxError){
+                                        .at = c->lex.cursor,
+                                        .expected = msg,
+                                        .got = tok_to_string[tok.t].data,
+                                    });
   add_node_flags(&c->meta, in, NFLAG_ERROR);
 }
 
-/*static*/
-bool expect(ParseCtx *c, NodeID in, TokKind t) {
+static bool expect(ParseCtx *c, NodeID in, TokKind t) {
   Tok tok = lex_peek(&c->lex);
   bool match = tok.t == t;
   if (!match) {

@@ -100,12 +100,12 @@ typedef struct {
 } Tok;
 
 typedef struct {
-  SourceCode source;
+  SourceCode *source;
   u32 cursor;
   Tok lookahead;  // is set every time `lex_peek` is called
 } Lexer;
 
-Lexer new_lexer(SourceCode source);
+Lexer new_lexer(SourceCode *source);
 Tok lex_peek(Lexer *l);
 void lex_consume(Lexer *l);
 

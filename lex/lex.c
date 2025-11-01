@@ -31,7 +31,7 @@ static const u32 keyword_to_kind_count =
 static Tok new_tok(Lexer *l, TokKind t, u32 len) {
   Tok r = (Tok){
       .t = t,
-      .text = t != T_EOF ? substr(l->source.text, l->cursor, l->cursor + len)
+      .text = t != T_EOF ? substr(l->source->text, l->cursor, l->cursor + len)
                          : (string){.data = NULL, .len = 0},
       .offset = l->cursor,
   };
@@ -40,7 +40,7 @@ static Tok new_tok(Lexer *l, TokKind t, u32 len) {
 }
 
 static void skipws(Lexer *l) {
-  char c = l->source.text.data[l->cursor];
+  char c = l->source->text.data[l->cursor];
 tok:
   switch (c) {
     case '\n':
@@ -48,21 +48,21 @@ tok:
     case '\r':
     case ' ':
       l->cursor++;
-      if (l->cursor >= l->source.text.len) {
+      if (l->cursor >= l->source->text.len) {
         return;
       }
-      c = l->source.text.data[l->cursor];
+      c = l->source->text.data[l->cursor];
       goto tok;
   }
 }
 
-Lexer new_lexer(SourceCode source) {
+Lexer new_lexer(SourceCode *source) {
   Lexer l = {
       .source = source,
       .cursor = 0,
       .lookahead = {.t = T_EMPTY},
   };
-  if (source.text.len != 0) {
+  if (source->text.len != 0) {
     skipws(&l);
   }
   return l;
@@ -72,16 +72,18 @@ static size_t scan_id(const char *txt);
 static size_t scan_num(Lexer *l);
 static Tok eval_num(Lexer *l, string num_text);
 static bool ahead(Lexer *l, char c);
+static void lex_raise_invalid_char(Lexer *l, char c);
+static void lex_raise_error(Lexer *l, const char *text);
 
 Tok lex_peek(Lexer *l) {
   // Cursor is at the same position as cached token just return that token.
   if (l->cursor == l->lookahead.offset && l->lookahead.t != T_EMPTY) {
     return l->lookahead;
   }
-  if (l->cursor >= l->source.text.len) {
+  if (l->cursor >= l->source->text.len) {
     return new_tok(l, T_EOF, 0);
   }
-  char c = l->source.text.data[l->cursor];
+  char c = l->source->text.data[l->cursor];
   switch (c) {
     case '[':
       return new_tok(l, T_LBRK, 1);
@@ -148,9 +150,9 @@ Tok lex_peek(Lexer *l) {
       if (ahead(l, '/')) {
         // Its a comment look for '\n' or eof
         u32 peek = l->cursor;
-        char c = l->source.text.data[peek];
-        while (c != '\n' && peek < l->source.text.len) {
-          c = l->source.text.data[++peek];
+        char c = l->source->text.data[peek];
+        while (c != '\n' && peek < l->source->text.len) {
+          c = l->source->text.data[++peek];
         }
         return new_tok(l, T_CMNT, peek - l->cursor);
       }
@@ -159,17 +161,16 @@ Tok lex_peek(Lexer *l) {
     case '\'': {
       // TODO: escape codes
       u32 peek = l->cursor + 1;
-      char c = l->source.text.data[peek];
-      while (c != '\'' && peek < l->source.text.len) {
-        c = l->source.text.data[++peek];
+      char c = l->source->text.data[peek];
+      while (c != '\'' && peek < l->source->text.len) {
+        c = l->source->text.data[++peek];
       }
       if (c != '\'') {
-        reportf(l->source, l->cursor, "unmatched quote in character literal");
+        lex_raise_error(l, "unmatched quote in character literal");
         return new_tok(l, T_ILLEGAL, 1);
       }
       if (peek - l->cursor - 1 != 1) {
-        reportf(l->source, l->cursor,
-                "extraneous elements in character literal");
+        lex_raise_error(l, "extraneous elements in character literal");
         return new_tok(l, T_ILLEGAL, peek - l->cursor + 1);
       }
       return new_tok(l, T_CHAR, peek - l->cursor + 1);
@@ -177,12 +178,12 @@ Tok lex_peek(Lexer *l) {
     case '"': {
       // TODO: escape codes
       u32 peek = l->cursor + 1;
-      char c = l->source.text.data[peek];
-      while (c != '"' && peek < l->source.text.len) {
-        c = l->source.text.data[++peek];
+      char c = l->source->text.data[peek];
+      while (c != '"' && peek < l->source->text.len) {
+        c = l->source->text.data[++peek];
       }
       if (c != '"') {
-        reportf(l->source, l->cursor, "unmatched quote in string literal");
+        lex_raise_error(l, "unmatched quote in string literal");
         return new_tok(l, T_ILLEGAL, 1);
       }
       return new_tok(l, T_STR, peek - l->cursor + 1);
@@ -194,14 +195,14 @@ Tok lex_peek(Lexer *l) {
         if (len == 0) {
           return new_tok(l, T_ILLEGAL, 1);
         }
-        return eval_num(l, substr(l->source.text, l->cursor, l->cursor + len));
+        return eval_num(l, substr(l->source->text, l->cursor, l->cursor + len));
       }
-      size_t len = scan_id(&l->source.text.data[l->cursor]);
+      size_t len = scan_id(&l->source->text.data[l->cursor]);
       if (len == 0) {
-        reportf(l->source, l->cursor, "invalid character '%c'", c);
+        lex_raise_invalid_char(l, c);
         return new_tok(l, T_ILLEGAL, 1);
       }
-      string id_text = substr(l->source.text, l->cursor, l->cursor + len);
+      string id_text = substr(l->source->text, l->cursor, l->cursor + len);
       for (u32 i = 0; i < keyword_to_kind_count; i++) {
         KeywordBinding b = keyword_to_kind[i];
         if (id_text.len == b.keyword.len &&
@@ -215,16 +216,32 @@ Tok lex_peek(Lexer *l) {
   panic("unreachable state");
 }
 
+static void lex_raise_invalid_char(Lexer *l, char c) {
+  raise_lexical_error(l->source, (LexicalError){
+                                     .t = LEXICAL_ERROR_INVALID_CHAR,
+                                     .invalid_char = c,
+                                     .at = l->cursor,
+                                 });
+}
+
+static void lex_raise_error(Lexer *l, const char *text) {
+  raise_lexical_error(l->source, (LexicalError){
+                                     .t = LEXICAL_ERROR_TEXT,
+                                     .text = text,
+                                     .at = l->cursor,
+                                 });
+}
+
 static bool ahead(Lexer *l, char c) {
-  return l->cursor + 1 < l->source.text.len &&
-         l->source.text.data[l->cursor + 1] == c;
+  return l->cursor + 1 < l->source->text.len &&
+         l->source->text.data[l->cursor + 1] == c;
 }
 
 void lex_consume(Lexer *l) {
   // set cursor position to be pointing to the last byte of the current
   // token.
   l->cursor = l->lookahead.offset + l->lookahead.text.len;
-  if (l->cursor >= l->source.text.len) {
+  if (l->cursor >= l->source->text.len) {
     return;
   }
   skipws(l);
@@ -233,14 +250,13 @@ void lex_consume(Lexer *l) {
 static size_t scan_num(Lexer *l) {
   // TODO: different base integers + floating point support
   u32 peek = l->cursor;
-  char c = l->source.text.data[peek];
-  while ('0' <= c && c <= '9' && peek < l->source.text.len) {
-    c = l->source.text.data[++peek];
+  char c = l->source->text.data[peek];
+  while ('0' <= c && c <= '9' && peek < l->source->text.len) {
+    c = l->source->text.data[++peek];
   }
-  string text = substr(l->source.text, l->cursor, peek);
+  string text = substr(l->source->text, l->cursor, peek);
   if (text.data[0] == '0' && text.len != 1) {
-    reportf(l->source, l->cursor,
-            "0 is illegal at start of multi-digit number");
+    lex_raise_error(l, "0 is illegal at start of multi-digit number");
     return 0;
   }
   return peek - l->cursor;

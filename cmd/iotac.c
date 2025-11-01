@@ -5,17 +5,20 @@
 #include "../syn/syn.h"
 
 int main(void) {
-  string source = ztos("io::println(&x)!");
+  string source = ztos("while <foo; {}");
 
   SourceCode code = new_source_code(ztos("<string>"), source);
+  ParseCtx pc = new_parse_ctx(&code);
 
-  ParseCtx pc = new_parse_ctx(code);
-
-  Expr *root = parse_expr(&pc);
+  Stmt *root = parse_stmt(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
   tree_dump(&dump_ctx, root->id);
+
+  for (u32 i = 0; i < code.errors.len; i++) {
+    report_error(code, code.errors.items[i]);
+  }
   //
   // printf("---\n");
   //
