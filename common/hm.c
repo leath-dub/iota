@@ -10,7 +10,7 @@ static u64 fnv1a(string s) {
   u64 hash = FNV1A_64_OFFSET_BASIS;
   for (u32 i = 0; i < s.len; i++) {
     hash ^= s.data[i];
-    hash *= FNV1A_64_OFFSET_BASIS;
+    hash *= FNV1A_64_PRIME;
   }
   return hash;
 }
