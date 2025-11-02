@@ -15,6 +15,9 @@ lex/uc_data.c
 lex/liblex.a
 ast/libast.a
 syn/libsyn.a
+common/hmtypes.h
+common/hmtypes.c
+common/hmgen
 config.env
 t/test.o
 t/runecat_test

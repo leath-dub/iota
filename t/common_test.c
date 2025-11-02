@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "../common/hmtypes.h"
 #include "test.h"
 
 void test_arena(void) {
@@ -41,36 +42,42 @@ void test_arena(void) {
   arena_free(&a);
 }
 
-typedef struct {
+typedef struct Point {
   u32 x;
   u32 y;
   const char *name;
 } Point;
 
-typedef MAP(Point) PointMap;
-
 void test_hashmap(void) {
-  PointMap map = NEW_MAP(Point, PointMap);
-  (void)HM_ENSURE(Point, &map, ztos("mypoint"));
-  (void)HM_ENSURE(Point, &map, ztos("other"));
-  (void)HM_ENSURE(Point, &map, ztos("foo"));
-  (void)HM_ENSURE(Point, &map, ztos("bar"));
-  (void)HM_ENSURE(Point, &map, ztos("baz"));
-  (void)HM_ENSURE(Point, &map, ztos("billy"));
+  HashMapPoint pm = hm_point_new(HM_INIT_SLOTS);
 
-  ASSERT(hm_contains(&map, ztos("mypoint")));
-  ASSERT(hm_contains(&map, ztos("other")));
-  ASSERT(hm_contains(&map, ztos("foo")));
-  ASSERT(hm_contains(&map, ztos("bar")));
-  ASSERT(hm_contains(&map, ztos("baz")));
-  ASSERT(hm_contains(&map, ztos("billy")));
+  Point *point = hm_point_ensure(&pm, S("mypoint"));
+  point->x = 20;
+  point->y = 30;
+  point->name = "hello";
+  hm_point_put(&pm, S("other"), ((Point){.x = 10, .y = 12}));
+  (void)hm_point_ensure(&pm, S("foo"));
+  (void)hm_point_ensure(&pm, S("bar"));
+  (void)hm_point_ensure(&pm, S("baz"));
+  (void)hm_point_ensure(&pm, S("billy"));
 
-  // Entry *entry = HM_ENSURE(Point, &map, ztos("mypoint"));
-  // Point *point = (Point *)entry->data;
-  // point->x = 10;
-  // point->y = 12;
-  // point->name = "hello";
-  hm_free(&map);
+  ASSERT(hm_point_contains(&pm, S("mypoint")));
+  ASSERT(hm_point_contains(&pm, S("other")));
+  ASSERT(hm_point_contains(&pm, S("foo")));
+  ASSERT(hm_point_contains(&pm, S("bar")));
+  ASSERT(hm_point_contains(&pm, S("baz")));
+  ASSERT(hm_point_contains(&pm, S("billy")));
+
+  Point *mypoint = hm_point_get(&pm, S("mypoint"));
+  ASSERT(mypoint->x == 20);
+  ASSERT(mypoint->y == 30);
+  ASSERT_STREQL(ztos((char *)mypoint->name), S("hello"));
+
+  Point *other = hm_point_get(&pm, S("other"));
+  ASSERT(other->x == 10);
+  ASSERT(other->y == 12);
+
+  hm_point_free(&pm);
 }
 
 int main(void) {

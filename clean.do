@@ -10,3 +10,6 @@ rm -f t/runecat_test
 rm -f t/lex_test
 rm -f t/ast_test
 rm -f t/syn/dump_ast
+rm -f common/hmgen
+rm -f common/hmtypes.h
+rm -f common/hmtypes.c

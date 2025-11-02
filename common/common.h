@@ -41,6 +41,8 @@ string ztos(char *s);
 // Same as ztos (lower case) but only for 'char[<comptime known size>]'
 #define ZTOS(s) {.data = (s), .len = sizeof(s) - 1}
 
+#define S(s) ((string)ZTOS(s))
+
 u64 atou64(string s);
 
 #define MIN(a, b) (a) < (b) ? (a) : (b)
@@ -125,47 +127,5 @@ void arena_own(Arena *a, void *alloc, u32 size);
     bool ok;     \
     T value;     \
   }
-
-// Hash map stuff
-
-typedef struct Entry {
-  struct Entry *next;
-  const string key;
-  u8 data[];
-} Entry;
-
-typedef struct {
-  Entry **items;
-  u32 len;
-} Entries;
-
-typedef struct {
-  Entries entries;
-  Arena arena;  // For entries in the buckets
-  u32 value_count;
-} MapHead;
-
-// Try not to use the following directly, they are not type safe
-MapHead __new_map(usize slots);
-Entry *__hm_ensure(MapHead *map, string key, usize value_size);
-
-void hm_free(void *head);
-bool hm_contains(void *head, string key);
-
-#define MAP(T)      \
-  struct {          \
-    MapHead base;   \
-    usize T##_size; \
-  }
-
-#ifndef HM_INIT_SLOTS
-#define HM_INIT_SLOTS 128
-#endif
-
-#define NEW_MAP(T, Map) \
-  (Map) { .base = __new_map(HM_INIT_SLOTS), .T##_size = sizeof(T), }
-
-#define HM_ENSURE(T, map, key) \
-  __hm_ensure((MapHead *)(map), (key), (map)->T##_size)
 
 #endif
