@@ -13,53 +13,23 @@ typedef struct {
   NodeID parent;
 } NodeCtx;
 
-static void *make_node(ParseCtx *c, NodeKind kind) {
-  return new_node(&c->meta, &c->arena, kind);
-}
-
-static void *attr(ParseCtx *c, const char *name, void *node) {
-  NodeChild *child = last_child(&c->meta, c->current);
-  child->name.ok = true;
-  child->name.value = name;
-  return node;
-}
-
-static Tok token_attr(ParseCtx *c, const char *name, Tok tok) {
-  add_child(&c->meta, c->current, child_token_named(name, tok));
-  return tok;
-}
-
-static Tok token_attr_anon(ParseCtx *c, Tok tok) {
-  add_child(&c->meta, c->current, child_token(tok));
-  return tok;
-}
-
-static NodeCtx begin_node(ParseCtx *c, void *node) {
-  NodeCtx ctx = {
-      .node = node,
-      .parent = c->current,
-  };
-  c->current = *(NodeID *)ctx.node;
-  return ctx;
-}
-
-static NodeCtx start_node(ParseCtx *c, NodeKind kind) {
-  return begin_node(c, make_node(c, kind));
-}
-
-static void set_current_node(ParseCtx *c, NodeID id) { c->current = id; }
-
-static void *end_node(ParseCtx *c, NodeCtx ctx) {
-  assert(*(NodeID *)ctx.node == c->current);
-  bool root = ctx.parent == c->current;
-  if (!root) {
-    assert(ctx.parent !=
-           c->current);  // Make sure we can't accidentally add a cycle
-    add_child(&c->meta, ctx.parent, child_node(c->current));
-    set_current_node(c, ctx.parent);
-  }
-  return ctx.node;
-}
+static void *make_node(ParseCtx *c, NodeKind kind);
+static void *attr(ParseCtx *c, const char *name, void *node);
+static Tok token_attr(ParseCtx *c, const char *name, Tok tok);
+static Tok token_attr_anon(ParseCtx *c, Tok tok);
+static NodeCtx begin_node(ParseCtx *c, void *node);
+static NodeCtx start_node(ParseCtx *c, NodeKind kind);
+static void set_current_node(ParseCtx *c, NodeID id);
+static void *end_node(ParseCtx *c, NodeCtx ctx);
+static Tok tnext(ParseCtx *c);
+static void next(ParseCtx *c);
+static Tok consume(ParseCtx *c);
+static Tok at(ParseCtx *c);
+static bool looking_at(ParseCtx *c, TokKind t);
+static bool one_of(TokKind t, Toks toks);
+static void advance(ParseCtx *c, Toks toks);
+static void expected(ParseCtx *c, NodeID in, const char *msg);
+static bool expect(ParseCtx *c, NodeID in, TokKind t);
 
 ParseCtx new_parse_ctx(SourceCode *code) {
   return (ParseCtx){
@@ -72,70 +42,6 @@ ParseCtx new_parse_ctx(SourceCode *code) {
 void parse_ctx_free(ParseCtx *c) {
   node_metadata_free(&c->meta);
   arena_free(&c->arena);
-}
-
-// static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
-// static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex;
-// }
-
-static Tok tnext(ParseCtx *c) {
-  Tok tok;
-  do {
-    lex_consume(&c->lex);
-    tok = lex_peek(&c->lex);
-  } while (tok.t == T_CMNT);
-  return tok;
-}
-
-static void next(ParseCtx *c) { (void)tnext(c); }
-
-static Tok consume(ParseCtx *c) {
-  Tok tok = lex_peek(&c->lex);
-  next(c);
-  return tok;
-}
-
-Tok at(ParseCtx *c) { return lex_peek(&c->lex); }
-
-/*static*/
-bool looking_at(ParseCtx *c, TokKind t) { return at(c).t == t; }
-
-bool one_of(TokKind t, Toks toks) {
-  for (u32 i = 0; i < toks.len; i++) {
-    if (t == toks.items[i]) {
-      return true;
-    }
-  }
-  return false;
-}
-
-static void advance(ParseCtx *c, Toks toks) {
-  for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
-    if (one_of(tok.t, toks)) {
-      return;
-    }
-  }
-}
-
-static void expected(ParseCtx *c, NodeID in, const char *msg) {
-  Tok tok = lex_peek(&c->lex);
-  raise_syntax_error(c->lex.source, (SyntaxError){
-                                        .at = c->lex.cursor,
-                                        .expected = msg,
-                                        .got = tok_to_string[tok.t].data,
-                                    });
-  add_node_flags(&c->meta, in, NFLAG_ERROR);
-}
-
-static bool expect(ParseCtx *c, NodeID in, TokKind t) {
-  Tok tok = lex_peek(&c->lex);
-  bool match = tok.t == t;
-  if (!match) {
-    expected(c, in, tok_to_string[t].data);
-  } else {
-    next(c);
-  }
-  return match;
 }
 
 #define DECLARE_FOLLOW_SET(name, ...)                            \
@@ -1697,4 +1603,115 @@ Atom *parse_atom(ParseCtx *c) {
   expected(c, n->id, "an atom");
   advance(c, FOLLOW_ATOM);
   return end_node(c, nc);
+}
+
+static void *make_node(ParseCtx *c, NodeKind kind) {
+  return new_node(&c->meta, &c->arena, kind);
+}
+
+static void *attr(ParseCtx *c, const char *name, void *node) {
+  NodeChild *child = last_child(&c->meta, c->current);
+  child->name.ok = true;
+  child->name.value = name;
+  return node;
+}
+
+static Tok token_attr(ParseCtx *c, const char *name, Tok tok) {
+  add_child(&c->meta, c->current, child_token_named(name, tok));
+  return tok;
+}
+
+static Tok token_attr_anon(ParseCtx *c, Tok tok) {
+  add_child(&c->meta, c->current, child_token(tok));
+  return tok;
+}
+
+static NodeCtx begin_node(ParseCtx *c, void *node) {
+  NodeCtx ctx = {
+      .node = node,
+      .parent = c->current,
+  };
+  c->current = *(NodeID *)ctx.node;
+  return ctx;
+}
+
+static NodeCtx start_node(ParseCtx *c, NodeKind kind) {
+  return begin_node(c, make_node(c, kind));
+}
+
+static void set_current_node(ParseCtx *c, NodeID id) { c->current = id; }
+
+static void *end_node(ParseCtx *c, NodeCtx ctx) {
+  assert(*(NodeID *)ctx.node == c->current);
+  bool root = ctx.parent == c->current;
+  if (!root) {
+    assert(ctx.parent !=
+           c->current);  // Make sure we can't accidentally add a cycle
+    add_child(&c->meta, ctx.parent, child_node(c->current));
+    set_current_node(c, ctx.parent);
+  }
+  return ctx.node;
+}
+
+// static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
+// static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex;
+// }
+
+static Tok tnext(ParseCtx *c) {
+  Tok tok;
+  do {
+    lex_consume(&c->lex);
+    tok = lex_peek(&c->lex);
+  } while (tok.t == T_CMNT);
+  return tok;
+}
+
+static void next(ParseCtx *c) { (void)tnext(c); }
+
+static Tok consume(ParseCtx *c) {
+  Tok tok = lex_peek(&c->lex);
+  next(c);
+  return tok;
+}
+
+static Tok at(ParseCtx *c) { return lex_peek(&c->lex); }
+
+static bool looking_at(ParseCtx *c, TokKind t) { return at(c).t == t; }
+
+static bool one_of(TokKind t, Toks toks) {
+  for (u32 i = 0; i < toks.len; i++) {
+    if (t == toks.items[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void advance(ParseCtx *c, Toks toks) {
+  for (Tok tok = lex_peek(&c->lex); tok.t != T_EOF; tok = tnext(c)) {
+    if (one_of(tok.t, toks)) {
+      return;
+    }
+  }
+}
+
+static void expected(ParseCtx *c, NodeID in, const char *msg) {
+  Tok tok = lex_peek(&c->lex);
+  raise_syntax_error(c->lex.source, (SyntaxError){
+                                        .at = c->lex.cursor,
+                                        .expected = msg,
+                                        .got = tok_to_string[tok.t].data,
+                                    });
+  add_node_flags(&c->meta, in, NFLAG_ERROR);
+}
+
+static bool expect(ParseCtx *c, NodeID in, TokKind t) {
+  Tok tok = lex_peek(&c->lex);
+  bool match = tok.t == t;
+  if (!match) {
+    expected(c, in, tok_to_string[t].data);
+  } else {
+    next(c);
+  }
+  return match;
 }

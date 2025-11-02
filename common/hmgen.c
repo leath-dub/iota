@@ -71,37 +71,37 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
   fprintf(hdr, "     hm_%s_ensure(hm, key))\n\n", lowtype);
 }
 
-static void gen_start_imp(FILE *hdr) {
-  fprintf(hdr, "#include \"hmtypes.h\"\n\n");
+static void gen_start_imp(FILE *imp) {
+  fprintf(imp, "#include \"hmtypes.h\"\n\n");
 }
 
-static void gen_end_imp(FILE *hdr) { (void)hdr; }
+static void gen_end_imp(FILE *imp) { (void)imp; }
 
-static void gen_type_imp(FILE *hdr, const char *type) {
+static void gen_type_imp(FILE *imp, const char *type) {
   static char buf[BUFSIZ] = {0};
   const char *lowtype = snake_case(type, buf, BUFSIZ);
 
-  fprintf(hdr, "HashMap%s hm_%s_new(usize slots) {\n", type, lowtype);
-  fprintf(hdr, "  return (HashMap%s) { .base = hm_unsafe_new(slots) };\n",
+  fprintf(imp, "HashMap%s hm_%s_new(usize slots) {\n", type, lowtype);
+  fprintf(imp, "  return (HashMap%s) { .base = hm_unsafe_new(slots) };\n",
           type);
-  fprintf(hdr, "}\n\n");
+  fprintf(imp, "}\n\n");
 
   fprintf(
-      hdr,
+      imp,
       "struct %s *hm_%s_ensure_sz(HashMap%s *hm, string key, usize size) {\n",
       type, lowtype, type);
-  fprintf(hdr, "  Entry *entry = hm_unsafe_ensure(&hm->base, key, size);\n");
-  fprintf(hdr, "  return (struct %s *)entry->data;\n", type);
-  fprintf(hdr, "}\n\n");
+  fprintf(imp, "  Entry *entry = hm_unsafe_ensure(&hm->base, key, size);\n");
+  fprintf(imp, "  return (struct %s *)entry->data;\n", type);
+  fprintf(imp, "}\n\n");
 
-  fprintf(hdr, "bool hm_%s_contains(HashMap%s *hm, string key) {\n", lowtype,
+  fprintf(imp, "bool hm_%s_contains(HashMap%s *hm, string key) {\n", lowtype,
           type);
-  fprintf(hdr, "  return hm_unsafe_contains(&hm->base, key);\n");
-  fprintf(hdr, "}\n\n");
+  fprintf(imp, "  return hm_unsafe_contains(&hm->base, key);\n");
+  fprintf(imp, "}\n\n");
 
-  fprintf(hdr, "void hm_%s_free(HashMap%s *hm) {\n", lowtype, type);
-  fprintf(hdr, "  hm_unsafe_free(&hm->base);\n");
-  fprintf(hdr, "}\n");
+  fprintf(imp, "void hm_%s_free(HashMap%s *hm) {\n", lowtype, type);
+  fprintf(imp, "  hm_unsafe_free(&hm->base);\n");
+  fprintf(imp, "}\n");
 }
 
 int main(int argc, char *argv[]) {
