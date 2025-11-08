@@ -101,29 +101,12 @@ typedef struct {
   usize align;
 } Layout;
 
-#define LAYOUT_OF(T) \
-  (Layout) { .size = sizeof(T), .align = _Alignof(T) }
+#define LAYOUT_OF(T) {.size = sizeof(T), .align = _Alignof(T)}
 
 typedef struct {
   const char *name;
   Layout layout;
 } NodeDescriptor;
-
-static NodeDescriptor node_descriptors[];
-
-const char *node_kind_name(NodeKind kind) {
-  return node_descriptors[kind].name;
-}
-
-void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
-  Layout layout = node_descriptors[kind].layout;
-  NodeID *r = arena_alloc(a, layout.size, layout.align);
-  APPEND(&m->flags, 0);
-  APPEND(&m->names, node_kind_name(kind));
-  APPEND(&m->trees, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
-  *r = m->next_id++;
-  return r;
-}
 
 const char *get_node_name(NodeMetadata *m, NodeID id) {
   return *AT(m->names, id);
@@ -144,3 +127,17 @@ static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
     EACH_NODE
 #undef USE
 };
+
+const char *node_kind_name(NodeKind kind) {
+  return node_descriptors[kind].name;
+}
+
+void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
+  Layout layout = node_descriptors[kind].layout;
+  NodeID *r = arena_alloc(a, layout.size, layout.align);
+  APPEND(&m->flags, 0);
+  APPEND(&m->names, node_kind_name(kind));
+  APPEND(&m->trees, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
+  *r = m->next_id++;
+  return r;
+}
