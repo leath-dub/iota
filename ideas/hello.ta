@@ -1,6 +1,5 @@
 import fmt;
-export main;
 
 fun main() {
-  fmt.println("Hello, world");
+  fmt::println("Hello, world");
 }

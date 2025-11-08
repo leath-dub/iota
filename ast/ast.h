@@ -19,7 +19,7 @@ typedef u32 NodeID;
 // For these reasons, The weird and arcane trick known as "X macro" is used
 // below (see here for more: info https://en.wikipedia.org/wiki/X_macro).
 
-#define EACH_NODE                                      \
+#define EACH_NODE(USE)                                 \
   USE(SourceFile, SOURCE_FILE, "source_file")          \
   USE(Imports, IMPORTS, "imports")                     \
   USE(Decls, DECLS, "decls")                           \
@@ -85,9 +85,9 @@ typedef u32 NodeID;
   USE(BracedLit, BRACED_LIT, "braced_lit")             \
   USE(Index, INDEX, "index")
 
-#define USE(NODE, ...) struct NODE;
-EACH_NODE
-#undef USE
+#define FWD_DECL_NODE(NODE, ...) struct NODE;
+
+EACH_NODE(FWD_DECL_NODE)
 
 struct SourceFile {
   NodeID id;
@@ -627,15 +627,14 @@ struct BinExpr {
   struct Expr *right;
 };
 
-#define USE(NODE, ...) typedef struct NODE NODE;
-EACH_NODE
-#undef USE
+#define TYPEDEF_NODE(NODE, ...) typedef struct NODE NODE;
+
+EACH_NODE(TYPEDEF_NODE)
+
+#define DECL_NODE_KIND(_, UPPER_NAME, ...) NODE_##UPPER_NAME,
 
 typedef enum {
-#define USE(_, UPPER_NAME, ...) NODE_##UPPER_NAME,
-  EACH_NODE
-#undef USE
-      NODE_KIND_COUNT,
+  EACH_NODE(DECL_NODE_KIND) NODE_KIND_COUNT,
 } NodeKind;
 
 typedef enum {
@@ -661,10 +660,15 @@ typedef enum {
 } ChildKind;
 
 typedef struct {
+  NodeID *data;
+  NodeKind kind;
+} AnyNode;
+
+typedef struct {
   ChildKind t;
   union {
     Tok token;
-    NodeID id;
+    AnyNode node;
   };
   NULLABLE_PTR(const char) name;
 } NodeChild;
@@ -679,12 +683,7 @@ typedef struct {
   NodeChildren *items;
   u32 cap;
   u32 len;
-} NodeTrees;
-
-typedef struct {
-  NodeID *data;
-  NodeKind kind;
-} AnyNode;
+} NodeTree;
 
 typedef struct Scope {
   HashMapScopeEntry table;
@@ -702,7 +701,7 @@ typedef struct ScopeEntry {
 typedef struct {
   NodeID next_id;
   NodeFlags flags;
-  NodeTrees trees;
+  NodeTree tree;
   NodeNames names;
   HashMapScope scopes;
 } NodeMetadata;
@@ -718,12 +717,25 @@ bool has_error(NodeMetadata *m, void *node);
 void add_child(NodeMetadata *m, NodeID id, NodeChild child);
 NodeChild child_token(Tok token);
 NodeChild child_token_named(const char *name, Tok token);
-NodeChild child_node(NodeID node);
-NodeChild child_node_named(const char *name, NodeID node);
+NodeChild child_node(AnyNode node);
+NodeChild child_node_named(const char *name, AnyNode node);
+void remove_child(NodeMetadata *m, NodeID from, NodeID child);
 
 const char *get_node_name(NodeMetadata *m, NodeID id);
 NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
 NodeChild *last_child(NodeMetadata *m, NodeID id);
+
+void *expect_node(NodeKind kind, AnyNode node);
+
+typedef enum {
+  PRE_ORDER,
+  POST_ORDER,
+} TraversalOrder;
+
+void ast_traverse_dfs(TraversalOrder order, void *ctx, AnyNode root,
+                      NodeMetadata *m,
+                      void (*visit_fun)(void *ctx, NodeMetadata *m,
+                                        AnyNode node));
 
 typedef struct {
   FILE *fs;
@@ -733,5 +745,15 @@ typedef struct {
 } TreeDumpCtx;
 
 void tree_dump(TreeDumpCtx *ctx, NodeID id);
+
+#define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
+
+#define GET_NODE_KIND(NODE_PTR)                             \
+  _Generic((NODE_PTR),                                      \
+      EACH_NODE(NODE_GENERIC_CASE) default: assert(false && \
+                                                   "not a pointer to a node"))
+
+#define MAKE_ANY(NODE_PTR) \
+  (AnyNode) { (NodeID *)(NODE_PTR), GET_NODE_KIND(NODE_PTR) }
 
 #endif

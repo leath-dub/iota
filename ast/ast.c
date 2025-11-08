@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include <assert.h>
+#include <string.h>
 
 NodeMetadata new_node_metadata(void) {
   return (NodeMetadata){
@@ -11,7 +12,7 @@ NodeMetadata new_node_metadata(void) {
               .cap = 0,
               .items = NULL,
           },
-      .trees =
+      .tree =
           {
               .len = 0,
               .cap = 0,
@@ -31,12 +32,12 @@ void node_metadata_free(NodeMetadata *m) {
   if (m->flags.items != NULL) {
     free(m->flags.items);
   }
-  if (m->trees.items != NULL) {
-    for (u32 id = 0; id < m->trees.len; id++) {
+  if (m->tree.items != NULL) {
+    for (u32 id = 0; id < m->tree.len; id++) {
       NodeChildren *children = get_node_children(m, id);
       free(children->items);
     }
-    free(m->trees.items);
+    free(m->tree.items);
   }
   if (m->names.items != NULL) {
     free(m->names.items);
@@ -60,7 +61,7 @@ bool has_error(NodeMetadata *m, void *node) {
 }
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
-  NodeChildren *children = &m->trees.items[id];
+  NodeChildren *children = &m->tree.items[id];
   APPEND(children, child);
 }
 
@@ -80,18 +81,18 @@ NodeChild child_token_named(const char *name, Tok token) {
   };
 }
 
-NodeChild child_node(NodeID id) {
+NodeChild child_node(AnyNode node) {
   return (NodeChild){
       .t = CHILD_NODE,
-      .id = id,
+      .node = node,
       .name.ptr = NULL,
   };
 }
 
-NodeChild child_node_named(const char *name, NodeID id) {
+NodeChild child_node_named(const char *name, AnyNode node) {
   return (NodeChild){
       .t = CHILD_NODE,
-      .id = id,
+      .node = node,
       .name.ptr = name,
   };
 }
@@ -113,20 +114,66 @@ const char *get_node_name(NodeMetadata *m, NodeID id) {
 }
 
 NodeChildren *get_node_children(NodeMetadata *m, NodeID id) {
-  return AT(m->trees, id);
+  return AT(m->tree, id);
 }
 
 NodeChild *last_child(NodeMetadata *m, NodeID id) {
-  NodeChildren *children = AT(m->trees, id);
+  NodeChildren *children = AT(m->tree, id);
   return AT(*children, children->len - 1);
 }
 
-static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
-#define USE(TYPE, UPPER_NAME, REPR) \
+void remove_child(NodeMetadata *m, NodeID from, NodeID child) {
+  NodeChildren *children = get_node_children(m, from);
+  int child_index = -1;
+  for (u32 i = 0; i < children->len; i++) {
+    NodeChild *check = &children->items[i];
+    bool child_to_remove = check->t == CHILD_NODE && *check->node.data == child;
+    if (child_to_remove) {
+      child_index = i;
+      break;
+    }
+  }
+  assert(child_index != -1 && "Child not found");
+
+  NodeChild *child_ptr = &children->items[child_index];
+  memmove(child_ptr, child_ptr + 1,
+          (children->len - child_index - 1) * sizeof(NodeChild));
+  children->len--;
+}
+
+void *expect_node(NodeKind kind, AnyNode node) {
+  assert(kind == node.kind);
+  return node.data;
+}
+
+void ast_traverse_dfs(TraversalOrder order, void *ctx, AnyNode root,
+                      NodeMetadata *m,
+                      void (*visit_fun)(void *ctx, NodeMetadata *m,
+                                        AnyNode node)) {
+  const NodeChildren *children = get_node_children(m, *root.data);
+  for (u32 i = 0; i < children->len; i++) {
+    NodeChild child = children->items[i];
+    switch (child.t) {
+      case CHILD_NODE:
+        if (order == PRE_ORDER) {
+          visit_fun(ctx, m, child.node);
+        }
+        ast_traverse_dfs(order, ctx, child.node, m, visit_fun);
+        if (order == POST_ORDER) {
+          visit_fun(ctx, m, child.node);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+#define DESCRIBE_NODE(TYPE, UPPER_NAME, REPR) \
   [NODE_##UPPER_NAME] = {REPR, LAYOUT_OF(TYPE)},
-    EACH_NODE
-#undef USE
-};
+
+static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
+    EACH_NODE(DESCRIBE_NODE)};
 
 const char *node_kind_name(NodeKind kind) {
   return node_descriptors[kind].name;
@@ -137,7 +184,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
   NodeID *r = arena_alloc(a, layout.size, layout.align);
   APPEND(&m->flags, 0);
   APPEND(&m->names, node_kind_name(kind));
-  APPEND(&m->trees, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
+  APPEND(&m->tree, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
   *r = m->next_id++;
   return r;
 }

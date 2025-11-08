@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "../ast/ast.h"
+#include "../sem/sem.h"
 #include "../syn/syn.h"
 
 #define ERROR_IMMEDIATE
@@ -62,6 +63,8 @@ int main(int argc, char *argv[]) {
 
   SourceFile *root = parse_source_file(&pc);
 
+  do_post_parse(&pc.meta, MAKE_ANY(root));
+
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
   tree_dump(&dump_ctx, root->id);
@@ -69,12 +72,8 @@ int main(int argc, char *argv[]) {
   for (u32 i = 0; i < code.errors.len; i++) {
     report_error(code, code.errors.items[i]);
   }
-  //
-  // printf("---\n");
-  //
-  // Dump_Out out = new_dump_out();
-  // DUMP(&out, &pc, sf, source_file);
 
   source_code_free(&code);
   parse_ctx_free(&pc);
+  free(source.data);
 }

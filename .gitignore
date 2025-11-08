@@ -8,6 +8,7 @@ result
 *.d
 *.a
 *.so
+*.out
 .direnv/
 cmd/iotac
 lex/ucgen

@@ -21,7 +21,7 @@ typedef struct {
   Lexer lex;
   Arena arena;
   NodeMetadata meta;
-  NodeID current;
+  AnyNode current;
 } ParseCtx;
 
 typedef struct {

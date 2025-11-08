@@ -33,7 +33,7 @@ void tree_dump(TreeDumpCtx *ctx, NodeID id) {
                   "", child.name.ptr);
           indent(ctx);
         }
-        tree_dump(ctx, child.id);
+        tree_dump(ctx, *child.node.data);
         if (child.name.ptr) {
           deindent(ctx);
         }

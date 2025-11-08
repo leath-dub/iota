@@ -60,7 +60,7 @@ static inline uptr align_forward(uptr p, uptr align) {
 }
 
 // Trys to allocate size bytes in block, returning NULL if not successful
-static void *block_alloc(Block *block, size_t size, uptr align) {
+static inline void *try_alloc_in_block(Block *block, size_t size, uptr align) {
   uptr base_ptr = (uptr)&block->alloc[block->used];
   uptr aligned_ptr = align_forward(base_ptr, align);
   uptr padding = aligned_ptr - base_ptr;
@@ -93,7 +93,7 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
   }
 
   for (u32 i = 0; i < a->blocks.len; i++) {
-    void *p = block_alloc(&a->blocks.items[i], size, align);
+    void *p = try_alloc_in_block(&a->blocks.items[i], size, align);
     if (p != NULL) {
       return p;
     }
@@ -109,7 +109,8 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
                          .used = 0,
                          .alloc = alloc,
                      });
-  void *p = block_alloc(&a->blocks.items[a->blocks.len - 1], size, align);
+  void *p =
+      try_alloc_in_block(&a->blocks.items[a->blocks.len - 1], size, align);
   assert(p != NULL);
   return p;
 }
