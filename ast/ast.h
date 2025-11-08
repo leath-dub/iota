@@ -545,6 +545,7 @@ typedef enum {
   ATOM_TOKEN,
   ATOM_BRACED_LIT,
   ATOM_DESIGNATOR,
+  ATOM_SCOPED_IDENT,
 } AtomKind;
 
 struct Atom {
@@ -552,6 +553,7 @@ struct Atom {
   AtomKind t;
   union {
     Tok token;  // Stores: identifier, number, string, enum, nil
+    struct ScopedIdent *scoped_ident;
     struct Designator *designator;
     struct BracedLit *braced_lit;
   };

@@ -1354,12 +1354,27 @@ static Maybe_Power postfix_bpow(TokKind op) {
 }
 
 static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow) {
-  NodeCtx lhs_ctx = start_node(c, NODE_EXPR);
-  Expr *lhs = lhs_ctx.node;
+  NodeCtx lhs_ctx = {BAD_PTR, -1};
+  Expr *lhs = BAD_PTR;
 
   Tok tok = at(c);
 
-  if (is_prefix_op(tok.t)) {
+  if (tok.t == T_LPAR) {
+    next(c);
+    lhs_ctx = expr_with_bpow(c, 0);
+    lhs = lhs_ctx.node;
+
+    if (!expect(c, lhs->id, T_RPAR)) {
+      advance(c, FOLLOW_EXPR);
+      return lhs_ctx;
+    }
+    if (!is_op(at(c).t)) {
+      return lhs_ctx;
+    }
+  } else if (is_prefix_op(tok.t)) {
+    lhs_ctx = start_node(c, NODE_EXPR);
+    lhs = lhs_ctx.node;
+
     NodeCtx unary_ctx = start_node(c, NODE_UNARY_EXPR);
     UnaryExpr *unary_expr = unary_ctx.node;
 
@@ -1378,26 +1393,11 @@ static NodeCtx expr_with_bpow(ParseCtx *c, u32 min_pow) {
     lhs->t = EXPR_UNARY;
     lhs->unary_expr = end_node(c, unary_ctx);
   } else {
-    if (tok.t == T_LPAR) {
-      next(c);
+    lhs_ctx = start_node(c, NODE_EXPR);
+    lhs = lhs_ctx.node;
 
-      // TODO: this effectively leaks an expression allocated in the arena
-      // maybe we can just free the node here before recursing
-      set_current_node(c, lhs_ctx.parent);
-      lhs_ctx = expr_with_bpow(c, 0);
-      lhs = lhs_ctx.node;
-
-      if (!expect(c, lhs->id, T_RPAR)) {
-        advance(c, FOLLOW_EXPR);
-        return lhs_ctx;
-      }
-      if (!is_op(at(c).t)) {
-        return lhs_ctx;
-      }
-    } else {
-      lhs->t = EXPR_ATOM;
-      lhs->atom = parse_atom(c);
-    }
+    lhs->t = EXPR_ATOM;
+    lhs->atom = parse_atom(c);
   }
 
   while (true) {

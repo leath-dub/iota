@@ -133,4 +133,6 @@ void arena_own(Arena *a, void *alloc, u32 size);
     T *ptr;             \
   }
 
+#define BAD_PTR (void *)0xDEADBEEF
+
 #endif
