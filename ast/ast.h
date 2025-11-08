@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "../common/common.h"
+#include "../common/hmtypes.h"
 #include "../lex/lex.h"
 
 typedef u32 NodeID;
@@ -103,11 +104,7 @@ struct Imports {
 
 struct Import {
   NodeID id;
-  bool aliased;
-  struct {
-    Tok alias;
-  };
-  Tok import_name;
+  struct ScopedIdent *module;
 };
 
 struct Decls {
@@ -212,9 +209,9 @@ struct UnpackUnion {
 struct FnDecl {
   NodeID id;
   Tok ident;
-  MAYBE(struct TypeParams *) type_params;
+  NULLABLE_PTR(struct TypeParams) type_params;
   struct FnParams *params;
-  MAYBE(struct Type *) return_type;
+  NULLABLE_PTR(struct Type) return_type;
   struct CompStmt *body;
 };
 
@@ -240,7 +237,7 @@ struct TypeParams {
 struct StructDecl {
   NodeID id;
   Tok ident;
-  MAYBE(struct TypeParams *) type_params;
+  NULLABLE_PTR(struct TypeParams) type_params;
   struct StructBody *body;
 };
 
@@ -301,7 +298,7 @@ struct Err {
 struct UnionDecl {
   NodeID id;
   Tok ident;
-  MAYBE(struct TypeParams *) type_params;
+  NULLABLE_PTR(struct TypeParams) type_params;
   struct Fields *alts;
 };
 
@@ -334,7 +331,7 @@ struct IfStmt {
   NodeID id;
   struct Cond *cond;
   struct CompStmt *true_branch;
-  MAYBE(struct Else *) else_branch;
+  NULLABLE_PTR(struct Else) else_branch;
 };
 
 struct WhileStmt {
@@ -357,7 +354,7 @@ struct CasePatt {
     Tok default_;
     struct {
       struct ScopedIdent *ident;
-      MAYBE(struct Binding *) binding;
+      NULLABLE_PTR(struct Binding) binding;
     } name;
   };
 };
@@ -418,7 +415,7 @@ struct Else {
 
 struct ReturnStmt {
   NodeID id;
-  MAYBE(struct Expr *) expr;
+  NULLABLE_PTR(struct Expr) expr;
 };
 
 struct DeferStmt {
@@ -468,13 +465,13 @@ struct BuiltinType {
 
 struct CollType {
   NodeID id;
-  MAYBE(struct Expr *) index_expr;
+  NULLABLE_PTR(struct Expr) index_expr;
   struct Type *element_type;
 };
 
 struct StructType {
   NodeID id;
-  MAYBE(struct TypeParams *) type_params;
+  NULLABLE_PTR(struct TypeParams) type_params;
   struct StructBody *body;
 };
 
@@ -487,7 +484,7 @@ struct Types {
 
 struct UnionType {
   NodeID id;
-  MAYBE(struct TypeParams *) type_params;
+  NULLABLE_PTR(struct TypeParams) type_params;
   struct Fields *fields;
 };
 
@@ -510,7 +507,7 @@ struct PtrType {
 struct FnType {
   NodeID id;
   struct Types *params;
-  MAYBE(struct Type *) return_type;
+  NULLABLE_PTR(struct Type) return_type;
 };
 
 struct ScopedIdent {
@@ -563,12 +560,12 @@ struct Atom {
 struct Designator {
   NodeID id;
   struct ScopedIdent *ident;
-  MAYBE(struct Init *) init;
+  NULLABLE_PTR(struct Init) init;
 };
 
 struct BracedLit {
   NodeID id;
-  MAYBE(struct Type *) type;
+  NULLABLE_PTR(struct Type) type;
   struct Init *init;
 };
 
@@ -611,8 +608,8 @@ typedef enum {
 struct Index {
   NodeID id;
   IndexKind t;
-  MAYBE(struct Expr *) start;
-  MAYBE(struct Expr *) end;
+  NULLABLE_PTR(struct Expr) start;
+  NULLABLE_PTR(struct Expr) end;
 };
 
 struct UnaryExpr {
@@ -667,7 +664,7 @@ typedef struct {
     Tok token;
     NodeID id;
   };
-  MAYBE(const char *) name;
+  NULLABLE_PTR(const char) name;
 } NodeChild;
 
 typedef struct {
@@ -682,11 +679,30 @@ typedef struct {
   u32 len;
 } NodeTrees;
 
+// typedef struct {
+//   NodeID *data;
+//   NodeKind kind;
+// } AnyNode;
+
+// typedef struct {
+//   HashMapScopeEntry table;
+//   NULLABLE_PTR(Scope) parent_scope;
+// } Scope;
+//
+// typedef struct ScopeEntry {
+//   union {
+//     AnyNode node;
+//     Scope *sub_scope;
+//   };
+//   struct ScopeEntry *shadows;
+// } ScopeEntry;
+
 typedef struct {
   NodeID next_id;
   NodeFlags flags;
   NodeTrees trees;
   NodeNames names;
+  // HashMapScope scopes;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);

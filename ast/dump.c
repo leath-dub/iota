@@ -28,20 +28,20 @@ void tree_dump(TreeDumpCtx *ctx, NodeID id) {
     indent(ctx);
     switch (child.t) {
       case CHILD_NODE:
-        if (child.name.ok) {
+        if (child.name.ptr) {
           fprintf(ctx->fs, "%*s%s:\n", ctx->indent_level * ctx->indent_width,
-                  "", child.name.value);
+                  "", child.name.ptr);
           indent(ctx);
         }
         tree_dump(ctx, child.id);
-        if (child.name.ok) {
+        if (child.name.ptr) {
           deindent(ctx);
         }
         break;
       case CHILD_TOKEN:
         fprintf(ctx->fs, "%*s", ctx->indent_level * ctx->indent_width, "");
-        if (child.name.ok) {
-          fprintf(ctx->fs, "%s=", child.name.value);
+        if (child.name.ptr) {
+          fprintf(ctx->fs, "%s=", child.name.ptr);
         }
         fprintf(ctx->fs, "'%.*s'\n", child.token.text.len,
                 child.token.text.data);

@@ -128,4 +128,9 @@ void arena_own(Arena *a, void *alloc, u32 size);
     T value;     \
   }
 
+#define NULLABLE_PTR(T) \
+  struct {              \
+    T *ptr;             \
+  }
+
 #endif

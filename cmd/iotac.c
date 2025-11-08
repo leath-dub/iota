@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   char *path = argv[1];
   string source = read_file(path);
 
-  SourceCode code = new_source_code(ztos("<string>"), source);
+  SourceCode code = new_source_code(ztos(path), source);
   ParseCtx pc = new_parse_ctx(&code);
 
   SourceFile *root = parse_source_file(&pc);

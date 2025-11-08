@@ -98,17 +98,11 @@ Import *parse_import(ParseCtx *c) {
   NodeCtx nc = start_node(c, NODE_IMPORT);
   Import *n = nc.node;
   assert(expect(c, n->id, T_IMPORT));
-  if (looking_at(c, T_IDENT)) {
-    n->aliased = true;
-    n->alias = at(c);
-    next(c);
-  }
-  Tok import_name = at(c);
-  if (!expect(c, n->id, T_STR) || !expect(c, n->id, T_SCLN)) {
+  n->module = parse_scoped_ident(c, TOKS(T_SCLN));
+  if (!expect(c, n->id, T_SCLN)) {
     advance(c, FOLLOW_IMPORT);
     return end_node(c, nc);
   }
-  n->import_name = token_attr(c, "module", import_name);
   return end_node(c, nc);
 }
 
@@ -278,7 +272,6 @@ VarDecl *parse_var_decl(ParseCtx *c) {
     n->type = parse_type(c);
   }
   if (looking_at(c, T_EQ)) {
-    n->init.ok = true;
     n->init.assign_token = consume(c);
     n->init.expr = attr(c, "value", parse_expr(c));
   }
@@ -321,7 +314,7 @@ Binding *parse_binding(ParseCtx *c) {
     n->ref.ok = true;
     n->ref.value = token_attr(c, "kind", consume(c));
     if (looking_at(c, T_RO)) {
-      n->mod.ok = true;
+      n->ref.ok = true;
       n->mod.value = token_attr(c, "modifier", consume(c));
     }
   }
@@ -458,8 +451,7 @@ FnDecl *parse_fn_decl(ParseCtx *c) {
     return end_node(c, nc);
   }
   if (!looking_at(c, T_LBRC)) {
-    n->return_type.ok = true;
-    n->return_type.value = parse_type(c);
+    n->return_type.ptr = parse_type(c);
   }
   n->body = parse_comp_stmt(c);
   return end_node(c, nc);
@@ -568,8 +560,7 @@ IfStmt *parse_if_stmt(ParseCtx *c) {
   n->cond = parse_cond(c);
   n->true_branch = parse_comp_stmt(c);
   if (looking_at(c, T_ELSE)) {
-    n->else_branch.ok = true;
-    n->else_branch.value = parse_else(c);
+    n->else_branch.ptr = parse_else(c);
   }
   return end_node(c, nc);
 }
@@ -602,8 +593,7 @@ CasePatt *parse_case_patt(ParseCtx *c) {
       n->name.ident = parse_scoped_ident(c, TOKS(T_LPAR, T_ARROW));
       if (looking_at(c, T_LPAR)) {
         next(c);
-        n->name.binding.ok = true;
-        n->name.binding.value = parse_binding(c);
+        n->name.binding.ptr = parse_binding(c);
         if (!expect(c, n->id, T_RPAR)) {
           advance(c, FOLLOW_CASE_PATT);
           return end_node(c, nc);
@@ -665,8 +655,7 @@ ReturnStmt *parse_return_stmt(ParseCtx *c) {
   if (looking_at(c, T_SCLN)) {
     return end_node(c, nc);
   }
-  n->expr.ok = true;
-  n->expr.value = parse_expr(c);
+  n->expr.ptr = parse_expr(c);
   if (!expect(c, n->id, T_SCLN)) {
     advance(c, FOLLOW_STMT);
     return end_node(c, nc);
@@ -834,8 +823,7 @@ CollType *parse_coll_type(ParseCtx *c) {
     n->element_type = parse_type(c);
     return end_node(c, nc);
   }
-  n->index_expr.ok = true;
-  n->index_expr.value = parse_expr(c);
+  n->index_expr.ptr = parse_expr(c);
   if (!expect(c, n->id, T_RBRK)) {
     advance(c, FOLLOW_TYPE);
     return end_node(c, nc);
@@ -1037,8 +1025,7 @@ FnType *parse_fn_type(ParseCtx *c) {
     return end_node(c, nc);
   }
   if (!one_of(at(c).t, FOLLOW_TYPE)) {
-    n->return_type.ok = true;
-    n->return_type.value = parse_type(c);
+    n->return_type.ptr = parse_type(c);
   }
   return end_node(c, nc);
 }
@@ -1204,21 +1191,18 @@ static Index *index(ParseCtx *c) {
       // Although it is not technically correct to have
       // ';' as a "valid" delimiter, it is used here to prevent
       // spurious errors caused by unmatched '['
-      n->end.value = parse_expr(c);
-      n->end.ok = true;
+      n->end.ptr = parse_expr(c);
     }
     goto delim;
   }
 
-  n->start.value = parse_expr(c);
-  n->start.ok = true;
+  n->start.ptr = parse_expr(c);
 
   if (looking_at(c, T_CLN)) {
     n->t = INDEX_RANGE;
     token_attr_anon(c, consume(c));
     if (!looking_at(c, T_RBRK)) {
-      n->end.value = parse_expr(c);
-      n->end.ok = true;
+      n->end.ptr = parse_expr(c);
     }
     goto delim;
   }
@@ -1526,8 +1510,7 @@ Designator *parse_designator(ParseCtx *c) {
   n->ident = parse_scoped_ident(c, TOKS(T_LBRC));
   if (looking_at(c, T_LBRC)) {
     next(c);
-    n->init.ok = true;
-    n->init.value = parse_init(c, T_RBRC);
+    n->init.ptr = parse_init(c, T_RBRC);
     if (!expect(c, n->id, T_RBRC)) {
       advance(c, FOLLOW_ATOM);
     }
@@ -1548,8 +1531,7 @@ Atom *parse_atom(ParseCtx *c) {
     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
     BracedLit *braced_lit = lit_ctx.node;
 
-    braced_lit->type.ok = true;
-    braced_lit->type.value = parse_type(c);
+    braced_lit->type.ptr = parse_type(c);
 
     if (!expect(c, braced_lit->id, T_LBRC)) {
       advance(c, FOLLOW_ATOM);
@@ -1580,8 +1562,7 @@ Atom *parse_atom(ParseCtx *c) {
       NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
       BracedLit *braced_lit = lit_ctx.node;
 
-      braced_lit->type.ok = true;
-      braced_lit->type.value = parse_type(c);
+      braced_lit->type.ptr = parse_type(c);
 
       if (!expect(c, braced_lit->id, T_LBRC)) {
         advance(c, FOLLOW_ATOM);
@@ -1637,8 +1618,7 @@ static void *make_node(ParseCtx *c, NodeKind kind) {
 
 static void *attr(ParseCtx *c, const char *name, void *node) {
   NodeChild *child = last_child(&c->meta, c->current);
-  child->name.ok = true;
-  child->name.value = name;
+  child->name.ptr = name;
   return node;
 }
 

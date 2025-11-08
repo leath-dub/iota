@@ -61,7 +61,7 @@ NodeChild child_token(Tok token) {
   return (NodeChild){
       .t = CHILD_TOKEN,
       .token = token,
-      .name.ok = false,
+      .name.ptr = NULL,
   };
 }
 
@@ -69,7 +69,7 @@ NodeChild child_token_named(const char *name, Tok token) {
   return (NodeChild){
       .t = CHILD_TOKEN,
       .token = token,
-      .name = {.value = name, .ok = true},
+      .name.ptr = name,
   };
 }
 
@@ -77,7 +77,7 @@ NodeChild child_node(NodeID id) {
   return (NodeChild){
       .t = CHILD_NODE,
       .id = id,
-      .name.ok = false,
+      .name.ptr = NULL,
   };
 }
 
@@ -85,7 +85,7 @@ NodeChild child_node_named(const char *name, NodeID id) {
   return (NodeChild){
       .t = CHILD_NODE,
       .id = id,
-      .name = {.value = name, .ok = true},
+      .name.ptr = name,
   };
 }
 
