@@ -26,4 +26,14 @@ Entry *hm_unsafe_ensure(HashMap *hm, string key, usize value_size);
 bool hm_unsafe_contains(HashMap *hm, string key);
 void hm_unsafe_free(HashMap *hm);
 
+typedef struct {
+  u32 entry_index;
+  Entry *current_entry;
+  const HashMap *map;
+  bool finished;
+} HashMapCursor;
+
+HashMapCursor hm_cursor_unsafe_new(const HashMap *map);
+Entry *hm_cursor_unsafe_next(HashMapCursor *cursor);
+
 #endif

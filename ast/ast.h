@@ -679,30 +679,30 @@ typedef struct {
   u32 len;
 } NodeTrees;
 
-// typedef struct {
-//   NodeID *data;
-//   NodeKind kind;
-// } AnyNode;
+typedef struct {
+  NodeID *data;
+  NodeKind kind;
+} AnyNode;
 
-// typedef struct {
-//   HashMapScopeEntry table;
-//   NULLABLE_PTR(Scope) parent_scope;
-// } Scope;
-//
-// typedef struct ScopeEntry {
-//   union {
-//     AnyNode node;
-//     Scope *sub_scope;
-//   };
-//   struct ScopeEntry *shadows;
-// } ScopeEntry;
+typedef struct Scope {
+  HashMapScopeEntry table;
+  NULLABLE_PTR(struct Scope) parent_scope;
+} Scope;
+
+typedef struct ScopeEntry {
+  union {
+    AnyNode node;
+    Scope *scope;
+  };
+  struct ScopeEntry *shadows;
+} ScopeEntry;
 
 typedef struct {
   NodeID next_id;
   NodeFlags flags;
   NodeTrees trees;
   NodeNames names;
-  // HashMapScope scopes;
+  HashMapScope scopes;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);

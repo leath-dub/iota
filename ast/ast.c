@@ -23,6 +23,7 @@ NodeMetadata new_node_metadata(void) {
               .cap = 0,
               .items = NULL,
           },
+      .scopes = hm_scope_new(128),
   };
 }
 
@@ -40,6 +41,12 @@ void node_metadata_free(NodeMetadata *m) {
   if (m->names.items != NULL) {
     free(m->names.items);
   }
+  HashMapCursorScope it = hm_cursor_scope_new(&m->scopes);
+  Scope *scope = NULL;
+  while ((scope = hm_cursor_scope_next(&it))) {
+    hm_scope_entry_free(&scope->table);
+  }
+  hm_scope_free(&m->scopes);
 }
 
 void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags) {

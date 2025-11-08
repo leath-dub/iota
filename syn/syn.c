@@ -36,6 +36,7 @@ ParseCtx new_parse_ctx(SourceCode *code) {
       .lex = new_lexer(code),
       .arena = new_arena(),
       .current = 0,
+      .meta = new_node_metadata(),
   };
 }
 

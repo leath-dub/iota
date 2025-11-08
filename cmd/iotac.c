@@ -58,6 +58,8 @@ int main(int argc, char *argv[]) {
   SourceCode code = new_source_code(ztos(path), source);
   ParseCtx pc = new_parse_ctx(&code);
 
+  assert(pc.meta.scopes.base.entries.len != 0);
+
   SourceFile *root = parse_source_file(&pc);
 
   TreeDumpCtx dump_ctx = {

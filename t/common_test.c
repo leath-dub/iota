@@ -77,6 +77,15 @@ void test_hashmap(void) {
   ASSERT(other->x == 10);
   ASSERT(other->y == 12);
 
+  HashMapCursor cursor = hm_cursor_unsafe_new(&pm.base);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
+  ASSERT(hm_cursor_unsafe_next(&cursor) == NULL);
+
   hm_point_free(&pm);
 }
 

@@ -63,6 +63,7 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
   fprintf(hdr, "bool hm_%s_contains(HashMap%s *hm, string key);\n", lowtype,
           type);
   fprintf(hdr, "void hm_%s_free(HashMap%s *hm);\n\n", lowtype, type);
+
   fprintf(hdr, "#define hm_%s_ensure(hm, key) \\\n", lowtype);
   fprintf(hdr, "  hm_%s_ensure_sz(hm, key, sizeof(struct %s))\n", lowtype,
           type);
@@ -71,6 +72,15 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
   fprintf(hdr, "#define hm_%s_get(hm, key) \\\n", lowtype);
   fprintf(hdr, "  (assert(hm_%s_contains(hm, key)), \\\n", lowtype);
   fprintf(hdr, "     hm_%s_ensure(hm, key))\n\n", lowtype);
+
+  fprintf(hdr, "typedef struct {\n");
+  fprintf(hdr, "  HashMapCursor base;\n");
+  fprintf(hdr, "} HashMapCursor%s;\n\n", type);
+
+  fprintf(hdr, "HashMapCursor%s hm_cursor_%s_new(HashMap%s *hm);\n", type,
+          lowtype, type);
+  fprintf(hdr, "struct %s *hm_cursor_%s_next(HashMapCursor%s *cursor);\n\n",
+          type, lowtype, type);
 }
 
 static void gen_start_imp(FILE *imp) {
@@ -103,7 +113,21 @@ static void gen_type_imp(FILE *imp, const char *type) {
 
   fprintf(imp, "void hm_%s_free(HashMap%s *hm) {\n", lowtype, type);
   fprintf(imp, "  hm_unsafe_free(&hm->base);\n");
-  fprintf(imp, "}\n");
+  fprintf(imp, "}\n\n");
+  fprintf(imp, "HashMapCursor%s hm_cursor_%s_new(HashMap%s *hm) {\n", type,
+          lowtype, type);
+  fprintf(imp,
+          "  return (HashMapCursor%s) { hm_cursor_unsafe_new(&hm->base) };\n",
+          type);
+  fprintf(imp, "}\n\n");
+  fprintf(imp, "struct %s *hm_cursor_%s_next(HashMapCursor%s *cursor) {\n",
+          type, lowtype, type);
+  fprintf(imp, "  Entry *entry = hm_cursor_unsafe_next(&cursor->base);\n");
+  fprintf(imp, "  if (entry == NULL) {\n");
+  fprintf(imp, "    return NULL;\n");
+  fprintf(imp, "  }\n");
+  fprintf(imp, "  return (struct %s *)&entry->data;\n", type);
+  fprintf(imp, "}\n\n");
 }
 
 int main(int argc, char *argv[]) {

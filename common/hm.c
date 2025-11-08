@@ -104,3 +104,40 @@ void hm_unsafe_free(HashMap *hm) {
   }
   arena_free(&hm->arena);
 }
+
+HashMapCursor hm_cursor_unsafe_new(const HashMap *map) {
+  assert(map->entries.len != 0);
+  return (HashMapCursor){
+      .entry_index = 0,
+      .current_entry = NULL,
+      .map = map,
+      .finished = false,
+  };
+}
+
+Entry *hm_cursor_unsafe_next(HashMapCursor *cursor) {
+  if (cursor->finished) {
+    return NULL;
+  }
+
+  if (cursor->current_entry != NULL) {
+    Entry *next = cursor->current_entry->next;
+    if (next != NULL) {
+      cursor->current_entry = next;
+      return next;
+    }
+    cursor->entry_index++;
+  }
+
+  for (u32 i = cursor->entry_index; i < cursor->map->entries.len; i++) {
+    Entry *entr = cursor->map->entries.items[i];
+    if (entr != NULL) {
+      cursor->current_entry = entr;
+      cursor->entry_index = i;
+      return entr;
+    }
+  }
+
+  cursor->finished = true;
+  return NULL;
+}
