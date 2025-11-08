@@ -41,6 +41,7 @@ Decl *parse_decl(ParseCtx *c);
 StructDecl *parse_struct_decl(ParseCtx *c);
 StructBody *parse_struct_body(ParseCtx *c, Toks follow);
 EnumDecl *parse_enum_decl(ParseCtx *c);
+UnionDecl *parse_union_decl(ParseCtx *c);
 ErrDecl *parse_err_decl(ParseCtx *c);
 VarDecl *parse_var_decl(ParseCtx *c);
 FnDecl *parse_fn_decl(ParseCtx *c);

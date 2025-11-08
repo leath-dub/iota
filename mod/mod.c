@@ -96,20 +96,23 @@ void source_code_free(SourceCode *code) {
 
 void raise_error(SourceCode *code, Error error) {
   APPEND(&code->errors, error);
+#ifdef ERROR_IMMEDIATE
+  report_error(*code, error);
+#endif
 }
 
 void raise_syntax_error(SourceCode *code, SyntaxError error) {
-  APPEND(&code->errors, (Error){
-                            .t = ERROR_SYNTAX,
-                            .syntax_error = error,
-                        });
+  raise_error(code, (Error){
+                        .t = ERROR_SYNTAX,
+                        .syntax_error = error,
+                    });
 }
 
 void raise_lexical_error(SourceCode *code, LexicalError error) {
-  APPEND(&code->errors, (Error){
-                            .t = ERROR_LEXICAL,
-                            .lexical_error = error,
-                        });
+  raise_error(code, (Error){
+                        .t = ERROR_LEXICAL,
+                        .lexical_error = error,
+                    });
 }
 
 void report_error(SourceCode code, Error error) {

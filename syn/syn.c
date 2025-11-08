@@ -142,6 +142,10 @@ Decl *parse_decl(ParseCtx *c) {
       n->t = DECL_ENUM;
       n->enum_decl = parse_enum_decl(c);
       break;
+    case T_UNION:
+      n->t = DECL_UNION;
+      n->union_decl = parse_union_decl(c);
+      break;
     case T_ERROR:
       n->t = DECL_ERR;
       n->err_decl = parse_err_decl(c);
@@ -213,6 +217,28 @@ EnumDecl *parse_enum_decl(ParseCtx *c) {
     return end_node(c, nc);
   }
   n->alts = parse_idents(c);
+  if (!expect(c, n->id, T_RBRC)) {
+    advance(c, FOLLOW_DECL);
+    return end_node(c, nc);
+  }
+  return end_node(c, nc);
+}
+
+UnionDecl *parse_union_decl(ParseCtx *c) {
+  NodeCtx nc = start_node(c, NODE_UNION_DECL);
+  UnionDecl *n = nc.node;
+  assert(consume(c).t == T_UNION);
+  Tok name = at(c);
+  if (!expect(c, n->id, T_IDENT)) {
+    advance(c, FOLLOW_DECL);
+    return end_node(c, nc);
+  }
+  n->ident = token_attr(c, "name", name);
+  if (!expect(c, n->id, T_LBRC)) {
+    advance(c, FOLLOW_DECL);
+    return end_node(c, nc);
+  }
+  n->alts = parse_fields(c);
   if (!expect(c, n->id, T_RBRC)) {
     advance(c, FOLLOW_DECL);
     return end_node(c, nc);

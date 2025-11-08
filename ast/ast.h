@@ -302,7 +302,7 @@ struct UnionDecl {
   NodeID id;
   Tok ident;
   MAYBE(struct TypeParams *) type_params;
-  struct Fields *fields;
+  struct Fields *alts;
 };
 
 typedef enum {

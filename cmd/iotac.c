@@ -4,13 +4,61 @@
 #include "../ast/ast.h"
 #include "../syn/syn.h"
 
-int main(void) {
-  string source = ztos("while <foo; {}");
+#define ERROR_IMMEDIATE
+
+static string read_file(char *path) {
+  FILE *f = fopen(path, "r");
+
+  if (f == NULL) {
+    fprintf(stderr, "iotac: failed to open file: %s\n", path);
+    exit(70);
+  }
+
+  if (fseek(f, 0, SEEK_END)) {
+    fclose(f);
+    fprintf(stderr, "iotac: failed to seek file: %s\n", path);
+    exit(70);
+  }
+
+  ssize file_size = ftell(f);
+  if (file_size == -1) {
+    fclose(f);
+    fprintf(stderr, "iotac: failed query stream associated with file: %s\n",
+            path);
+    exit(70);
+  }
+
+  char *buf = malloc(file_size + 1);
+  usize left = file_size;
+  rewind(f);
+
+  int bytes_read = fread(buf, 1, left, f);
+  if (bytes_read != file_size && ferror(f)) {
+    free(buf);
+    fclose(f);
+    fprintf(stderr, "iotac: error reading contents of file: %s\n", path);
+    exit(70);
+  }
+
+  fclose(f);
+
+  buf[file_size] = '\0';
+  return ztos(buf);
+}
+
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    fprintf(stderr, "usage: iotac <path to file to compile>\n");
+    return 2;
+  }
+
+  char *path = argv[1];
+  string source = read_file(path);
 
   SourceCode code = new_source_code(ztos("<string>"), source);
   ParseCtx pc = new_parse_ctx(&code);
 
-  Stmt *root = parse_stmt(&pc);
+  SourceFile *root = parse_source_file(&pc);
 
   TreeDumpCtx dump_ctx = {
       .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
