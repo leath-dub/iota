@@ -8,9 +8,9 @@ void tassert(const char *file, const char *func, u32 line, const char *condstr,
 bool strdiff(string str1, string str2);
 
 #define ASSERT(cond) tassert(__FILE__, __func__, __LINE__, #cond, cond)
-#define ASSERT_STREQL(str1, str2)                               \
-  tassert(__FILE__, __func__, __LINE__, "string 1 == string 2", \
-          strdiff(str1, str2))
+#define ASSERT_STREQL(str1, str2)                                 \
+    tassert(__FILE__, __func__, __LINE__, "string 1 == string 2", \
+            strdiff(str1, str2))
 
 #endif
 

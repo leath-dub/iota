@@ -5,61 +5,61 @@
 
 // An array of line start offsets
 typedef struct {
-  u32 *items;
-  u32 cap;
-  u32 len;
+    u32 *items;
+    u32 cap;
+    u32 len;
 } Lines;
 
 typedef struct {
-  u32 at;
-  const char *expected;
-  const char *got;
+    u32 at;
+    const char *expected;
+    const char *got;
 } SyntaxError;
 
 typedef enum {
-  LEXICAL_ERROR_INVALID_CHAR,
-  LEXICAL_ERROR_TEXT,
+    LEXICAL_ERROR_INVALID_CHAR,
+    LEXICAL_ERROR_TEXT,
 } LexicalErrorKind;
 
 typedef struct {
-  u32 at;
-  LexicalErrorKind t;
-  union {
-    char invalid_char;
-    const char *text;
-  };
+    u32 at;
+    LexicalErrorKind t;
+    union {
+        char invalid_char;
+        const char *text;
+    };
 } LexicalError;
 
 typedef enum {
-  ERROR_SYNTAX,
-  ERROR_LEXICAL,
+    ERROR_SYNTAX,
+    ERROR_LEXICAL,
 } ErrorKind;
 
 typedef struct {
-  ErrorKind t;
-  union {
-    SyntaxError syntax_error;
-    LexicalError lexical_error;
-  };
+    ErrorKind t;
+    union {
+        SyntaxError syntax_error;
+        LexicalError lexical_error;
+    };
 } Error;
 
 typedef struct {
-  Error *items;
-  u32 len;
-  u32 cap;
+    Error *items;
+    u32 len;
+    u32 cap;
 } Errors;
 
 typedef struct {
-  string file_path;
-  string text;
-  Lines lines;
-  FILE *error_stream;
-  Errors errors;
+    string file_path;
+    string text;
+    Lines lines;
+    FILE *error_stream;
+    Errors errors;
 } SourceCode;
 
 typedef struct {
-  u32 line;    // 1-indexed
-  u32 column;  // 1-indexed
+    u32 line;    // 1-indexed
+    u32 column;  // 1-indexed
 } Position;
 
 SourceCode new_source_code(string file_path, string text);

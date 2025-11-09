@@ -27,8 +27,8 @@ typedef float f32;
 typedef double f64;
 
 typedef struct {
-  char *data;
-  u32 len;
+    char *data;
+    u32 len;
 } string;
 
 // Return a sub string (view) of 's' from 'start' inclusive to 'end' exclusive
@@ -50,50 +50,50 @@ u64 atou64(string s);
 
 // Logging
 void panic(const char *msg);
-#define PANICF(fmt, ...)                              \
-  do {                                                \
-    fprintf(stderr, "panic: " fmt "\n", __VA_ARGS__); \
-    abort();                                          \
-  } while (0)
+#define PANICF(fmt, ...)                                  \
+    do {                                                  \
+        fprintf(stderr, "panic: " fmt "\n", __VA_ARGS__); \
+        abort();                                          \
+    } while (0)
 #define LOGF(fmt, ...) fprintf(stderr, fmt "\n", __VA_ARGS__)
 
 #define AT(arr, index) \
-  (assert(index < (arr).len && "index out of bounds"), &(arr).items[index])
+    (assert(index < (arr).len && "index out of bounds"), &(arr).items[index])
 
 // Generic dynamic array append. expects "arr" to have shape
 // *struct { <int> len, <int> cap, <typeof(item)*> items }
-#define APPEND(arr, ...)                                             \
-  do {                                                               \
-    if ((arr)->len >= (arr)->cap) {                                  \
-      (arr)->cap = (arr)->cap ? (arr)->cap * 2 : 1;                  \
-      void *newptr =                                                 \
-          realloc((arr)->items, (arr)->cap * sizeof(*(arr)->items)); \
-      if (newptr == NULL) {                                          \
-        panic("out of memory");                                      \
-      }                                                              \
-      (arr)->items = newptr;                                         \
-    }                                                                \
-    (arr)->items[(arr)->len++] = (__VA_ARGS__);                      \
-  } while (0)
+#define APPEND(arr, ...)                                                   \
+    do {                                                                   \
+        if ((arr)->len >= (arr)->cap) {                                    \
+            (arr)->cap = (arr)->cap ? (arr)->cap * 2 : 1;                  \
+            void *newptr =                                                 \
+                realloc((arr)->items, (arr)->cap * sizeof(*(arr)->items)); \
+            if (newptr == NULL) {                                          \
+                panic("out of memory");                                    \
+            }                                                              \
+            (arr)->items = newptr;                                         \
+        }                                                                  \
+        (arr)->items[(arr)->len++] = (__VA_ARGS__);                        \
+    } while (0)
 
 // A flexible array member is not used as this arena
 // supports externally allocated blocks which the arena takes ownership of
 typedef struct {
-  u32 cap;
-  u32 used;
-  u8 *alloc;
+    u32 cap;
+    u32 used;
+    u8 *alloc;
 } Block;
 
 typedef struct {
-  u32 cap;
-  u32 len;
-  Block *items;
+    u32 cap;
+    u32 len;
+    Block *items;
 } Blocks;
 
 typedef struct {
-  u32 block_size;
-  Blocks blocks;
-  Blocks adopted_blocks;
+    u32 block_size;
+    Blocks blocks;
+    Blocks adopted_blocks;
 } Arena;
 
 Arena new_arena(void);
@@ -124,15 +124,15 @@ void arena_own(Arena *a, void *alloc, u32 size);
 #endif
 
 #define MAYBE(T) \
-  struct {       \
-    bool ok;     \
-    T value;     \
-  }
+    struct {     \
+        bool ok; \
+        T value; \
+    }
 
 #define NULLABLE_PTR(T) \
-  struct {              \
-    T *ptr;             \
-  }
+    struct {            \
+        T *ptr;         \
+    }
 
 #define BAD_PTR (void *)0xDEADBEEF
 

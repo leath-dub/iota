@@ -5,27 +5,27 @@
 #include "../lex/lex.h"
 
 typedef struct {
-  TokKind *items;
-  u32 len;
+    TokKind *items;
+    u32 len;
 } Toks;
 
 // I know this is smelly but C is very limited for variadic args and not storing
 // size with array is really limiting for building abstractions
-#define TOKS(...)                                             \
-  (Toks) {                                                    \
-    .items = (TokKind[]){__VA_ARGS__},                        \
-    .len = sizeof((TokKind[]){__VA_ARGS__}) / sizeof(TokKind) \
-  }
+#define TOKS(...)                                                 \
+    (Toks) {                                                      \
+        .items = (TokKind[]){__VA_ARGS__},                        \
+        .len = sizeof((TokKind[]){__VA_ARGS__}) / sizeof(TokKind) \
+    }
 
 typedef struct {
-  Lexer lex;
-  Arena arena;
-  NodeMetadata meta;
-  AnyNode current;
+    Lexer lex;
+    Arena arena;
+    NodeMetadata meta;
+    AnyNode current;
 } ParseCtx;
 
 typedef struct {
-  Lexer lex;
+    Lexer lex;
 } ParseState;
 
 void check_allocs(void);
