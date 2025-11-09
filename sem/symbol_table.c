@@ -1,0 +1,111 @@
+#include "../ast/ast.h"
+
+#define SCOPE_ENTRY_SLOTS 32
+#define GLOBAL_SCOPE_ENTRY_SLOTS 128
+
+static void build_symbol_table_enter(void *_ctx, NodeMetadata *m, AnyNode node);
+static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node);
+
+typedef struct {
+    NodeMetadata *meta;
+    Stack scope_node_ctx;
+} SymbolTableCtx;
+
+void do_build_symbol_table(NodeMetadata *m, AnyNode root) {
+    SymbolTableCtx ctx = {
+        .meta = m,
+        .scope_node_ctx = stack_new(),
+    };
+    ast_traverse_dfs(&ctx, root, m,
+                     (EnterExitVTable){
+                         .enter = build_symbol_table_enter,
+                         .exit = build_symbol_table_exit,
+                     });
+    // Make sure traversal properly popped everything correctly
+    assert(ctx.scope_node_ctx.top == NULL);
+}
+
+static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
+static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
+
+static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl);
+static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl);
+
+static void enter_field(SymbolTableCtx *ctx, Field *field);
+
+static void build_symbol_table_enter(void *_ctx, NodeMetadata *m,
+                                     AnyNode node) {
+    (void)m;
+    SymbolTableCtx *ctx = _ctx;
+    switch (node.kind) {
+        case NODE_SOURCE_FILE:
+            enter_source_file(ctx, (SourceFile *)node.data);
+            break;
+        case NODE_STRUCT_DECL:
+            enter_struct_decl(ctx, (StructDecl *)node.data);
+            break;
+        case NODE_FIELD:
+            enter_field(ctx, (Field *)node.data);
+            break;
+        default:
+            break;
+    }
+}
+
+static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node) {
+    (void)m;
+    SymbolTableCtx *ctx = _ctx;
+    switch (node.kind) {
+        case NODE_SOURCE_FILE:
+            exit_source_file(ctx, (SourceFile *)node.data);
+            break;
+        case NODE_STRUCT_DECL:
+            exit_struct_decl(ctx, (StructDecl *)node.data);
+            break;
+        default:
+            break;
+    }
+}
+
+static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
+    printf("enter source file\n");
+    AnyNode *node =
+        stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
+    *node = MAKE_ANY(source_file);
+    (void)scope_attach(ctx->meta, *node);
+}
+
+static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
+    printf("exit source file\n");
+    (void)source_file;
+    stack_pop(&ctx->scope_node_ctx);
+}
+
+static void scope_insert_enclosing(SymbolTableCtx *ctx, string symbol,
+                                   AnyNode node) {
+    AnyNode *enclosing_node = stack_top(&ctx->scope_node_ctx);
+    Scope *enclosing_scope = scope_get(ctx->meta, *enclosing_node->data);
+    assert(enclosing_scope);
+    scope_insert(ctx->meta, enclosing_scope, symbol, node);
+}
+
+static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
+    printf("enter struct\n");
+    AnyNode self = MAKE_ANY(decl);
+    scope_insert_enclosing(ctx, decl->ident.text, self);
+    AnyNode *node =
+        stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
+    *node = self;
+    (void)scope_attach(ctx->meta, *node);
+}
+
+static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
+    printf("exit struct\n");
+    (void)decl;
+    stack_pop(&ctx->scope_node_ctx);
+}
+
+static void enter_field(SymbolTableCtx *ctx, Field *field) {
+    assert(!stack_empty(&ctx->scope_node_ctx));
+    scope_insert_enclosing(ctx, field->ident.text, MAKE_ANY(field));
+}

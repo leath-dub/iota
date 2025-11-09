@@ -685,25 +685,28 @@ typedef struct {
     u32 len;
 } NodeTree;
 
-typedef struct Scope {
-    HashMapScopeEntry table;
-    NULLABLE_PTR(struct Scope) parent_scope;
-} Scope;
-
 typedef struct ScopeEntry {
-    union {
-        AnyNode node;
-        Scope *scope;
-    };
+    AnyNode node;
     struct ScopeEntry *shadows;
 } ScopeEntry;
 
+typedef struct Scope {
+    AnyNode self;
+    HashMapScopeEntry table;
+    NULLABLE_PTR(struct Scope) enclosing_scope;
+} Scope;
+
+typedef struct ScopeAlloc {
+    Scope *scope_ref;
+} ScopeAlloc;
+
 typedef struct {
+    Arena arena;
     NodeID next_id;
     NodeFlags flags;
     NodeTree tree;
     NodeNames names;
-    HashMapScope scopes;
+    HashMapScopeAlloc scopes;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);
@@ -726,6 +729,10 @@ NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
 NodeChild *last_child(NodeMetadata *m, NodeID id);
 
 void *expect_node(NodeKind kind, AnyNode node);
+
+Scope *scope_attach(NodeMetadata *m, AnyNode node);
+void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node);
+Scope *scope_get(NodeMetadata *m, NodeID id);
 
 typedef struct {
     void (*enter)(void *ctx, NodeMetadata *m, AnyNode node);

@@ -24,7 +24,8 @@ NodeMetadata new_node_metadata(void) {
                 .cap = 0,
                 .items = NULL,
             },
-        .scopes = hm_scope_new(128),
+        .scopes = hm_scope_alloc_new(128),
+        .arena = new_arena(),
     };
 }
 
@@ -42,12 +43,13 @@ void node_metadata_free(NodeMetadata *m) {
     if (m->names.items != NULL) {
         free(m->names.items);
     }
-    HashMapCursorScope it = hm_cursor_scope_new(&m->scopes);
-    Scope *scope = NULL;
-    while ((scope = hm_cursor_scope_next(&it))) {
-        hm_scope_entry_free(&scope->table);
+    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scopes);
+    ScopeAlloc *alloc = NULL;
+    while ((alloc = hm_cursor_scope_alloc_next(&it))) {
+        hm_scope_entry_free(&alloc->scope_ref->table);
     }
-    hm_scope_free(&m->scopes);
+    hm_scope_alloc_free(&m->scopes);
+    arena_free(&m->arena);
 }
 
 void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags) {
@@ -147,24 +149,65 @@ void *expect_node(NodeKind kind, AnyNode node) {
     return node.data;
 }
 
+Scope *scope_attach(NodeMetadata *m, AnyNode node) {
+    string id_ref = {.data = (char *)node.data, .len = sizeof(*node.data)};
+    ScopeAllocResult res = hm_scope_alloc_ensure(&m->scopes, id_ref);
+    assert(res.inserted && "probably tried to insert a scope twice");
+
+    Scope *scope = arena_alloc(&m->arena, sizeof(Scope), _Alignof(Scope));
+    scope->self = node;
+    scope->table = hm_scope_entry_new(128);
+    scope->enclosing_scope.ptr = NULL;
+    res.entry->scope_ref = scope;
+
+    return scope;
+}
+
+Scope *scope_get(NodeMetadata *m, NodeID id) {
+    string id_ref = {.data = (char *)&id, .len = sizeof(id)};
+    if (hm_scope_alloc_contains(&m->scopes, id_ref)) {
+        ScopeAllocResult res = hm_scope_alloc_ensure(&m->scopes, id_ref);
+        assert(!res.inserted);
+        return res.entry->scope_ref;
+    }
+    return NULL;
+}
+
+void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
+    ScopeEntryResult res = hm_scope_entry_ensure(&scope->table, symbol);
+    if (res.inserted) {
+        res.entry->node = node;
+        res.entry->shadows = NULL;
+        return;
+    }
+
+    // Allocate a new entry and copy the old head into it.
+    ScopeEntry *old_entry =
+        arena_alloc(&m->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
+    *old_entry = *res.entry;
+
+    res.entry->node = node;
+    res.entry->shadows = old_entry;
+}
+
 void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
                       EnterExitVTable vtable) {
+    if (vtable.enter) {
+        vtable.enter(ctx, m, root);
+    }
     const NodeChildren *children = get_node_children(m, *root.data);
     for (u32 i = 0; i < children->len; i++) {
         NodeChild child = children->items[i];
         switch (child.t) {
             case CHILD_NODE:
-                if (vtable.enter) {
-                    vtable.enter(ctx, m, child.node);
-                }
                 ast_traverse_dfs(ctx, child.node, m, vtable);
-                if (vtable.exit) {
-                    vtable.exit(ctx, m, child.node);
-                }
                 break;
             default:
                 break;
         }
+    }
+    if (vtable.exit) {
+        vtable.exit(ctx, m, root);
     }
 }
 

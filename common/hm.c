@@ -30,17 +30,17 @@ static Entry *hm_unsafe_alloc(HashMap *map, usize value_size) {
                        _Alignof(Entry));
 }
 
-Entry *hm_unsafe_ensure(HashMap *map, string key, usize value_size) {
+EntryResult hm_unsafe_ensure(HashMap *map, string key, usize value_size) {
     double load_factor = (double)map->value_count / (double)map->entries.len;
     if (load_factor >= .75) {
         HashMap new_map = hm_unsafe_new(map->entries.len * 2);
         for (u32 i = 0; i < map->entries.len; i++) {
             Entry *it = map->entries.items[i];
             while (it != NULL) {
-                Entry *new_entry =
+                EntryResult new_entry =
                     hm_unsafe_ensure(&new_map, it->key, value_size);
-                memcpy(&new_entry->data, &it->data, value_size);
-                string *new_key_ref = (string *)&new_entry->key;
+                memcpy(&new_entry.entry->data, &it->data, value_size);
+                string *new_key_ref = (string *)&new_entry.entry->key;
                 *new_key_ref = it->key;
                 it = it->next;
             }
@@ -61,17 +61,26 @@ Entry *hm_unsafe_ensure(HashMap *map, string key, usize value_size) {
         *key_ref = key;
         new_entry->next = NULL;
         *head = new_entry;
-        return new_entry;
+        return (EntryResult){
+            .entry = new_entry,
+            .inserted = true,
+        };
     } else {
         Entry *it = *head;
         while (it->next != NULL) {
             if (streql(key, it->key)) {
-                return it;
+                return (EntryResult){
+                    .entry = it,
+                    .inserted = false,
+                };
             }
             it = it->next;
         }
         if (streql(key, it->key)) {
-            return it;
+            return (EntryResult){
+                .entry = it,
+                .inserted = false,
+            };
         }
 
         Entry *new_entry = hm_unsafe_alloc(map, value_size);
@@ -85,7 +94,10 @@ Entry *hm_unsafe_ensure(HashMap *map, string key, usize value_size) {
         new_entry->next = NULL;
         it->next = new_entry;
 
-        return new_entry;
+        return (EntryResult){
+            .entry = new_entry,
+            .inserted = true,
+        };
     }
 }
 

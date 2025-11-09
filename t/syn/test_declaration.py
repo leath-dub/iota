@@ -157,6 +157,7 @@ syntax_test(
       decls {
         decl {
           struct_decl {
+            name='Point'
             struct_body {
               fields {
                 field {

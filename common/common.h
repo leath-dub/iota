@@ -35,6 +35,9 @@ typedef struct {
 string substr(string s, u32 start, u32 end);
 bool streql(string a, string b);
 
+#define STRING_REF(x) \
+    (string) { .data = (char *)&(x), .len = sizeof(x) }
+
 // Converts sentinal c string to 'string'
 string ztos(char *s);
 
@@ -107,6 +110,24 @@ void arena_free(Arena *a);
 // dynamic arrays separate to the arena (good idea) and you still want the
 // lifetime grouped with the arena.
 void arena_own(Arena *a, void *alloc, u32 size);
+
+typedef struct StackSegment {
+    struct StackSegment *next;
+    uptr cap;
+    uptr bp;
+    uptr sp;
+    u8 data[];
+} StackSegment;
+
+typedef struct {
+    StackSegment *top;
+} Stack;
+
+Stack stack_new(void);
+void *stack_push(Stack *stack, usize size, usize align);
+bool stack_empty(Stack *stack);
+void *stack_top(Stack *stack);
+void stack_pop(Stack *stack);
 
 #define NEW(a, type) arena_alloc(a, sizeof(type), _Alignof(type))
 #define LEN(a) sizeof(a) / sizeof(*a)

@@ -20,9 +20,14 @@ typedef struct {
     u32 value_count;
 } HashMap;
 
+typedef struct {
+    Entry *entry;
+    bool inserted;
+} EntryResult;
+
 // Try not to use the following directly, they are not type safe
 HashMap hm_unsafe_new(usize slots);
-Entry *hm_unsafe_ensure(HashMap *hm, string key, usize value_size);
+EntryResult hm_unsafe_ensure(HashMap *hm, string key, usize value_size);
 bool hm_unsafe_contains(HashMap *hm, string key);
 void hm_unsafe_free(HashMap *hm);
 

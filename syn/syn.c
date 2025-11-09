@@ -163,7 +163,7 @@ StructDecl *parse_struct_decl(ParseCtx *c) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
     }
-    n->ident = name;
+    n->ident = token_attr(c, "name", name);
     n->body = parse_struct_body(c, FOLLOW_DECL);
     return end_node(c, nc);
 }
@@ -186,6 +186,10 @@ StructBody *parse_struct_body(ParseCtx *c, Toks follow) {
             n->tuple_like = true;
             n->types = parse_types(c);
             if (!expect(c, n->id, T_RPAR)) {
+                advance(c, follow);
+                return end_node(c, nc);
+            }
+            if (!expect(c, n->id, T_SCLN)) {
                 advance(c, follow);
                 return end_node(c, nc);
             }

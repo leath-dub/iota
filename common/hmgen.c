@@ -8,7 +8,7 @@
 // Put any types you need to specialize the hash map with in here
 static const char *types[] = {
     "Point",
-    "Scope",
+    "ScopeAlloc",
     "ScopeEntry",
 };
 static const int types_len = sizeof(types) / sizeof(*types);
@@ -52,29 +52,34 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
 
     fprintf(hdr, "struct %s;\n\n", type);
     fprintf(hdr, "typedef struct {\n");
-    fprintf(hdr, "  HashMap base;\n");
+    fprintf(hdr, "    HashMap base;\n");
     fprintf(hdr, "} HashMap%s;\n\n", type);
+
+    fprintf(hdr, "typedef struct {\n");
+    fprintf(hdr, "    struct %s *entry;\n", type);
+    fprintf(hdr, "    bool inserted;\n");
+    fprintf(hdr, "} %sResult;\n\n", type);
 
     fprintf(hdr, "HashMap%s hm_%s_new(usize slots);\n", type, lowtype);
     fprintf(
         hdr,
-        "struct %s *hm_%s_ensure_sz(HashMap%s *hm, string key, usize size);\n",
+        "%sResult hm_%s_ensure_sz(HashMap%s *hm, string key, usize size);\n",
         type, lowtype, type);
     fprintf(hdr, "bool hm_%s_contains(HashMap%s *hm, string key);\n", lowtype,
             type);
     fprintf(hdr, "void hm_%s_free(HashMap%s *hm);\n\n", lowtype, type);
 
     fprintf(hdr, "#define hm_%s_ensure(hm, key) \\\n", lowtype);
-    fprintf(hdr, "  hm_%s_ensure_sz(hm, key, sizeof(struct %s))\n", lowtype,
+    fprintf(hdr, "    hm_%s_ensure_sz(hm, key, sizeof(struct %s))\n", lowtype,
             type);
     fprintf(hdr, "#define hm_%s_put(hm, key, value) \\\n", lowtype);
-    fprintf(hdr, "  (void)(*hm_%s_ensure(hm, key) = value)\n", lowtype);
+    fprintf(hdr, "    (void)(*hm_%s_ensure(hm, key).entry = value)\n", lowtype);
     fprintf(hdr, "#define hm_%s_get(hm, key) \\\n", lowtype);
-    fprintf(hdr, "  (assert(hm_%s_contains(hm, key)), \\\n", lowtype);
-    fprintf(hdr, "     hm_%s_ensure(hm, key))\n\n", lowtype);
+    fprintf(hdr, "    (assert(hm_%s_contains(hm, key)), \\\n", lowtype);
+    fprintf(hdr, "         hm_%s_ensure(hm, key).entry)\n\n", lowtype);
 
     fprintf(hdr, "typedef struct {\n");
-    fprintf(hdr, "  HashMapCursor base;\n");
+    fprintf(hdr, "    HashMapCursor base;\n");
     fprintf(hdr, "} HashMapCursor%s;\n\n", type);
 
     fprintf(hdr, "HashMapCursor%s hm_cursor_%s_new(HashMap%s *hm);\n", type,
@@ -94,39 +99,44 @@ static void gen_type_imp(FILE *imp, const char *type) {
     const char *lowtype = snake_case(type, buf, BUFSIZ);
 
     fprintf(imp, "HashMap%s hm_%s_new(usize slots) {\n", type, lowtype);
-    fprintf(imp, "  return (HashMap%s) { .base = hm_unsafe_new(slots) };\n",
+    fprintf(imp, "    return (HashMap%s) { .base = hm_unsafe_new(slots) };\n",
             type);
     fprintf(imp, "}\n\n");
 
     fprintf(
         imp,
-        "struct %s *hm_%s_ensure_sz(HashMap%s *hm, string key, usize size) {\n",
+        "%sResult hm_%s_ensure_sz(HashMap%s *hm, string key, usize size) {\n",
         type, lowtype, type);
-    fprintf(imp, "  Entry *entry = hm_unsafe_ensure(&hm->base, key, size);\n");
-    fprintf(imp, "  return (struct %s *)entry->data;\n", type);
+    fprintf(imp,
+            "    EntryResult res = hm_unsafe_ensure(&hm->base, key, size);\n");
+    fprintf(imp, "    return (%sResult) {\n", type);
+    fprintf(imp, "        .entry = (struct %s *)res.entry->data,\n", type);
+    fprintf(imp, "        .inserted = res.inserted,\n");
+    fprintf(imp, "    };\n");
     fprintf(imp, "}\n\n");
 
     fprintf(imp, "bool hm_%s_contains(HashMap%s *hm, string key) {\n", lowtype,
             type);
-    fprintf(imp, "  return hm_unsafe_contains(&hm->base, key);\n");
+    fprintf(imp, "    return hm_unsafe_contains(&hm->base, key);\n");
     fprintf(imp, "}\n\n");
 
     fprintf(imp, "void hm_%s_free(HashMap%s *hm) {\n", lowtype, type);
-    fprintf(imp, "  hm_unsafe_free(&hm->base);\n");
+    fprintf(imp, "    hm_unsafe_free(&hm->base);\n");
     fprintf(imp, "}\n\n");
     fprintf(imp, "HashMapCursor%s hm_cursor_%s_new(HashMap%s *hm) {\n", type,
             lowtype, type);
-    fprintf(imp,
-            "  return (HashMapCursor%s) { hm_cursor_unsafe_new(&hm->base) };\n",
-            type);
+    fprintf(
+        imp,
+        "    return (HashMapCursor%s) { hm_cursor_unsafe_new(&hm->base) };\n",
+        type);
     fprintf(imp, "}\n\n");
     fprintf(imp, "struct %s *hm_cursor_%s_next(HashMapCursor%s *cursor) {\n",
             type, lowtype, type);
-    fprintf(imp, "  Entry *entry = hm_cursor_unsafe_next(&cursor->base);\n");
-    fprintf(imp, "  if (entry == NULL) {\n");
-    fprintf(imp, "    return NULL;\n");
-    fprintf(imp, "  }\n");
-    fprintf(imp, "  return (struct %s *)&entry->data;\n", type);
+    fprintf(imp, "    Entry *entry = hm_cursor_unsafe_next(&cursor->base);\n");
+    fprintf(imp, "    if (entry == NULL) {\n");
+    fprintf(imp, "        return NULL;\n");
+    fprintf(imp, "    }\n");
+    fprintf(imp, "    return (struct %s *)&entry->data;\n", type);
     fprintf(imp, "}\n\n");
 }
 

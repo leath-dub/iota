@@ -51,7 +51,7 @@ typedef struct Point {
 void test_hashmap(void) {
     HashMapPoint pm = hm_point_new(HM_INIT_SLOTS);
 
-    Point *point = hm_point_ensure(&pm, S("mypoint"));
+    Point *point = hm_point_ensure(&pm, S("mypoint")).entry;
     point->x = 20;
     point->y = 30;
     point->name = "hello";
@@ -89,7 +89,37 @@ void test_hashmap(void) {
     hm_point_free(&pm);
 }
 
+void test_stack(void) {
+    Stack stack = stack_new();
+
+    Point *ref = stack_push(&stack, sizeof(Point), _Alignof(Point));
+    ref->x = 10;
+    ref->y = 20;
+
+    ref = stack_top(&stack);
+    ASSERT(ref->x == 10);
+    ASSERT(ref->y == 20);
+
+    ref = stack_push(&stack, sizeof(Point), _Alignof(Point));
+    ref->x = 434;
+    ref->y = 12;
+
+    ref = stack_top(&stack);
+    ASSERT(ref->x == 434);
+    ASSERT(ref->y == 12);
+
+    stack_pop(&stack);
+
+    ref = stack_top(&stack);
+    ASSERT(ref->x == 10);
+    ASSERT(ref->y == 20);
+
+    stack_pop(&stack);
+    ASSERT(stack.top == NULL);
+}
+
 int main(void) {
     test_arena();
     test_hashmap();
+    test_stack();
 }
