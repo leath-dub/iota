@@ -93,6 +93,7 @@ typedef struct {
 typedef struct {
   u32 block_size;
   Blocks blocks;
+  Blocks adopted_blocks;
 } Arena;
 
 Arena new_arena(void);

@@ -52,6 +52,7 @@ Arena new_arena(void) {
   return (Arena){
       .block_size = sysconf(_SC_PAGESIZE),
       .blocks = (Blocks){.cap = 0, .len = 0, .items = NULL},
+      .adopted_blocks = (Blocks){.cap = 0, .len = 0, .items = NULL},
   };
 }
 
@@ -100,6 +101,9 @@ void *arena_alloc(Arena *a, size_t size, uptr align) {
   }
 
   // No block currently has enough memory, create a new block
+  // of double the size of the last allocated block.
+  a->block_size *= 2;
+
   void *alloc = malloc(a->block_size);
   if (alloc == NULL) {
     panic("out of memory");
@@ -119,6 +123,9 @@ void arena_reset(Arena *a) {
   for (u32 i = 0; i < a->blocks.len; i++) {
     a->blocks.items[i].used = 0;
   }
+  for (u32 i = 0; i < a->adopted_blocks.len; i++) {
+    a->adopted_blocks.items[i].used = 0;
+  }
 }
 
 void arena_free(Arena *a) {
@@ -132,12 +139,23 @@ void arena_free(Arena *a) {
   a->blocks.items = NULL;
   a->blocks.cap = 0;
   a->blocks.len = 0;
+
+  for (u32 i = 0; i < a->adopted_blocks.len; i++) {
+    const Block *block = &a->adopted_blocks.items[i];
+    free(block->alloc);
+  }
+  if (a->adopted_blocks.items != NULL) {
+    free(a->adopted_blocks.items);
+  }
+  a->adopted_blocks.items = NULL;
+  a->adopted_blocks.cap = 0;
+  a->adopted_blocks.len = 0;
 }
 
 void arena_own(Arena *a, void *alloc, u32 size) {
-  APPEND(&a->blocks, (Block){
-                         .cap = size,
-                         .used = size,
-                         .alloc = alloc,
-                     });
+  APPEND(&a->adopted_blocks, (Block){
+                                 .cap = size,
+                                 .used = size,
+                                 .alloc = alloc,
+                             });
 }

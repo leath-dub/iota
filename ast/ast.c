@@ -146,21 +146,19 @@ void *expect_node(NodeKind kind, AnyNode node) {
   return node.data;
 }
 
-void ast_traverse_dfs(TraversalOrder order, void *ctx, AnyNode root,
-                      NodeMetadata *m,
-                      void (*visit_fun)(void *ctx, NodeMetadata *m,
-                                        AnyNode node)) {
+void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
+                      EnterExitVTable vtable) {
   const NodeChildren *children = get_node_children(m, *root.data);
   for (u32 i = 0; i < children->len; i++) {
     NodeChild child = children->items[i];
     switch (child.t) {
       case CHILD_NODE:
-        if (order == PRE_ORDER) {
-          visit_fun(ctx, m, child.node);
+        if (vtable.enter) {
+          vtable.enter(ctx, m, child.node);
         }
-        ast_traverse_dfs(order, ctx, child.node, m, visit_fun);
-        if (order == POST_ORDER) {
-          visit_fun(ctx, m, child.node);
+        ast_traverse_dfs(ctx, child.node, m, vtable);
+        if (vtable.exit) {
+          vtable.exit(ctx, m, child.node);
         }
         break;
       default:

@@ -727,15 +727,13 @@ NodeChild *last_child(NodeMetadata *m, NodeID id);
 
 void *expect_node(NodeKind kind, AnyNode node);
 
-typedef enum {
-  PRE_ORDER,
-  POST_ORDER,
-} TraversalOrder;
+typedef struct {
+  void (*enter)(void *ctx, NodeMetadata *m, AnyNode node);
+  void (*exit)(void *ctx, NodeMetadata *m, AnyNode node);
+} EnterExitVTable;
 
-void ast_traverse_dfs(TraversalOrder order, void *ctx, AnyNode root,
-                      NodeMetadata *m,
-                      void (*visit_fun)(void *ctx, NodeMetadata *m,
-                                        AnyNode node));
+void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
+                      EnterExitVTable vtable);
 
 typedef struct {
   FILE *fs;

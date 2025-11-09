@@ -4,7 +4,11 @@ static void post_parse_enter(void *ctx, NodeMetadata *m, AnyNode node);
 static void normalize_atom(NodeMetadata *m, Atom *atom);
 
 void do_post_parse(NodeMetadata *m, AnyNode root) {
-  ast_traverse_dfs(PRE_ORDER, NULL, root, m, post_parse_enter);
+  ast_traverse_dfs(NULL, root, m,
+                   (EnterExitVTable){
+                       .enter = post_parse_enter,
+                       .exit = NULL,
+                   });
 }
 
 static void post_parse_enter(void *ctx, NodeMetadata *m, AnyNode node) {
@@ -18,7 +22,7 @@ static void post_parse_enter(void *ctx, NodeMetadata *m, AnyNode node) {
   }
 }
 
-// At syntax parse time so as to not need backtracking, designator and
+// At syntax parse time, so as to not need backtracking, designator and
 // scoped identifier atoms are parsed as the same node (a designator).
 // This function just changes the atom to reference a scoped identifier
 // if it is a designator without an initialiser list.
