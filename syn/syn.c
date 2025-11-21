@@ -584,27 +584,18 @@ CasePatt *parse_case_patt(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_CASE_PATT);
     CasePatt *n = expect_node(NODE_CASE_PATT, nc.node);
     switch (at(c).t) {
-        case T_NUM:
-        case T_STR:
-        case T_CHAR:
-            n->t = CASE_PATT_LIT;
-            n->lit = token_attr(c, "lit", consume(c));
+        case T_LET:
+            next(c);
+            n->t = CASE_PATT_UNPACK_UNION;
+            n->unpack_union = parse_unpack_union(c, FOLLOW_CASE_PATT);
             break;
         case T_ELSE:
             n->t = CASE_PATT_DEFAULT;
             n->default_ = token_attr_anon(c, consume(c));
             break;
         default:
-            n->t = CASE_PATT_NAME;
-            n->name.ident = parse_scoped_ident(c, TOKS(T_LPAR, T_ARROW));
-            if (looking_at(c, T_LPAR)) {
-                next(c);
-                n->name.binding.ptr = parse_binding(c);
-                if (!expect(c, n->id, T_RPAR)) {
-                    advance(c, FOLLOW_CASE_PATT);
-                    return end_node(c, nc);
-                }
-            }
+            n->t = CASE_PATT_EXPR;
+            n->expr = parse_expr(c);
             break;
     }
     return end_node(c, nc);
@@ -646,10 +637,6 @@ CaseStmt *parse_case_stmt(ParseCtx *c) {
     CaseStmt *n = expect_node(NODE_CASE_STMT, nc.node);
     assert(consume(c).t == T_CASE);
     n->expr = parse_expr(c);
-    if (!expect(c, n->id, T_SCLN)) {
-        advance(c, FOLLOW_STMT);
-        return end_node(c, nc);
-    }
     n->branches = parse_case_branches(c);
     return end_node(c, nc);
 }
@@ -717,35 +704,6 @@ UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
 
     return end_node(c, nc);
 }
-
-// static bool starts_type(TokKind t) {
-//     switch (t) {
-//         case T_S8:
-//         case T_U8:
-//         case T_S16:
-//         case T_U16:
-//         case T_S32:
-//         case T_U32:
-//         case T_S64:
-//         case T_U64:
-//         case T_F32:
-//         case T_F64:
-//         case T_BOOL:
-//         case T_STRING:
-//         case T_ANY:
-//         case T_LBRK:
-//         case T_STRUCT:
-//         case T_UNION:
-//         case T_ENUM:
-//         case T_ERROR:
-//         case T_STAR:
-//         case T_FUN:
-//         case T_IDENT:
-//             return true;
-//         default:
-//             return false;
-//     }
-// }
 
 Type *parse_type(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_TYPE);
@@ -1511,67 +1469,8 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
 Atom *parse_atom(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_ATOM);
     Atom *n = expect_node(NODE_ATOM, nc.node);
-    // Handle first as IDENT is also the start of a type
-    // if (looking_at(c, T_IDENT) || looking_at(c, T_SCOPE)) {
-    //     n->t = ATOM_DESIGNATOR;
-    //     n->designator = parse_designator(c);
-    //     return end_node(c, nc);
-    // }
-    // if (starts_type(at(c).t)) {
-    //     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
-    //     BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
-    //
-    //     braced_lit->type.ptr = parse_type(c);
-    //
-    //     if (!expect(c, braced_lit->id, T_LBRC)) {
-    //         advance(c, FOLLOW_ATOM);
-    //         n->t = ATOM_BRACED_LIT;
-    //         n->braced_lit = end_node(c, lit_ctx);
-    //         return end_node(c, nc);
-    //     }
-    //     // TODO: try parse a compound statement if `parse_init` fails
-    //     // if that is successful, suggest that the user missed a `;` after
-    //     // expression. e.g.:
-    //     //
-    //     // if foo {
-    //     //       ^
-    //     //       ; Did you mean to put a semicolon here?
-    //     braced_lit->init = parse_init(c, T_RBRC);
-    //     if (!expect(c, braced_lit->id, T_RBRC)) {
-    //         advance(c, FOLLOW_ATOM);
-    //     }
-    //
-    //     n->t = ATOM_BRACED_LIT;
-    //     n->braced_lit = end_node(c, lit_ctx);
-    //     return end_node(c, nc);
-    // }
     switch (at(c).t) {
-        // case T_CONS: {
-        //     next(c);
-        //
-        //     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
-        //     BracedLit *braced_lit = expect_node(NODE_BRACED_LIT,
-        //     lit_ctx.node);
-        //
-        //     braced_lit->type.ptr = parse_type(c);
-        //
-        //     if (!expect(c, braced_lit->id, T_LBRC)) {
-        //         advance(c, FOLLOW_ATOM);
-        //         goto yield_braced_lit;
-        //     }
-        //
-        //     braced_lit->init = parse_init(c, T_RBRC);
-        //
-        //     if (!expect(c, braced_lit->id, T_RBRC)) {
-        //         advance(c, FOLLOW_ATOM);
-        //         goto yield_braced_lit;
-        //     }
-        //
-        // yield_braced_lit:
-        //     n->t = ATOM_BRACED_LIT;
-        //     n->braced_lit = end_node(c, lit_ctx);
-        //     return end_node(c, nc);
-        // }
+        case T_SCOPE:
         case T_IDENT: {
             n->t = ATOM_SCOPED_IDENT;
             n->scoped_ident = parse_scoped_ident(c, TOKS(T_SCLN));

@@ -76,8 +76,8 @@ syntax_test(
 syntax_test(
     name="case_statement_basic",
     source="""
-    case x; {
-        Just(_) -> do();
+    case x {
+        let Just(_) -> do();
         ::x -> return 10;
         'x' -> {}
         10 -> {}
@@ -98,11 +98,11 @@ syntax_test(
         case_branches {
           case_branch {
             case_patt {
-              scoped_ident {
-                'Just'
-              }
-              binding {
-                name='_'
+              unpack_union {
+                tag='Just'
+                binding {
+                  name='_'
+                }
               }
             }
             stmt {
@@ -123,9 +123,13 @@ syntax_test(
           }
           case_branch {
             case_patt {
-              scoped_ident {
-                ''
-                'x'
+              expr {
+                atom {
+                  scoped_ident {
+                    ''
+                    'x'
+                  }
+                }
               }
             }
             stmt {
@@ -140,7 +144,11 @@ syntax_test(
           }
           case_branch {
             case_patt {
-              lit=''x''
+              expr {
+                atom {
+                  char=''x''
+                }
+              }
             }
             stmt {
               comp_stmt {}
@@ -148,7 +156,11 @@ syntax_test(
           }
           case_branch {
             case_patt {
-              lit='10'
+              expr {
+                atom {
+                  '10'
+                }
+              }
             }
             stmt {
               comp_stmt {}
@@ -156,7 +168,11 @@ syntax_test(
           }
           case_branch {
             case_patt {
-              lit='"foo bar"'
+              expr {
+                atom {
+                  '"foo bar"'
+                }
+              }
             }
             stmt {
               comp_stmt {}

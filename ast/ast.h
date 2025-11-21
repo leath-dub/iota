@@ -340,21 +340,18 @@ struct WhileStmt {
 };
 
 typedef enum {
-    CASE_PATT_LIT,
-    CASE_PATT_NAME,
+    CASE_PATT_EXPR,
     CASE_PATT_DEFAULT,
+    CASE_PATT_UNPACK_UNION,
 } CasePattKind;
 
 struct CasePatt {
     NodeID id;
     CasePattKind t;
     union {
-        Tok lit;
+        struct Expr *expr;
         Tok default_;
-        struct {
-            struct ScopedIdent *ident;
-            NULLABLE_PTR(struct Binding) binding;
-        } name;
+        struct UnpackUnion *unpack_union;
     };
 };
 
