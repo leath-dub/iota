@@ -7,7 +7,7 @@
 
 #define EACH_TOKEN                            \
     TOKEN(EMPTY, "<empty token>")             \
-    TOKEN(EOF, "<end of file>")               \
+    TOKEN(EOF, "<EOF>")                       \
     TOKEN(CMNT, "<comment>")                  \
     TOKEN(SYNTHESIZED, "<synthesized token>") \
     TOKEN(ILLEGAL, "<illegal token>")         \
