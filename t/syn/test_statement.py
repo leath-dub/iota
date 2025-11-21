@@ -1,16 +1,14 @@
 syntax_test(
     name="if_statement_basic",
-    source="if foo; {}",
+    source="if foo {}",
     expected="""
     stmt {
       if_stmt {
         cond {
           expr {
             atom {
-              designator {
-                scoped_ident {
-                  'foo'
-                }
+              scoped_ident {
+                'foo'
               }
             }
           }
@@ -24,17 +22,15 @@ syntax_test(
 
 syntax_test(
     name="while_statement_basic",
-    source="while foo; {}",
+    source="while foo {}",
     expected="""
     stmt {
       while_stmt {
         cond {
           expr {
             atom {
-              designator {
-                scoped_ident {
-                  'foo'
-                }
+              scoped_ident {
+                'foo'
               }
             }
           }
@@ -58,10 +54,8 @@ syntax_test(
             left:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'x'
-                    }
+                  scoped_ident {
+                    'x'
                   }
                 }
               }
@@ -96,10 +90,8 @@ syntax_test(
       case_stmt {
         expr {
           atom {
-            designator {
-              scoped_ident {
-                'x'
-              }
+            scoped_ident {
+              'x'
             }
           }
         }
@@ -118,10 +110,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'do'
-                        }
+                      scoped_ident {
+                        'do'
                       }
                     }
                   }

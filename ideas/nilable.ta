@@ -1,0 +1,13 @@
+@{ x = 10 } Some_Annotation
+@{ foo = ::IS_SET } Attrs
+fun maybe_from_nilable(x *nilable int) Maybe(*int) {
+    if x == nil {
+        return ::Nothing;
+    }
+
+    return ::Just { x as *int };
+
+    return { x as *int } ::Just;
+    // or maybe:
+    // return { cast(*int)x } ::Just;
+}

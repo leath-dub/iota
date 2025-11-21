@@ -58,7 +58,7 @@ void parse_ctx_free(ParseCtx *c) {
 // These were manually calculated by looking at the tree-sitter grammar.
 // I really fucking hope it was worth the effort.
 DECLARE_FOLLOW_SET(IMPORT, T_IMPORT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR,
-                   T_UNION, T_TYPE, T_USE)
+                   T_UNION, T_TYPE)
 DECLARE_FOLLOW_SET(DECL, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION)
 DECLARE_FOLLOW_SET(VAR_BINDING, T_SCLN, T_EQ)
 DECLARE_FOLLOW_SET(BINDING, T_COMMA, T_RPAR)
@@ -696,11 +696,6 @@ Cond *parse_cond(ParseCtx *c) {
             n->expr = parse_expr(c);
             break;
     }
-    if (!expect(c, n->id, T_SCLN)) {
-        // TODO: add follow set
-        advance(c, TOKS(T_LBRC));
-        return end_node(c, nc);
-    }
     return end_node(c, nc);
 }
 
@@ -723,34 +718,34 @@ UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
     return end_node(c, nc);
 }
 
-static bool starts_type(TokKind t) {
-    switch (t) {
-        case T_S8:
-        case T_U8:
-        case T_S16:
-        case T_U16:
-        case T_S32:
-        case T_U32:
-        case T_S64:
-        case T_U64:
-        case T_F32:
-        case T_F64:
-        case T_BOOL:
-        case T_STRING:
-        case T_ANY:
-        case T_LBRK:
-        case T_STRUCT:
-        case T_UNION:
-        case T_ENUM:
-        case T_ERROR:
-        case T_STAR:
-        case T_FUN:
-        case T_IDENT:
-            return true;
-        default:
-            return false;
-    }
-}
+// static bool starts_type(TokKind t) {
+//     switch (t) {
+//         case T_S8:
+//         case T_U8:
+//         case T_S16:
+//         case T_U16:
+//         case T_S32:
+//         case T_U32:
+//         case T_S64:
+//         case T_U64:
+//         case T_F32:
+//         case T_F64:
+//         case T_BOOL:
+//         case T_STRING:
+//         case T_ANY:
+//         case T_LBRK:
+//         case T_STRUCT:
+//         case T_UNION:
+//         case T_ENUM:
+//         case T_ERROR:
+//         case T_STAR:
+//         case T_FUN:
+//         case T_IDENT:
+//             return true;
+//         default:
+//             return false;
+//     }
+// }
 
 Type *parse_type(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_TYPE);
@@ -1513,60 +1508,76 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
     }
 }
 
-Designator *parse_designator(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_DESIGNATOR);
-    Designator *n = expect_node(NODE_DESIGNATOR, nc.node);
-    assert(at(c).t == T_IDENT || at(c).t == T_SCOPE);
-    n->ident = parse_scoped_ident(c, TOKS(T_LBRC));
-    if (looking_at(c, T_LBRC)) {
-        next(c);
-        n->init.ptr = parse_init(c, T_RBRC);
-        if (!expect(c, n->id, T_RBRC)) {
-            advance(c, FOLLOW_ATOM);
-        }
-    }
-    return end_node(c, nc);
-}
-
 Atom *parse_atom(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_ATOM);
     Atom *n = expect_node(NODE_ATOM, nc.node);
     // Handle first as IDENT is also the start of a type
-    if (looking_at(c, T_IDENT) || looking_at(c, T_SCOPE)) {
-        n->t = ATOM_DESIGNATOR;
-        n->designator = parse_designator(c);
-        return end_node(c, nc);
-    }
-    if (starts_type(at(c).t)) {
-        NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
-        BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
-
-        braced_lit->type.ptr = parse_type(c);
-
-        if (!expect(c, braced_lit->id, T_LBRC)) {
-            advance(c, FOLLOW_ATOM);
-            n->t = ATOM_BRACED_LIT;
-            n->braced_lit = end_node(c, lit_ctx);
+    // if (looking_at(c, T_IDENT) || looking_at(c, T_SCOPE)) {
+    //     n->t = ATOM_DESIGNATOR;
+    //     n->designator = parse_designator(c);
+    //     return end_node(c, nc);
+    // }
+    // if (starts_type(at(c).t)) {
+    //     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
+    //     BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
+    //
+    //     braced_lit->type.ptr = parse_type(c);
+    //
+    //     if (!expect(c, braced_lit->id, T_LBRC)) {
+    //         advance(c, FOLLOW_ATOM);
+    //         n->t = ATOM_BRACED_LIT;
+    //         n->braced_lit = end_node(c, lit_ctx);
+    //         return end_node(c, nc);
+    //     }
+    //     // TODO: try parse a compound statement if `parse_init` fails
+    //     // if that is successful, suggest that the user missed a `;` after
+    //     // expression. e.g.:
+    //     //
+    //     // if foo {
+    //     //       ^
+    //     //       ; Did you mean to put a semicolon here?
+    //     braced_lit->init = parse_init(c, T_RBRC);
+    //     if (!expect(c, braced_lit->id, T_RBRC)) {
+    //         advance(c, FOLLOW_ATOM);
+    //     }
+    //
+    //     n->t = ATOM_BRACED_LIT;
+    //     n->braced_lit = end_node(c, lit_ctx);
+    //     return end_node(c, nc);
+    // }
+    switch (at(c).t) {
+        // case T_CONS: {
+        //     next(c);
+        //
+        //     NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
+        //     BracedLit *braced_lit = expect_node(NODE_BRACED_LIT,
+        //     lit_ctx.node);
+        //
+        //     braced_lit->type.ptr = parse_type(c);
+        //
+        //     if (!expect(c, braced_lit->id, T_LBRC)) {
+        //         advance(c, FOLLOW_ATOM);
+        //         goto yield_braced_lit;
+        //     }
+        //
+        //     braced_lit->init = parse_init(c, T_RBRC);
+        //
+        //     if (!expect(c, braced_lit->id, T_RBRC)) {
+        //         advance(c, FOLLOW_ATOM);
+        //         goto yield_braced_lit;
+        //     }
+        //
+        // yield_braced_lit:
+        //     n->t = ATOM_BRACED_LIT;
+        //     n->braced_lit = end_node(c, lit_ctx);
+        //     return end_node(c, nc);
+        // }
+        case T_IDENT: {
+            n->t = ATOM_SCOPED_IDENT;
+            n->scoped_ident = parse_scoped_ident(c, TOKS(T_SCLN));
             return end_node(c, nc);
         }
-        // TODO: try parse a compound statement if `parse_init` fails
-        // if that is successful, suggest that the user missed a `;` after
-        // expression. e.g.:
-        //
-        // if foo {
-        //       ^
-        //       ; Did you mean to put a semicolon here?
-        braced_lit->init = parse_init(c, T_RBRC);
-        if (!expect(c, braced_lit->id, T_RBRC)) {
-            advance(c, FOLLOW_ATOM);
-        }
-
-        n->t = ATOM_BRACED_LIT;
-        n->braced_lit = end_node(c, lit_ctx);
-        return end_node(c, nc);
-    }
-    switch (at(c).t) {
-        case T_CONS: {
+        case T_BTICK: {
             next(c);
 
             NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
@@ -1574,14 +1585,13 @@ Atom *parse_atom(ParseCtx *c) {
 
             braced_lit->type.ptr = parse_type(c);
 
-            if (!expect(c, braced_lit->id, T_LBRC)) {
+            if (!expect(c, n->id, T_LBRC)) {
                 advance(c, FOLLOW_ATOM);
                 goto yield_braced_lit;
             }
+            braced_lit->init = parse_init(c, T_LBRC);
 
-            braced_lit->init = parse_init(c, T_RBRC);
-
-            if (!expect(c, braced_lit->id, T_RBRC)) {
+            if (!expect(c, n->id, T_RBRC)) {
                 advance(c, FOLLOW_ATOM);
                 goto yield_braced_lit;
             }

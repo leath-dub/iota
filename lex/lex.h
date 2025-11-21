@@ -28,6 +28,7 @@
     TOKEN(DOTDOT, "'..'")                     \
     TOKEN(PLUS, "'+'")                        \
     TOKEN(MINUS, "'-'")                       \
+    TOKEN(BTICK, "'`'")                       \
     TOKEN(STAR, "'*'")                        \
     TOKEN(SLASH, "'/'")                       \
     TOKEN(EQ, "'='")                          \
@@ -61,7 +62,6 @@
     KEYWORD(TYPE, "type")                     \
     KEYWORD(IMPORT, "import")                 \
     KEYWORD(ERROR, "error")                   \
-    KEYWORD(USE, "use")                       \
     KEYWORD(S8, "s8")                         \
     KEYWORD(U8, "u8")                         \
     KEYWORD(S16, "s16")                       \
@@ -75,8 +75,7 @@
     KEYWORD(BOOL, "bool")                     \
     KEYWORD(RETURN, "return")                 \
     KEYWORD(STRING, "string")                 \
-    KEYWORD(ANY, "any")                       \
-    KEYWORD(CONS, "cons")
+    KEYWORD(ANY, "any")
 
 typedef enum {
 #define TOKEN(NAME, ...) T_##NAME,

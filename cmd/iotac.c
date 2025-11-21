@@ -65,28 +65,26 @@ int main(int argc, char *argv[]) {
 
     AnyNode any_root = MAKE_ANY(root);
 
-    do_post_parse(&pc.meta, any_root);
     do_build_symbol_table(&pc.meta, any_root);
 
-    Scope *global_scope = scope_get(&pc.meta, root->id);
-    ScopeEntry *entry = hm_scope_entry_get(&global_scope->table, ztos("Point"));
-    assert(!entry->shadows);
-    assert(entry->node.kind == NODE_STRUCT_DECL);
-    StructDecl *decl = (StructDecl *)entry->node.data;
-    printf("It was inserted: %.*s\n", decl->ident.text.len,
-           decl->ident.text.data);
+    // Scope *global_scope = scope_get(&pc.meta, root->id);
+    // ScopeEntry *entry = hm_scope_entry_get(&global_scope->table,
+    // ztos("Point")); assert(!entry->shadows); assert(entry->node.kind ==
+    // NODE_STRUCT_DECL); StructDecl *decl = (StructDecl *)entry->node.data;
+    // printf("It was inserted: %.*s\n", decl->ident.text.len,
+    //        decl->ident.text.data);
+    //
+    // Scope *struct_scope = scope_get(&pc.meta, decl->id);
+    // entry = hm_scope_entry_get(&struct_scope->table, ztos("x"));
+    // assert(!entry->shadows);
+    // assert(entry->node.kind == NODE_FIELD);
+    // Field *field = (Field *)entry->node.data;
+    // printf("Has field: %.*s\n", field->ident.text.len,
+    // field->ident.text.data);
 
-    Scope *struct_scope = scope_get(&pc.meta, decl->id);
-    entry = hm_scope_entry_get(&struct_scope->table, ztos("x"));
-    assert(!entry->shadows);
-    assert(entry->node.kind == NODE_FIELD);
-    Field *field = (Field *)entry->node.data;
-    printf("Has field: %.*s\n", field->ident.text.len, field->ident.text.data);
-
-    // TreeDumpCtx dump_ctx = {
-    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
-    //     &pc.meta};
-    // tree_dump(&dump_ctx, root->id);
+    TreeDumpCtx dump_ctx = {
+        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
+    tree_dump(&dump_ctx, root->id);
 
     report_all_errors(code);
 

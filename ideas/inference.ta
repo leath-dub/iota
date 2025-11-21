@@ -1,0 +1,12 @@
+import "types"
+
+macro Maybe!(T type) {
+  return #type(union {
+      Just T,
+      Empty types::Nil #fail,
+  });
+}
+
+fun yield() Maybe!(s32) {
+    return ::Just{ 10 };
+}

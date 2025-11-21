@@ -68,7 +68,6 @@ static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node) {
 }
 
 static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
-    printf("enter source file\n");
     AnyNode *node =
         stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
     *node = MAKE_ANY(source_file);
@@ -76,7 +75,6 @@ static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
 }
 
 static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
-    printf("exit source file\n");
     (void)source_file;
     stack_pop(&ctx->scope_node_ctx);
 }
@@ -90,7 +88,6 @@ static void scope_insert_enclosing(SymbolTableCtx *ctx, string symbol,
 }
 
 static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
-    printf("enter struct\n");
     AnyNode self = MAKE_ANY(decl);
     scope_insert_enclosing(ctx, decl->ident.text, self);
     AnyNode *node =
@@ -100,7 +97,6 @@ static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
 }
 
 static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
-    printf("exit struct\n");
     (void)decl;
     stack_pop(&ctx->scope_node_ctx);
 }

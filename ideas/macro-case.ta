@@ -1,0 +1,16 @@
+// Say you have a custom type which you want to be able
+// to match on in the case statement. We can have a sort
+// of pattern matching that is user defined using macros
+
+concept Hash(x $T) {
+  ::hash(x) -> u64,
+}
+
+macro matches!(x $T) {
+  if Hash::(T) {
+  }
+}
+
+case x {
+  matches!(Foo { 10 }) ->
+}

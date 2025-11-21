@@ -74,7 +74,6 @@ typedef u32 NodeID;
     USE(ScopedIdent, SCOPED_IDENT, "scoped_ident")       \
     USE(Expr, EXPR, "expr")                              \
     USE(Atom, ATOM, "atom")                              \
-    USE(Designator, DESIGNATOR, "designator")            \
     USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
     USE(FnCall, FN_CALL, "fn_call")                      \
     USE(Init, INIT, "init")                              \
@@ -544,7 +543,6 @@ struct Expr {
 typedef enum {
     ATOM_TOKEN,
     ATOM_BRACED_LIT,
-    ATOM_DESIGNATOR,
     ATOM_SCOPED_IDENT,
 } AtomKind;
 
@@ -554,15 +552,8 @@ struct Atom {
     union {
         Tok token;  // Stores: identifier, number, string, enum, nil
         struct ScopedIdent *scoped_ident;
-        struct Designator *designator;
         struct BracedLit *braced_lit;
     };
-};
-
-struct Designator {
-    NodeID id;
-    struct ScopedIdent *ident;
-    NULLABLE_PTR(struct Init) init;
 };
 
 struct BracedLit {

@@ -54,10 +54,8 @@ syntax_test(
       coll_access {
         expr {
           atom {
-            designator {
-              scoped_ident {
-                'foo'
-              }
+            scoped_ident {
+              'foo'
             }
           }
         }
@@ -86,20 +84,16 @@ syntax_test(
             left:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'foo'
-                    }
+                  scoped_ident {
+                    'foo'
                   }
                 }
               }
             right:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'bar'
-                    }
+                  scoped_ident {
+                    'bar'
                   }
                 }
               }
@@ -136,10 +130,8 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -189,10 +181,8 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -244,10 +234,8 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -286,10 +274,8 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -328,10 +314,8 @@ syntax_test(
                 coll_access {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -377,10 +361,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -413,10 +395,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -424,10 +404,8 @@ syntax_test(
                     init {
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'x'
-                            }
+                          scoped_ident {
+                            'x'
                           }
                         }
                       }
@@ -459,10 +437,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -474,10 +450,8 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                designator {
-                                  scoped_ident {
-                                    'x'
-                                  }
+                                scoped_ident {
+                                  'x'
                                 }
                               }
                             }
@@ -517,10 +491,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -528,19 +500,15 @@ syntax_test(
                     init {
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'x'
-                            }
+                          scoped_ident {
+                            'x'
                           }
                         }
                       }
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'y'
-                            }
+                          scoped_ident {
+                            'y'
                           }
                         }
                       }
@@ -578,10 +546,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -589,10 +555,8 @@ syntax_test(
                     init {
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'x'
-                            }
+                          scoped_ident {
+                            'x'
                           }
                         }
                       }
@@ -602,10 +566,8 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                designator {
-                                  scoped_ident {
-                                    'y'
-                                  }
+                                scoped_ident {
+                                  'y'
                                 }
                               }
                             }
@@ -619,10 +581,8 @@ syntax_test(
                       }
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'y'
-                            }
+                          scoped_ident {
+                            'y'
                           }
                         }
                       }
@@ -654,10 +614,8 @@ syntax_test(
                 fn_call {
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }
@@ -667,10 +625,8 @@ syntax_test(
                         fn_call {
                           expr {
                             atom {
-                              designator {
-                                scoped_ident {
-                                  'foo'
-                                }
+                              scoped_ident {
+                                'foo'
                               }
                             }
                           }
@@ -680,10 +636,8 @@ syntax_test(
                                 fn_call {
                                   expr {
                                     atom {
-                                      designator {
-                                        scoped_ident {
-                                          'foo'
-                                        }
+                                      scoped_ident {
+                                        'foo'
                                       }
                                     }
                                   }
@@ -693,10 +647,8 @@ syntax_test(
                                         fn_call {
                                           expr {
                                             atom {
-                                              designator {
-                                                scoped_ident {
-                                                  'bar'
-                                                }
+                                              scoped_ident {
+                                                'bar'
                                               }
                                             }
                                           }
@@ -713,10 +665,8 @@ syntax_test(
                                                             op='*'
                                                             expr {
                                                               atom {
-                                                                designator {
-                                                                  scoped_ident {
-                                                                    'in'
-                                                                  }
+                                                                scoped_ident {
+                                                                  'in'
                                                                 }
                                                               }
                                                             }
@@ -741,10 +691,8 @@ syntax_test(
                                         fn_call {
                                           expr {
                                             atom {
-                                              designator {
-                                                scoped_ident {
-                                                  'foo'
-                                                }
+                                              scoped_ident {
+                                                'foo'
                                               }
                                             }
                                           }
@@ -762,10 +710,8 @@ syntax_test(
                         fn_call {
                           expr {
                             atom {
-                              designator {
-                                scoped_ident {
-                                  'foo'
-                                }
+                              scoped_ident {
+                                'foo'
                               }
                             }
                           }
@@ -879,10 +825,8 @@ syntax_test(
             value:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'Foo'
-                    }
+                  scoped_ident {
+                    'Foo'
                   }
                 }
               }
@@ -895,7 +839,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_ident",
-    source="let _ = Foo{ 10 };",
+    source="let _ = `Foo{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -909,9 +853,11 @@ syntax_test(
             value:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'Foo'
+                  braced_lit {
+                    type {
+                      scoped_ident {
+                        'Foo'
+                      }
                     }
                     init {
                       expr {
@@ -932,7 +878,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_scoped_ident",
-    source="let _ = Foo::Bar::baz{ 10 };",
+    source="let _ = `Foo::Bar::baz{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -946,11 +892,13 @@ syntax_test(
             value:
               expr {
                 atom {
-                  designator {
-                    scoped_ident {
-                      'Foo'
-                      'Bar'
-                      'baz'
+                  braced_lit {
+                    type {
+                      scoped_ident {
+                        'Foo'
+                        'Bar'
+                        'baz'
+                      }
                     }
                     init {
                       expr {
@@ -971,7 +919,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_array",
-    source="let _ = []u32{ x, y, z };",
+    source="let _ = `[]u32{ x, y, z };",
     expected="""
     source_file {
       imports {}
@@ -998,28 +946,22 @@ syntax_test(
                     init {
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'x'
-                            }
+                          scoped_ident {
+                            'x'
                           }
                         }
                       }
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'y'
-                            }
+                          scoped_ident {
+                            'y'
                           }
                         }
                       }
                       expr {
                         atom {
-                          designator {
-                            scoped_ident {
-                              'z'
-                            }
+                          scoped_ident {
+                            'z'
                           }
                         }
                       }
@@ -1054,20 +996,16 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        designator {
-                          scoped_ident {
-                            'x'
-                          }
+                        scoped_ident {
+                          'x'
                         }
                       }
                     }
                   right:
                     expr {
                       atom {
-                        designator {
-                          scoped_ident {
-                            'Foo'
-                          }
+                        scoped_ident {
+                          'Foo'
                         }
                       }
                     }
@@ -1082,7 +1020,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity1",
-    source="let _ = x * (*u32{ 10 });",
+    source="let _ = x * (*`u32{ 10 });",
     expected="""
     source_file {
       imports {}
@@ -1100,10 +1038,8 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        designator {
-                          scoped_ident {
-                            'x'
-                          }
+                        scoped_ident {
+                          'x'
                         }
                       }
                     }
@@ -1142,7 +1078,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity2",
-    source="let _ = x * cons *u32{ 10 };",
+    source="let _ = x * `*u32{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -1160,10 +1096,8 @@ syntax_test(
                   left:
                     expr {
                       atom {
-                        designator {
-                          scoped_ident {
-                            'x'
-                          }
+                        scoped_ident {
+                          'x'
                         }
                       }
                     }
@@ -1262,10 +1196,8 @@ syntax_test(
                           left:
                             expr {
                               atom {
-                                designator {
-                                  scoped_ident {
-                                    'x'
-                                  }
+                                scoped_ident {
+                                  'x'
                                 }
                               }
                             }
@@ -1290,7 +1222,7 @@ syntax_test(
 
 syntax_test(
     name="address_of",
-    source = "let _ = &(10 + 11) + &x - &Foo{ 10 };",
+    source = "let _ = &(10 + 11) + &x - &`Foo{ 10 };",
     expected = """
     source_file {
       imports {}
@@ -1338,10 +1270,8 @@ syntax_test(
                               op='&'
                               expr {
                                 atom {
-                                  designator {
-                                    scoped_ident {
-                                      'x'
-                                    }
+                                  scoped_ident {
+                                    'x'
                                   }
                                 }
                               }
@@ -1355,9 +1285,11 @@ syntax_test(
                         op='&'
                         expr {
                           atom {
-                            designator {
-                              scoped_ident {
-                                'Foo'
+                            braced_lit {
+                              type {
+                                scoped_ident {
+                                  'Foo'
+                                }
                               }
                               init {
                                 expr {
@@ -1402,10 +1334,8 @@ syntax_test(
                         lvalue:
                           expr {
                             atom {
-                              designator {
-                                scoped_ident {
-                                  'foo'
-                                }
+                              scoped_ident {
+                                'foo'
                               }
                             }
                           }
@@ -1441,10 +1371,8 @@ syntax_test(
                   op='++'
                   expr {
                     atom {
-                      designator {
-                        scoped_ident {
-                          'foo'
-                        }
+                      scoped_ident {
+                        'foo'
                       }
                     }
                   }

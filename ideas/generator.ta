@@ -1,0 +1,9 @@
+let it = strs::lines(text);
+while let Just(line) = strs::line(&it); {
+  io::println(line)!;
+}
+
+let it = nums::range(0, 10);
+while let Just(num) = nums::next(&it); {
+  io::println(num);
+}
