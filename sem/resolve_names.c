@@ -70,11 +70,15 @@ static void resolve_names_exit(void *_ctx, NodeMetadata *m, AnyNode node) {
     pop_any_scope(ctx, *node.data);
 }
 
-static void sem_raise(NameResCtx *ctx, NodeID id, const char *message) {
-    u32 offset = get_node_offset(ctx->meta, id);
+static void sem_raise_at(NameResCtx *ctx, const char *message, u32 offset) {
     raise_semantic_error(ctx->code,
                          (SemanticError){.at = offset, .message = message});
 }
+
+// static void sem_raise(NameResCtx *ctx, NodeID id, const char *message) {
+//     u32 offset = get_node_offset(ctx->meta, id);
+//     sem_raise_at(ctx, message, offset);
+// }
 
 static Scope *current_scope(NameResCtx *ctx) {
     return *(Scope **)stack_top(&ctx->scope_ctx);
@@ -98,8 +102,30 @@ static void enter_scoped_ident(NameResCtx *ctx, ScopedIdent *scoped_ident) {
 
     Scope *scope = current_scope(ctx);
 
-    ScopeEntry *entry = scope_lookup(scope, top.text, LOOKUP_MODE_LEXICAL);
-    if (!entry) {
-        sem_raise(ctx, scoped_ident->id, "unresolved identifier");
+    for (u32 i = 0; i < scoped_ident->len; i++) {
+        Tok ident_tok = scoped_ident->items[i];
+        assert(ident_tok.t == T_IDENT);
+        string ident = ident_tok.text;
+        ScopeEntry *entry = scope_lookup(
+            scope, ident, i == 0 ? LOOKUP_MODE_LEXICAL : LOOKUP_MODE_DIRECT);
+        if (!entry) {
+            if (i != 0) {
+                // TODO: print better message about what scope it was unresolved
+                // in
+            }
+            sem_raise_at(ctx, "unresolved identifier", ident_tok.offset);
+            return;
+        }
+        switch (entry->node.kind) {
+            case NODE_STRUCT_DECL: {
+                Scope *type_scope = scope_get(ctx->meta, *entry->node.data);
+                assert(type_scope);
+                scope = type_scope;
+                break;
+            }
+            default:
+                TODO("this is just a test for structs only");
+                return;
+        }
     }
 }
