@@ -88,6 +88,37 @@ int main(int argc, char *argv[]) {
 
     report_all_errors(code);
 
+    // Debug symbol table
+    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&pc.meta.scopes);
+    ScopeAlloc *alloc = NULL;
+    while ((alloc = hm_cursor_scope_alloc_next(&it))) {
+        Entry *entry = it.base.current_entry;
+        assert(entry->key.len == sizeof(NodeID));
+
+        NodeID id = *(NodeID *)it.base.current_entry->key.data;
+        printf("scope [node_id = %d]:\n", id);
+        printf("  node_type: %s\n", get_node_name(&pc.meta, id));
+
+        Scope *enclosing_scope = alloc->scope_ref->enclosing_scope.ptr;
+        if (enclosing_scope) {
+            printf("  enclosing_scope: [node_id = %d]\n",
+                   *(NodeID *)enclosing_scope->self.data);
+        }
+
+        HashMapCursorScopeEntry subit =
+            hm_cursor_scope_entry_new(&alloc->scope_ref->table);
+        ScopeEntry *scope_entry = NULL;
+        while ((scope_entry = hm_cursor_scope_entry_next(&subit))) {
+            string key = subit.base.current_entry->key;
+            printf("    entry (%.*s):\n", key.len, key.data);
+            ScopeEntry *scope_entry_it = scope_entry;
+            while (scope_entry_it) {
+                printf("      %s\n", node_kind_name(scope_entry_it->node.kind));
+                scope_entry_it = scope_entry_it->shadows;
+            }
+        }
+    }
+
     source_code_free(&code);
     parse_ctx_free(&pc);
     free(source.data);
