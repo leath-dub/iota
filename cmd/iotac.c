@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     SourceCode code = new_source_code(ztos(path), source);
     ParseCtx pc = new_parse_ctx(&code);
 
-    assert(pc.meta.scopes.base.entries.len != 0);
+    assert(pc.meta.scope_allocs.base.entries.len != 0);
 
     SourceFile *root = parse_source_file(&pc);
 
@@ -89,7 +89,8 @@ int main(int argc, char *argv[]) {
     report_all_errors(code);
 
     // Debug symbol table
-    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&pc.meta.scopes);
+    HashMapCursorScopeAlloc it =
+        hm_cursor_scope_alloc_new(&pc.meta.scope_allocs);
     ScopeAlloc *alloc = NULL;
     while ((alloc = hm_cursor_scope_alloc_next(&it))) {
         Entry *entry = it.base.current_entry;
@@ -113,7 +114,11 @@ int main(int argc, char *argv[]) {
             printf("    entry (%.*s):\n", key.len, key.data);
             ScopeEntry *scope_entry_it = scope_entry;
             while (scope_entry_it) {
-                printf("      %s\n", node_kind_name(scope_entry_it->node.kind));
+                NodeID entry_id = *(NodeID *)scope_entry_it->node.data;
+                Position pos = get_node_pos(&pc.meta, entry_id);
+                printf("      %s @ %d:%d [node_id = %d]\n",
+                       node_kind_name(scope_entry_it->node.kind), pos.line,
+                       pos.column, entry_id);
                 scope_entry_it = scope_entry_it->shadows;
             }
         }

@@ -24,7 +24,13 @@ NodeMetadata new_node_metadata(void) {
                 .cap = 0,
                 .items = NULL,
             },
-        .scopes = hm_scope_alloc_new(128),
+        .scope_allocs = hm_scope_alloc_new(128),
+        .positions =
+            {
+                .len = 0,
+                .cap = 0,
+                .items = NULL,
+            },
         .arena = new_arena(),
     };
 }
@@ -43,12 +49,15 @@ void node_metadata_free(NodeMetadata *m) {
     if (m->names.items != NULL) {
         free(m->names.items);
     }
-    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scopes);
+    if (m->positions.items != NULL) {
+        free(m->positions.items);
+    }
+    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scope_allocs);
     ScopeAlloc *alloc = NULL;
     while ((alloc = hm_cursor_scope_alloc_next(&it))) {
         hm_scope_entry_free(&alloc->scope_ref->table);
     }
-    hm_scope_alloc_free(&m->scopes);
+    hm_scope_alloc_free(&m->scope_allocs);
     arena_free(&m->arena);
 }
 
@@ -60,6 +69,14 @@ bool has_error(NodeMetadata *m, void *node) {
     assert(node != NULL);
     NodeID *id = node;
     return m->flags.items[*id] & NFLAG_ERROR;
+}
+
+void set_node_pos(NodeMetadata *m, NodeID id, Position pos) {
+    *AT(m->positions, id) = pos;
+}
+
+Position get_node_pos(NodeMetadata *m, NodeID id) {
+    return *AT(m->positions, id);
 }
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
@@ -151,7 +168,7 @@ void *expect_node(NodeKind kind, AnyNode node) {
 
 Scope *scope_attach(NodeMetadata *m, AnyNode node) {
     string id_ref = {.data = (char *)node.data, .len = sizeof(*node.data)};
-    ScopeAllocResult res = hm_scope_alloc_ensure(&m->scopes, id_ref);
+    ScopeAllocResult res = hm_scope_alloc_ensure(&m->scope_allocs, id_ref);
     assert(res.inserted && "probably tried to insert a scope twice");
 
     Scope *scope = arena_alloc(&m->arena, sizeof(Scope), _Alignof(Scope));
@@ -165,8 +182,8 @@ Scope *scope_attach(NodeMetadata *m, AnyNode node) {
 
 Scope *scope_get(NodeMetadata *m, NodeID id) {
     string id_ref = {.data = (char *)&id, .len = sizeof(id)};
-    if (hm_scope_alloc_contains(&m->scopes, id_ref)) {
-        ScopeAllocResult res = hm_scope_alloc_ensure(&m->scopes, id_ref);
+    if (hm_scope_alloc_contains(&m->scope_allocs, id_ref)) {
+        ScopeAllocResult res = hm_scope_alloc_ensure(&m->scope_allocs, id_ref);
         assert(!res.inserted);
         return res.entry->scope_ref;
     }
@@ -227,6 +244,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
     APPEND(&m->flags, 0);
     APPEND(&m->names, node_kind_name(kind));
     APPEND(&m->tree, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
+    APPEND(&m->positions, (Position){0});
     *r = m->next_id++;
     return r;
 }

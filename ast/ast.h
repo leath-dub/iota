@@ -4,6 +4,7 @@
 #include "../common/common.h"
 #include "../common/hmtypes.h"
 #include "../lex/lex.h"
+#include "../mod/mod.h"
 
 typedef u32 NodeID;
 
@@ -637,6 +638,12 @@ typedef struct {
 } NodeFlags;
 
 typedef struct {
+    Position *items;
+    u32 cap;
+    u32 len;
+} NodePositions;
+
+typedef struct {
     const char **items;
     u32 cap;
     u32 len;
@@ -692,9 +699,13 @@ typedef struct {
     Arena arena;
     NodeID next_id;
     NodeFlags flags;
+    NodePositions positions;
+    // Used to store parent-child relation between AST nodes
     NodeTree tree;
+    // Used to label nodes in the AST for pretty printer (ast/dump.c)
     NodeNames names;
-    HashMapScopeAlloc scopes;
+    // Symbol table
+    HashMapScopeAlloc scope_allocs;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);
@@ -704,6 +715,9 @@ void node_metadata_free(NodeMetadata *m);
 void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
 void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags);
 bool has_error(NodeMetadata *m, void *node);
+
+void set_node_pos(NodeMetadata *m, NodeID id, Position pos);
+Position get_node_pos(NodeMetadata *m, NodeID id);
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child);
 NodeChild child_token(Tok token);
