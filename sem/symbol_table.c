@@ -195,18 +195,21 @@ static void exit_if_stmt(SymbolTableCtx *ctx, IfStmt *if_stmt) {
 }
 
 static void enter_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt) {
-    // If our parent is a compound statement this means the current compound
-    // statement is bare - not direct child of function decl, if statement,
-    // etc
+    // If the parent is a generic statement, it is in a statement
+    // context so it must be a bare compound statement. This means it is
+    // not a direct child of a function declaration, if statement, etc.
+    //
+    // This needs to be special cased as only bare compound statements insert
+    // their own anonymous scope.
     AnyNode parent = get_node_parent(ctx->meta, comp_stmt->id);
-    if (parent.kind == NODE_COMP_STMT) {
+    if (parent.kind == NODE_STMT) {
         anon_subscope_start(ctx, MAKE_ANY(comp_stmt));
     }
 }
 
 static void exit_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt) {
     AnyNode parent = get_node_parent(ctx->meta, comp_stmt->id);
-    if (parent.kind == NODE_COMP_STMT) {
+    if (parent.kind == NODE_STMT) {
         stack_pop(&ctx->scope_node_ctx);
     }
 }

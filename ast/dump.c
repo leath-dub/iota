@@ -67,8 +67,8 @@ void dump_symbols(NodeMetadata *m) {
         assert(entry->key.len == sizeof(NodeID));
 
         NodeID id = *(NodeID *)it.base.current_entry->key.data;
-        printf("scope [node_id = %d]:\n", id);
-        printf("  node_type: %s\n", get_node_name(m, id));
+        printf("scope: [node_id = %d]\n", id);
+        printf("  node_type: <%s>\n", get_node_name(m, id));
 
         Scope *enclosing_scope = alloc->scope_ref->enclosing_scope.ptr;
         if (enclosing_scope) {
@@ -76,17 +76,22 @@ void dump_symbols(NodeMetadata *m) {
                    *(NodeID *)enclosing_scope->self.data);
         }
 
+        bool first = true;
         HashMapCursorScopeEntry subit =
             hm_cursor_scope_entry_new(&alloc->scope_ref->table);
         ScopeEntry *scope_entry = NULL;
         while ((scope_entry = hm_cursor_scope_entry_next(&subit))) {
+            if (first) {
+                printf("  + Entries:\n");
+                first = false;
+            }
             string key = subit.base.current_entry->key;
-            printf("    entry (%.*s):\n", key.len, key.data);
+            printf("  | \"%.*s\":\n", key.len, key.data);
             ScopeEntry *scope_entry_it = scope_entry;
             while (scope_entry_it) {
                 NodeID entry_id = *(NodeID *)scope_entry_it->node.data;
                 Position pos = get_node_pos(m, entry_id);
-                printf("      %s @ %d:%d [node_id = %d]\n",
+                printf("  |   <%s> @ %d:%d [node_id = %d]\n",
                        node_kind_name(scope_entry_it->node.kind), pos.line,
                        pos.column, entry_id);
                 scope_entry_it = scope_entry_it->shadows;
