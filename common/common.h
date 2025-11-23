@@ -155,6 +155,11 @@ void stack_pop(Stack *stack);
         T *ptr;         \
     }
 
+#define TODO(msg)                                                       \
+    fprintf(stderr, "TODO(%s:%d in %s): " msg "\n", __FILE__, __LINE__, \
+            __func__)
+#define TODO_FATAL(msg) assert(false && "TODO: " msg))
+
 #define BAD_PTR (void *)0xDEADBEEF
 
 #endif

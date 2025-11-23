@@ -638,10 +638,10 @@ typedef struct {
 } NodeFlags;
 
 typedef struct {
-    Position *items;
+    u32 *items;
     u32 cap;
     u32 len;
-} NodePositions;
+} NodeOffsets;
 
 typedef struct {
     const char **items;
@@ -704,7 +704,7 @@ typedef struct {
     Arena arena;
     NodeID next_id;
     NodeFlags flags;
-    NodePositions positions;
+    NodeOffsets offsets;
     // Used to store parent-child relation between AST nodes
     NodeTree tree;
     // Used to label nodes in the AST for pretty printer (ast/dump.c)
@@ -720,8 +720,8 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
 void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags);
 bool has_error(NodeMetadata *m, void *node);
 
-void set_node_pos(NodeMetadata *m, NodeID id, Position pos);
-Position get_node_pos(NodeMetadata *m, NodeID id);
+void set_node_offset(NodeMetadata *m, NodeID id, u32 pos);
+u32 get_node_offset(NodeMetadata *m, NodeID id);
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child);
 NodeChild child_token(Tok token);
@@ -742,6 +742,13 @@ Scope *scope_attach(NodeMetadata *m, AnyNode node);
 void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node);
 Scope *scope_get(NodeMetadata *m, NodeID id);
 
+typedef enum {
+    LOOKUP_MODE_LEXICAL,
+    LOOKUP_MODE_DIRECT,
+} ScopeLookupMode;
+
+ScopeEntry *scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode);
+
 typedef struct {
     void (*enter)(void *ctx, NodeMetadata *m, AnyNode node);
     void (*exit)(void *ctx, NodeMetadata *m, AnyNode node);
@@ -758,7 +765,7 @@ typedef struct {
 } TreeDumpCtx;
 
 void dump_tree(TreeDumpCtx *ctx, NodeID id);
-void dump_symbols(NodeMetadata *m);
+void dump_symbols(const SourceCode *code, NodeMetadata *m);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

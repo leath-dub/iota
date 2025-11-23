@@ -66,6 +66,8 @@ int main(int argc, char *argv[]) {
     AnyNode any_root = MAKE_ANY(root);
 
     do_build_symbol_table(&pc.meta, any_root);
+    printf("AFTER\n");
+    do_resolve_names(&code, &pc.meta, any_root);
 
     // Scope *global_scope = scope_get(&pc.meta, root->id);
     // ScopeEntry *entry = hm_scope_entry_get(&global_scope->table,
@@ -82,13 +84,14 @@ int main(int argc, char *argv[]) {
     // printf("Has field: %.*s\n", field->ident.text.len,
     // field->ident.text.data);
 
-    TreeDumpCtx dump_ctx = {
-        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
-    dump_tree(&dump_ctx, root->id);
+    // TreeDumpCtx dump_ctx = {
+    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
+    //     &pc.meta};
+    // dump_tree(&dump_ctx, root->id);
+    //
+    // dump_symbols(&code, &pc.meta);
 
     report_all_errors(code);
-
-    dump_symbols(&pc.meta);
 
     source_code_free(&code);
     parse_ctx_free(&pc);

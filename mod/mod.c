@@ -115,6 +115,13 @@ void raise_lexical_error(SourceCode *code, LexicalError error) {
                       });
 }
 
+void raise_semantic_error(SourceCode *code, SemanticError error) {
+    raise_error(code, (Error){
+                          .t = ERROR_SEMANTIC,
+                          .semantic_error = error,
+                      });
+}
+
 void report_error(SourceCode code, Error error) {
     switch (error.t) {
         case ERROR_SYNTAX: {
@@ -139,8 +146,12 @@ void report_error(SourceCode code, Error error) {
             }
             break;
         }
-        default:
+        case ERROR_SEMANTIC: {
+            SemanticError semantic_error = error.semantic_error;
+            reportf(code, semantic_error.at, "error: %s",
+                    semantic_error.message);
             break;
+        }
     }
 }
 

@@ -36,6 +36,8 @@ typedef struct {
     u8 alloc[];
 } Frame;
 
+#define FRAME_ALLOC_OFFSET sizeof(uptr) * 2
+
 typedef struct {
     uptr aligned_size;
     uptr frame_addr;
@@ -48,7 +50,7 @@ static inline FrameDescriptor get_frame_descriptor(StackSegment *seg, uptr size,
                                                    uptr align) {
     uptr sp_addr = (uptr)&seg->data[seg->sp];
     uptr frame_addr = align_forward(sp_addr, _Alignof(Frame));
-    uptr obj_addr = offsetof(Frame, alloc) + frame_addr;
+    uptr obj_addr = FRAME_ALLOC_OFFSET + frame_addr;
     uptr aligned_obj_addr = align_forward(obj_addr, align);
     return (FrameDescriptor){
         .aligned_size = (aligned_obj_addr + size) - sp_addr,
@@ -103,9 +105,10 @@ void stack_pop(Stack *stack) {
     assert(seg);
     assert(seg->sp != 0);
 
-    Frame frame = *(Frame *)&seg->data[seg->bp];
+    Frame *frame = (Frame *)&seg->data[seg->bp];
+    uptr new_bp = frame->bp;
     seg->sp = seg->bp;
-    seg->bp = frame.bp;
+    seg->bp = new_bp;
 
     if (seg->sp == 0) {
         stack->top = seg->next;

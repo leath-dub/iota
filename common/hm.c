@@ -65,40 +65,65 @@ EntryResult hm_unsafe_ensure(HashMap *map, string key, usize value_size) {
             .entry = new_entry,
             .inserted = true,
         };
-    } else {
-        Entry *it = *head;
-        while (it->next != NULL) {
-            if (streql(key, it->key)) {
-                return (EntryResult){
-                    .entry = it,
-                    .inserted = false,
-                };
-            }
-            it = it->next;
-        }
+    }
+
+    Entry *it = *head;
+    while (it->next != NULL) {
         if (streql(key, it->key)) {
             return (EntryResult){
                 .entry = it,
                 .inserted = false,
             };
         }
-
-        Entry *new_entry = hm_unsafe_alloc(map, value_size);
-        // NOTE: We don't copy the key as this hash map is used for the symbol
-        // table which most often references a string in the source code. We
-        // don't want to make unnecessary copies if the source code is being
-        // kept around anyway for error messages (if this changes we can change
-        // this here).
-        string *key_ref = (string *)&new_entry->key;
-        *key_ref = key;
-        new_entry->next = NULL;
-        it->next = new_entry;
-
+        it = it->next;
+    }
+    if (streql(key, it->key)) {
         return (EntryResult){
-            .entry = new_entry,
-            .inserted = true,
+            .entry = it,
+            .inserted = false,
         };
     }
+
+    Entry *new_entry = hm_unsafe_alloc(map, value_size);
+    // NOTE: We don't copy the key as this hash map is used for the symbol
+    // table which most often references a string in the source code. We
+    // don't want to make unnecessary copies if the source code is being
+    // kept around anyway for error messages (if this changes we can change
+    // this here).
+    string *key_ref = (string *)&new_entry->key;
+    *key_ref = key;
+    new_entry->next = NULL;
+    it->next = new_entry;
+
+    return (EntryResult){
+        .entry = new_entry,
+        .inserted = true,
+    };
+}
+
+Entry *hm_unsafe_try_get(HashMap *map, string key) {
+    assert(map->entries.len != 0);
+    u64 hash = fnv1a(key) % map->entries.len;
+    Entry **head = &map->entries.items[hash];
+
+    // No bucket for given hash
+    if (*head == NULL) {
+        return NULL;
+    }
+
+    Entry *it = *head;
+    while (it->next != NULL) {
+        if (streql(key, it->key)) {
+            return it;
+        }
+        it = it->next;
+    }
+
+    if (streql(key, it->key)) {
+        return it;
+    }
+
+    return NULL;
 }
 
 bool hm_unsafe_contains(HashMap *hm, string key) {

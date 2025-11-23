@@ -1,8 +1,5 @@
 #include "../ast/ast.h"
 
-#define SCOPE_ENTRY_SLOTS 32
-#define GLOBAL_SCOPE_ENTRY_SLOTS 128
-
 static void build_symbol_table_enter(void *_ctx, NodeMetadata *m, AnyNode node);
 static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node);
 
@@ -21,7 +18,9 @@ void do_build_symbol_table(NodeMetadata *m, AnyNode root) {
                          .enter = build_symbol_table_enter,
                          .exit = build_symbol_table_exit,
                      });
-    // Make sure traversal properly popped everything correctly
+    // Make sure traversal properly popped everything correctly.
+    // NOTE: no cleanup is needed for the stack as segments are freed
+    // once they are popped.
     assert(ctx.scope_node_ctx.top == NULL);
 }
 
@@ -181,7 +180,7 @@ static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl) {
                                    MAKE_ANY(var_decl));
             break;
         default:
-            assert(false && "TODO");
+            TODO("other variable bindings");
     }
 }
 

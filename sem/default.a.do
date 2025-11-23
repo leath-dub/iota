@@ -1,6 +1,6 @@
 if expr "$3" : "lib.*_pic.a" > /dev/null; then
   pic="_pic"
 fi
-objs="symbol_table$pic.o"
+objs="symbol_table$pic.o resolve_names$pic.o"
 redo-ifchange $objs
 ar rcs $3 $objs

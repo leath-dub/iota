@@ -28,6 +28,7 @@ typedef struct {
 // Try not to use the following directly, they are not type safe
 HashMap hm_unsafe_new(usize slots);
 EntryResult hm_unsafe_ensure(HashMap *hm, string key, usize value_size);
+Entry *hm_unsafe_try_get(HashMap *hm, string key);
 bool hm_unsafe_contains(HashMap *hm, string key);
 void hm_unsafe_free(HashMap *hm);
 

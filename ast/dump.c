@@ -59,7 +59,7 @@ void dump_tree(TreeDumpCtx *ctx, NodeID id) {
     fprintf(ctx->fs, "}\n");
 }
 
-void dump_symbols(NodeMetadata *m) {
+void dump_symbols(const SourceCode *code, NodeMetadata *m) {
     HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scope_allocs);
     ScopeAlloc *alloc = NULL;
     while ((alloc = hm_cursor_scope_alloc_next(&it))) {
@@ -90,7 +90,8 @@ void dump_symbols(NodeMetadata *m) {
             ScopeEntry *scope_entry_it = scope_entry;
             while (scope_entry_it) {
                 NodeID entry_id = *(NodeID *)scope_entry_it->node.data;
-                Position pos = get_node_pos(m, entry_id);
+                u32 offset = get_node_offset(m, entry_id);
+                Position pos = line_and_column(code->lines, offset);
                 printf("  |   <%s> @ %d:%d [node_id = %d]\n",
                        node_kind_name(scope_entry_it->node.kind), pos.line,
                        pos.column, entry_id);

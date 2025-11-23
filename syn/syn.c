@@ -1553,8 +1553,7 @@ static Tok token_attr_anon(ParseCtx *c, Tok tok) {
 }
 
 static NodeCtx begin_node(ParseCtx *c, void *node, NodeKind kind) {
-    set_node_pos(&c->meta, *(NodeID *)node,
-                 line_and_column(c->lex.source->lines, c->lex.cursor));
+    set_node_offset(&c->meta, *(NodeID *)node, c->lex.cursor);
     NodeCtx ctx = {
         .node = {.data = node, .kind = kind},
         .parent = c->current,

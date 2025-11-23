@@ -67,6 +67,10 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
         type, lowtype, type);
     fprintf(hdr, "bool hm_%s_contains(HashMap%s *hm, string key);\n", lowtype,
             type);
+    fprintf(hdr, "struct %s *hm_%s_try_get(HashMap%s *hm, string key);\n", type,
+            lowtype, type);
+    fprintf(hdr, "struct %s *hm_%s_get(HashMap%s *hm, string key);\n", type,
+            lowtype, type);
     fprintf(hdr, "void hm_%s_free(HashMap%s *hm);\n\n", lowtype, type);
 
     fprintf(hdr, "#define hm_%s_ensure(hm, key) \\\n", lowtype);
@@ -74,9 +78,6 @@ static void gen_type_hdr(FILE *hdr, const char *type) {
             type);
     fprintf(hdr, "#define hm_%s_put(hm, key, value) \\\n", lowtype);
     fprintf(hdr, "    (void)(*hm_%s_ensure(hm, key).entry = value)\n", lowtype);
-    fprintf(hdr, "#define hm_%s_get(hm, key) \\\n", lowtype);
-    fprintf(hdr, "    (assert(hm_%s_contains(hm, key)), \\\n", lowtype);
-    fprintf(hdr, "         hm_%s_ensure(hm, key).entry)\n\n", lowtype);
 
     fprintf(hdr, "typedef struct {\n");
     fprintf(hdr, "    HashMapCursor base;\n");
@@ -118,6 +119,23 @@ static void gen_type_imp(FILE *imp, const char *type) {
     fprintf(imp, "bool hm_%s_contains(HashMap%s *hm, string key) {\n", lowtype,
             type);
     fprintf(imp, "    return hm_unsafe_contains(&hm->base, key);\n");
+    fprintf(imp, "}\n\n");
+
+    fprintf(imp, "struct %s *hm_%s_try_get(HashMap%s *hm, string key) {\n",
+            type, lowtype, type);
+    fprintf(imp, "    Entry *result = hm_unsafe_try_get(&hm->base, key);\n");
+    fprintf(imp, "    if (result) {\n");
+    fprintf(imp, "        return (struct %s *)&result->data;\n", type);
+    fprintf(imp, "    }\n");
+    fprintf(imp, "    return NULL;\n");
+    fprintf(imp, "}\n\n");
+
+    fprintf(imp, "struct %s *hm_%s_get(HashMap%s *hm, string key) {\n", type,
+            lowtype, type);
+    fprintf(imp, "    struct %s *result = hm_%s_try_get(hm, key);\n", type,
+            lowtype);
+    fprintf(imp, "    assert(result);\n");
+    fprintf(imp, "    return result;\n");
     fprintf(imp, "}\n\n");
 
     fprintf(imp, "void hm_%s_free(HashMap%s *hm) {\n", lowtype, type);

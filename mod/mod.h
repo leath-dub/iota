@@ -16,6 +16,11 @@ typedef struct {
     const char *got;
 } SyntaxError;
 
+typedef struct {
+    u32 at;
+    const char *message;
+} SemanticError;
+
 typedef enum {
     LEXICAL_ERROR_INVALID_CHAR,
     LEXICAL_ERROR_TEXT,
@@ -33,6 +38,7 @@ typedef struct {
 typedef enum {
     ERROR_SYNTAX,
     ERROR_LEXICAL,
+    ERROR_SEMANTIC,
 } ErrorKind;
 
 typedef struct {
@@ -40,6 +46,7 @@ typedef struct {
     union {
         SyntaxError syntax_error;
         LexicalError lexical_error;
+        SemanticError semantic_error;
     };
 } Error;
 
@@ -76,6 +83,7 @@ void reportf(SourceCode code, u32 at, const char *fmt, ...) PRINTF_CHECK(3, 4);
 void raise_error(SourceCode *code, Error error);
 void raise_syntax_error(SourceCode *code, SyntaxError error);
 void raise_lexical_error(SourceCode *code, LexicalError error);
+void raise_semantic_error(SourceCode *code, SemanticError error);
 void report_error(SourceCode code, Error error);
 void report_all_errors(SourceCode code);
 

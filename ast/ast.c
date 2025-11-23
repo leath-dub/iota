@@ -25,7 +25,7 @@ NodeMetadata new_node_metadata(void) {
                 .items = NULL,
             },
         .scope_allocs = hm_scope_alloc_new(128),
-        .positions =
+        .offsets =
             {
                 .len = 0,
                 .cap = 0,
@@ -49,8 +49,8 @@ void node_metadata_free(NodeMetadata *m) {
     if (m->names.items != NULL) {
         free(m->names.items);
     }
-    if (m->positions.items != NULL) {
-        free(m->positions.items);
+    if (m->offsets.items != NULL) {
+        free(m->offsets.items);
     }
     HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scope_allocs);
     ScopeAlloc *alloc = NULL;
@@ -71,13 +71,11 @@ bool has_error(NodeMetadata *m, void *node) {
     return m->flags.items[*id] & NFLAG_ERROR;
 }
 
-void set_node_pos(NodeMetadata *m, NodeID id, Position pos) {
-    *AT(m->positions, id) = pos;
+void set_node_offset(NodeMetadata *m, NodeID id, u32 pos) {
+    *AT(m->offsets, id) = pos;
 }
 
-Position get_node_pos(NodeMetadata *m, NodeID id) {
-    return *AT(m->positions, id);
-}
+u32 get_node_offset(NodeMetadata *m, NodeID id) { return *AT(m->offsets, id); }
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
     NodeChildren *children = &m->tree.items[id].children;
@@ -220,6 +218,29 @@ void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
     res.entry->shadows = old_entry;
 }
 
+ScopeEntry *scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
+    ScopeEntry *entry = hm_scope_entry_try_get(&scope->table, symbol);
+    if (entry) {
+        return entry;
+    }
+    // If not doing lexical lookup, just fail here
+    if (mode == LOOKUP_MODE_DIRECT) {
+        return NULL;
+    }
+
+    // Otherwise for lexical lookup check the enclosing scopes backwards
+    Scope *it = scope;
+    while (it->enclosing_scope.ptr) {
+        entry = hm_scope_entry_try_get(&it->enclosing_scope.ptr->table, symbol);
+        if (entry) {
+            return entry;
+        }
+        it = it->enclosing_scope.ptr;
+    }
+
+    return NULL;
+}
+
 void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
                       EnterExitVTable vtable) {
     if (vtable.enter && !has_error(m, root.data)) {
@@ -257,7 +278,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
     APPEND(&m->flags, 0);
     APPEND(&m->names, node_kind_name(kind));
     APPEND(&m->tree, (NodeTreeItem){0});
-    APPEND(&m->positions, (Position){0});
+    APPEND(&m->offsets, 0);
     *r = m->next_id++;
     return r;
 }
