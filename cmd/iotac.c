@@ -66,7 +66,6 @@ int main(int argc, char *argv[]) {
     AnyNode any_root = MAKE_ANY(root);
 
     do_build_symbol_table(&pc.meta, any_root);
-    printf("AFTER\n");
     do_resolve_names(&code, &pc.meta, any_root);
 
     // Scope *global_scope = scope_get(&pc.meta, root->id);

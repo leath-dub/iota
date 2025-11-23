@@ -85,20 +85,21 @@ static void enter_scoped_ident(NameResCtx *ctx, ScopedIdent *scoped_ident) {
 
     Tok top = scoped_ident->items[0];
     if (top.t == T_EMPTY_STRING) {
-        // Inferred namespace
+        // Inferred namespace based on a type context. Identifiers in certain
+        // contexts are deferred to type checking (e.g. field names). If you
+        // want to reference an identifier who's scope is dependent on the
+        // type context you can prefix with empty string scope (e.g. ::foo)
+        // to defer the name to be resolved based on the type context of the
+        // expression.
         TODO("inferred namespace");
         return;
     }
     assert(top.t == T_IDENT);
 
     Scope *scope = current_scope(ctx);
-    assert(scope->table.base.entries.len != 0);
+
     ScopeEntry *entry = scope_lookup(scope, top.text, LOOKUP_MODE_LEXICAL);
     if (!entry) {
         sem_raise(ctx, scoped_ident->id, "unresolved identifier");
     }
-
-    TreeDumpCtx dc = {
-        .meta = ctx->meta, .fs = stdout, .indent_level = 0, .indent_width = 2};
-    dump_tree(&dc, scoped_ident->id);
 }
