@@ -1137,7 +1137,7 @@ static const Power binding_power_of[PREC_COUNT] = {
     [PREC_ASSIGNMENT] = {2, 1},
 };
 
-static Index *index(ParseCtx *c) {
+static Index *parse_index(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_INDEX);
     Index *n = expect_node(NODE_INDEX, nc.node);
     assert(consume(c).t == T_LBRK);
@@ -1187,7 +1187,7 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
 
             NodeCtx lhs_ctx = begin_node(c, lhs, NODE_EXPR);
             access->lvalue = end_node(c, lhs_ctx);
-            access->index = index(c);
+            access->index = parse_index(c);
 
             expr->t = EXPR_COLL_ACCESS;
             expr->coll_access = end_node(c, access_ctx);
