@@ -1577,6 +1577,7 @@ static void *end_node(ParseCtx *c, NodeCtx ctx) {
             *ctx.parent.data !=
             *c->current.data);  // Make sure we can't accidentally add a cycle
         add_child(&c->meta, *ctx.parent.data, child_node(c->current));
+        set_node_parent(&c->meta, *c->current.data, ctx.parent);
         set_current_node(c, ctx.parent);
     }
     return ctx.node.data;

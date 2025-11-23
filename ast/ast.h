@@ -675,7 +675,12 @@ typedef struct {
 } NodeChildren;
 
 typedef struct {
-    NodeChildren *items;
+    NodeChildren children;
+    MAYBE(AnyNode) parent;
+} NodeTreeItem;
+
+typedef struct {
+    NodeTreeItem *items;
     u32 cap;
     u32 len;
 } NodeTree;
@@ -709,7 +714,6 @@ typedef struct {
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);
-
 NodeMetadata new_node_metadata(void);
 void node_metadata_free(NodeMetadata *m);
 void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
@@ -728,6 +732,8 @@ void remove_child(NodeMetadata *m, NodeID from, NodeID child);
 
 const char *get_node_name(NodeMetadata *m, NodeID id);
 NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
+void set_node_parent(NodeMetadata *m, NodeID id, AnyNode parent);
+AnyNode get_node_parent(NodeMetadata *m, NodeID id);
 NodeChild *last_child(NodeMetadata *m, NodeID id);
 
 void *expect_node(NodeKind kind, AnyNode node);
@@ -751,7 +757,8 @@ typedef struct {
     NodeMetadata *meta;
 } TreeDumpCtx;
 
-void tree_dump(TreeDumpCtx *ctx, NodeID id);
+void dump_tree(TreeDumpCtx *ctx, NodeID id);
+void dump_symbols(NodeMetadata *m);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

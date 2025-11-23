@@ -80,7 +80,7 @@ Position get_node_pos(NodeMetadata *m, NodeID id) {
 }
 
 void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
-    NodeChildren *children = &m->tree.items[id];
+    NodeChildren *children = &m->tree.items[id].children;
     APPEND(children, child);
 }
 
@@ -133,11 +133,24 @@ const char *get_node_name(NodeMetadata *m, NodeID id) {
 }
 
 NodeChildren *get_node_children(NodeMetadata *m, NodeID id) {
-    return AT(m->tree, id);
+    return &AT(m->tree, id)->children;
+}
+
+void set_node_parent(NodeMetadata *m, NodeID id, AnyNode parent) {
+    NodeTreeItem *item = AT(m->tree, id);
+    assert(!item->parent.ok && "parent node already set");
+    item->parent.ok = true;
+    item->parent.value = parent;
+}
+
+AnyNode get_node_parent(NodeMetadata *m, NodeID id) {
+    NodeTreeItem *item = AT(m->tree, id);
+    assert(item->parent.ok);
+    return item->parent.value;
 }
 
 NodeChild *last_child(NodeMetadata *m, NodeID id) {
-    NodeChildren *children = AT(m->tree, id);
+    NodeChildren *children = get_node_children(m, id);
     return AT(*children, children->len - 1);
 }
 
@@ -243,7 +256,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
     NodeID *r = arena_alloc(a, layout.size, layout.align);
     APPEND(&m->flags, 0);
     APPEND(&m->names, node_kind_name(kind));
-    APPEND(&m->tree, (NodeChildren){.len = 0, .cap = 0, .items = NULL});
+    APPEND(&m->tree, (NodeTreeItem){0});
     APPEND(&m->positions, (Position){0});
     *r = m->next_id++;
     return r;

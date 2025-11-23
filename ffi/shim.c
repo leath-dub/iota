@@ -36,7 +36,7 @@ char *ffi_parse(void (*parse_fn)(void), const char *srcz, bool delim) {
 
     TreeDumpCtx dump_ctx = {
         .fs = memfs, .indent_level = 0, .indent_width = 2, .meta = &ctx.meta};
-    tree_dump(&dump_ctx, *root);
+    dump_tree(&dump_ctx, *root);
 
     fflush(memfs);
     fclose(memfs);

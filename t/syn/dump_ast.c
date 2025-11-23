@@ -28,7 +28,7 @@ int main(void) {
 
     TreeDumpCtx dump_ctx = {
         .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
-    tree_dump(&dump_ctx, file->id);
+    dump_tree(&dump_ctx, file->id);
 
     parse_ctx_free(&pc);
     source_code_free(&code);

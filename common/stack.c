@@ -114,6 +114,8 @@ void stack_pop(Stack *stack) {
 }
 
 void *stack_top(Stack *stack) {
+    assert(!stack_empty(stack));
+
     StackSegment *seg = stack->top;
 
     assert(seg);
