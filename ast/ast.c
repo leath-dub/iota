@@ -192,7 +192,7 @@ void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
 
 void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
                       EnterExitVTable vtable) {
-    if (vtable.enter) {
+    if (vtable.enter && !has_error(m, root.data)) {
         vtable.enter(ctx, m, root);
     }
     const NodeChildren *children = get_node_children(m, *root.data);
@@ -206,7 +206,7 @@ void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
                 break;
         }
     }
-    if (vtable.exit) {
+    if (vtable.exit && !has_error(m, root.data)) {
         vtable.exit(ctx, m, root);
     }
 }
