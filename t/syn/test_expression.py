@@ -1135,7 +1135,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity3",
-    source="let _ = *{ 10 };",
+    source="let _ = *`{ 10 };",
     expected="""
     source_file {
       imports {}
@@ -1174,7 +1174,7 @@ syntax_test(
 
 syntax_test(
     name="atom_braced_literal_no_type",
-    source="let _ = { x = 10 };",
+    source="let _ = `{ x = 10 };",
     expected="""
     source_file {
       imports {}

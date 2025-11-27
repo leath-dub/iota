@@ -1483,7 +1483,9 @@ Atom *parse_atom(ParseCtx *c) {
             NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
             BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
 
-            braced_lit->type.ptr = parse_type(c);
+            if (!looking_at(c, T_LBRC)) {
+                braced_lit->type.ptr = parse_type(c);
+            }
 
             if (!expect(c, n->id, T_LBRC)) {
                 advance(c, FOLLOW_ATOM);
@@ -1499,22 +1501,6 @@ Atom *parse_atom(ParseCtx *c) {
         yield_braced_lit:
             n->t = ATOM_BRACED_LIT;
             n->braced_lit = end_node(c, lit_ctx);
-            return end_node(c, nc);
-        }
-        case T_LBRC: {
-            next(c);
-
-            NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
-            BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
-
-            braced_lit->init = parse_init(c, T_RBRC);
-            n->t = ATOM_BRACED_LIT;
-            n->braced_lit = end_node(c, lit_ctx);
-
-            if (!expect(c, n->id, T_RBRC)) {
-                advance(c, FOLLOW_ATOM);
-            }
-
             return end_node(c, nc);
         }
         case T_NUM:
