@@ -150,7 +150,7 @@ static void anon_subscope_start(SymbolTableCtx *ctx, AnyNode node) {
 
 static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
     AnyNode self = MAKE_ANY(decl);
-    subscope_start(ctx, decl->ident.text, self);
+    subscope_start(ctx, decl->name->token.text, self);
 }
 
 static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
@@ -159,12 +159,12 @@ static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
 }
 
 static void enter_field(SymbolTableCtx *ctx, Field *field) {
-    scope_insert_enclosing(ctx, field->ident.text, MAKE_ANY(field));
+    scope_insert_enclosing(ctx, field->name->token.text, MAKE_ANY(field));
 }
 
 static void enter_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
     AnyNode self = MAKE_ANY(fn_decl);
-    subscope_start(ctx, fn_decl->ident.text, self);
+    subscope_start(ctx, fn_decl->name->token.text, self);
 }
 
 static void exit_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
@@ -176,7 +176,7 @@ static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl) {
     VarBinding *binding = var_decl->binding;
     switch (binding->t) {
         case VAR_BINDING_BASIC:
-            scope_insert_enclosing(ctx, binding->basic.text,
+            scope_insert_enclosing(ctx, binding->basic->token.text,
                                    MAKE_ANY(var_decl));
             break;
         default:

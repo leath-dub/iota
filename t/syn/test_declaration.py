@@ -11,7 +11,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='x'
+                ident {
+                  'x'
+                }
               }
           }
         }
@@ -31,7 +33,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='x'
+                ident {
+                  'x'
+                }
               }
             type {
               builtin_type {
@@ -56,7 +60,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='x'
+                ident {
+                  'x'
+                }
               }
             value:
               expr {
@@ -87,20 +93,26 @@ syntax_test(
                     alias_binding {
                       binding {
                         kind='*'
-                        name='px'
+                        ident {
+                          'px'
+                        }
                       }
                       alias='x'
                     }
                     alias_binding {
                       binding {
                         kind='*'
-                        name='py'
+                        ident {
+                          'py'
+                        }
                       }
                       alias='y'
                     }
                     alias_binding {
                       binding {
-                        name='meta'
+                        ident {
+                          'meta'
+                        }
                       }
                     }
                   }
@@ -128,10 +140,14 @@ syntax_test(
                   bindings {
                     binding {
                       kind='*'
-                      name='px'
+                      ident {
+                        'px'
+                      }
                     }
                     binding {
-                      name='y'
+                      ident {
+                        'y'
+                      }
                     }
                   }
                 }
@@ -157,11 +173,15 @@ syntax_test(
       decls {
         decl {
           struct_decl {
-            name='Point'
+            ident {
+              'Point'
+            }
             struct_body {
               fields {
                 field {
-                  name='x'
+                  ident {
+                    'x'
+                  }
                   type {
                     builtin_type {
                       'f32'
@@ -169,7 +189,9 @@ syntax_test(
                   }
                 }
                 field {
-                  name='y'
+                  ident {
+                    'y'
+                  }
                   type {
                     builtin_type {
                       'f32'
@@ -201,12 +223,22 @@ syntax_test(
       decls {
         decl {
           enum_decl {
-            name='Direction'
+            ident {
+              'Direction'
+            }
             idents {
-              'north'
-              'south'
-              'east'
-              'west'
+              ident {
+                'north'
+              }
+              ident {
+                'south'
+              }
+              ident {
+                'east'
+              }
+              ident {
+                'west'
+              }
             }
           }
         }
@@ -230,21 +262,30 @@ syntax_test(
       decls {
         decl {
           err_decl {
+            ident {
+              'Parse_Error'
+            }
             errs {
               err {
                 scoped_ident {
-                  'Missing_Semicolon'
+                  ident {
+                    'Missing_Semicolon'
+                  }
                 }
               }
               err {
                 scoped_ident {
-                  'Unmatched_Quote'
+                  ident {
+                    'Unmatched_Quote'
+                  }
                 }
               }
               err {
                 kind='!'
                 scoped_ident {
-                  'IO_Error'
+                  ident {
+                    'IO_Error'
+                  }
                 }
               }
             }

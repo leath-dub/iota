@@ -10,6 +10,7 @@ static const char *types[] = {
     "Point",
     "ScopeAlloc",
     "ScopeEntry",
+    "AnyNode",
 };
 static const int types_len = sizeof(types) / sizeof(*types);
 

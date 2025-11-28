@@ -87,7 +87,7 @@ static Scope *current_scope(NameResCtx *ctx) {
 static void enter_scoped_ident(NameResCtx *ctx, ScopedIdent *scoped_ident) {
     assert(scoped_ident->len != 0);
 
-    Tok top = scoped_ident->items[0];
+    Tok top = scoped_ident->items[0]->token;
     if (top.t == T_EMPTY_STRING) {
         // Inferred namespace based on a type context. Identifiers in certain
         // contexts are deferred to type checking (e.g. field names). If you
@@ -103,7 +103,7 @@ static void enter_scoped_ident(NameResCtx *ctx, ScopedIdent *scoped_ident) {
     Scope *scope = current_scope(ctx);
 
     for (u32 i = 0; i < scoped_ident->len; i++) {
-        Tok ident_tok = scoped_ident->items[i];
+        Tok ident_tok = scoped_ident->items[i]->token;
         assert(ident_tok.t == T_IDENT);
         string ident = ident_tok.text;
         ScopeEntry *entry = scope_lookup(

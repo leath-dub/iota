@@ -55,7 +55,9 @@ syntax_test(
         expr {
           atom {
             scoped_ident {
-              'foo'
+              ident {
+                'foo'
+              }
             }
           }
         }
@@ -85,7 +87,9 @@ syntax_test(
               expr {
                 atom {
                   scoped_ident {
-                    'foo'
+                    ident {
+                      'foo'
+                    }
                   }
                 }
               }
@@ -93,7 +97,9 @@ syntax_test(
               expr {
                 atom {
                   scoped_ident {
-                    'bar'
+                    ident {
+                      'bar'
+                    }
                   }
                 }
               }
@@ -123,7 +129,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -131,7 +139,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -174,7 +184,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -182,7 +194,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -227,7 +241,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -235,7 +251,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -267,7 +285,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -275,7 +295,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -307,7 +329,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -315,7 +339,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -354,7 +380,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -362,7 +390,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -388,7 +418,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -396,7 +428,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -405,7 +439,9 @@ syntax_test(
                       expr {
                         atom {
                           scoped_ident {
-                            'x'
+                            ident {
+                              'x'
+                            }
                           }
                         }
                       }
@@ -430,7 +466,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -438,7 +476,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -451,7 +491,9 @@ syntax_test(
                             expr {
                               atom {
                                 scoped_ident {
-                                  'x'
+                                  ident {
+                                    'x'
+                                  }
                                 }
                               }
                             }
@@ -484,7 +526,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -492,7 +536,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -501,14 +547,18 @@ syntax_test(
                       expr {
                         atom {
                           scoped_ident {
-                            'x'
+                            ident {
+                              'x'
+                            }
                           }
                         }
                       }
                       expr {
                         atom {
                           scoped_ident {
-                            'y'
+                            ident {
+                              'y'
+                            }
                           }
                         }
                       }
@@ -539,7 +589,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -547,7 +599,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -556,7 +610,9 @@ syntax_test(
                       expr {
                         atom {
                           scoped_ident {
-                            'x'
+                            ident {
+                              'x'
+                            }
                           }
                         }
                       }
@@ -567,7 +623,9 @@ syntax_test(
                             expr {
                               atom {
                                 scoped_ident {
-                                  'y'
+                                  ident {
+                                    'y'
+                                  }
                                 }
                               }
                             }
@@ -582,7 +640,9 @@ syntax_test(
                       expr {
                         atom {
                           scoped_ident {
-                            'y'
+                            ident {
+                              'y'
+                            }
                           }
                         }
                       }
@@ -607,7 +667,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -615,7 +677,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }
@@ -626,7 +690,9 @@ syntax_test(
                           expr {
                             atom {
                               scoped_ident {
-                                'foo'
+                                ident {
+                                  'foo'
+                                }
                               }
                             }
                           }
@@ -637,7 +703,9 @@ syntax_test(
                                   expr {
                                     atom {
                                       scoped_ident {
-                                        'foo'
+                                        ident {
+                                          'foo'
+                                        }
                                       }
                                     }
                                   }
@@ -648,7 +716,9 @@ syntax_test(
                                           expr {
                                             atom {
                                               scoped_ident {
-                                                'bar'
+                                                ident {
+                                                  'bar'
+                                                }
                                               }
                                             }
                                           }
@@ -666,7 +736,9 @@ syntax_test(
                                                             expr {
                                                               atom {
                                                                 scoped_ident {
-                                                                  'in'
+                                                                  ident {
+                                                                    'in'
+                                                                  }
                                                                 }
                                                               }
                                                             }
@@ -692,7 +764,9 @@ syntax_test(
                                           expr {
                                             atom {
                                               scoped_ident {
-                                                'foo'
+                                                ident {
+                                                  'foo'
+                                                }
                                               }
                                             }
                                           }
@@ -711,7 +785,9 @@ syntax_test(
                           expr {
                             atom {
                               scoped_ident {
-                                'foo'
+                                ident {
+                                  'foo'
+                                }
                               }
                             }
                           }
@@ -742,7 +818,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -768,7 +846,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -794,7 +874,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -820,13 +902,17 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
                 atom {
                   scoped_ident {
-                    'Foo'
+                    ident {
+                      'Foo'
+                    }
                   }
                 }
               }
@@ -848,7 +934,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -856,7 +944,9 @@ syntax_test(
 #                   braced_lit {
 #                     type {
 #                       scoped_ident {
-#                         'Foo'
+#                         ident {
+#                           'Foo'
+#                         }
 #                       }
 #                     }
 #                     init {
@@ -875,7 +965,7 @@ syntax_test(
 #     }
 #     """,
 # )
-#
+
 # syntax_test(
 #     name="atom_braced_literal_scoped_ident",
 #     source="let _ = `Foo::Bar::baz{ 10 };",
@@ -887,7 +977,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -895,9 +987,15 @@ syntax_test(
 #                   braced_lit {
 #                     type {
 #                       scoped_ident {
-#                         'Foo'
-#                         'Bar'
-#                         'baz'
+#                         ident {
+#                           'Foo'
+#                         }
+#                         ident {
+#                           'Bar'
+#                         }
+#                         ident {
+#                           'baz'
+#                         }
 #                       }
 #                     }
 #                     init {
@@ -928,7 +1026,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -947,21 +1047,27 @@ syntax_test(
 #                       expr {
 #                         atom {
 #                           scoped_ident {
-#                             'x'
+#                             ident {
+#                               'x'
+#                             }
 #                           }
 #                         }
 #                       }
 #                       expr {
 #                         atom {
 #                           scoped_ident {
-#                             'y'
+#                             ident {
+#                               'y'
+#                             }
 #                           }
 #                         }
 #                       }
 #                       expr {
 #                         atom {
 #                           scoped_ident {
-#                             'z'
+#                             ident {
+#                               'z'
+#                             }
 #                           }
 #                         }
 #                       }
@@ -987,7 +1093,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -997,7 +1105,9 @@ syntax_test(
                     expr {
                       atom {
                         scoped_ident {
-                          'x'
+                          ident {
+                            'x'
+                          }
                         }
                       }
                     }
@@ -1005,7 +1115,9 @@ syntax_test(
                     expr {
                       atom {
                         scoped_ident {
-                          'Foo'
+                          ident {
+                            'Foo'
+                          }
                         }
                       }
                     }
@@ -1029,7 +1141,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -1039,7 +1153,9 @@ syntax_test(
 #                     expr {
 #                       atom {
 #                         scoped_ident {
-#                           'x'
+#                           ident {
+#                             'x'
+#                           }
 #                         }
 #                       }
 #                     }
@@ -1087,7 +1203,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -1097,7 +1215,9 @@ syntax_test(
 #                     expr {
 #                       atom {
 #                         scoped_ident {
-#                           'x'
+#                           ident {
+#                             'x'
+#                           }
 #                         }
 #                       }
 #                     }
@@ -1144,7 +1264,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -1183,7 +1305,9 @@ syntax_test(
 #           var_decl {
 #             binding:
 #               var_binding {
-#                 name='_'
+#                 ident {
+#                   '_'
+#                 }
 #               }
 #             value:
 #               expr {
@@ -1197,7 +1321,9 @@ syntax_test(
 #                             expr {
 #                               atom {
 #                                 scoped_ident {
-#                                   'x'
+#                                   ident {
+#                                     'x'
+#                                   }
 #                                 }
 #                               }
 #                             }
@@ -1231,7 +1357,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -1271,7 +1399,9 @@ syntax_test(
                               expr {
                                 atom {
                                   scoped_ident {
-                                    'x'
+                                    ident {
+                                      'x'
+                                    }
                                   }
                                 }
                               }
@@ -1288,7 +1418,9 @@ syntax_test(
                             expr {
                               atom {
                                 scoped_ident {
-                                  'Foo'
+                                  ident {
+                                    'Foo'
+                                  }
                                 }
                               }
                             }
@@ -1324,7 +1456,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -1336,14 +1470,20 @@ syntax_test(
                           expr {
                             atom {
                               scoped_ident {
-                                'foo'
+                                ident {
+                                  'foo'
+                                }
                               }
                             }
                           }
-                        field='bar'
+                        ident {
+                          'bar'
+                        }
                       }
                     }
-                  field='baz'
+                  ident {
+                    'baz'
+                  }
                 }
               }
           }
@@ -1364,7 +1504,9 @@ syntax_test(
           var_decl {
             binding:
               var_binding {
-                name='_'
+                ident {
+                  '_'
+                }
               }
             value:
               expr {
@@ -1373,7 +1515,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'foo'
+                        ident {
+                          'foo'
+                        }
                       }
                     }
                   }

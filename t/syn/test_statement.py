@@ -8,7 +8,9 @@ syntax_test(
           expr {
             atom {
               scoped_ident {
-                'foo'
+                ident {
+                  'foo'
+                }
               }
             }
           }
@@ -30,7 +32,9 @@ syntax_test(
           expr {
             atom {
               scoped_ident {
-                'foo'
+                ident {
+                  'foo'
+                }
               }
             }
           }
@@ -55,7 +59,9 @@ syntax_test(
               expr {
                 atom {
                   scoped_ident {
-                    'x'
+                    ident {
+                      'x'
+                    }
                   }
                 }
               }
@@ -91,7 +97,9 @@ syntax_test(
         expr {
           atom {
             scoped_ident {
-              'x'
+              ident {
+                'x'
+              }
             }
           }
         }
@@ -99,9 +107,13 @@ syntax_test(
           case_branch {
             case_patt {
               unpack_union {
-                tag='Just'
+                ident {
+                  'Just'
+                }
                 binding {
-                  name='_'
+                  ident {
+                    '_'
+                  }
                 }
               }
             }
@@ -111,7 +123,9 @@ syntax_test(
                   expr {
                     atom {
                       scoped_ident {
-                        'do'
+                        ident {
+                          'do'
+                        }
                       }
                     }
                   }
@@ -126,8 +140,10 @@ syntax_test(
               expr {
                 atom {
                   scoped_ident {
-                    ''
-                    'x'
+                    ident {}
+                    ident {
+                      'x'
+                    }
                   }
                 }
               }

@@ -73,6 +73,7 @@ typedef u32 NodeID;
     USE(PtrType, PTR_TYPE, "ptr_type")                   \
     USE(FnType, FN_TYPE, "fn_type")                      \
     USE(ScopedIdent, SCOPED_IDENT, "scoped_ident")       \
+    USE(Ident, IDENT, "ident")                           \
     USE(Expr, EXPR, "expr")                              \
     USE(Atom, ATOM, "atom")                              \
     USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
@@ -156,7 +157,7 @@ struct VarBinding {
     NodeID id;
     VarBindingKind t;
     union {
-        Tok basic;
+        struct Ident *basic;
         struct UnpackTuple *unpack_tuple;
         struct UnpackStruct *unpack_struct;
     };
@@ -177,7 +178,7 @@ struct AliasBindings {
 
 struct Binding {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     MAYBE(Tok) ref;  // could be a '*' meaning the binding is a reference
     MAYBE(Tok) mod;
 };
@@ -201,13 +202,13 @@ struct UnpackStruct {
 
 struct UnpackUnion {
     NodeID id;
-    Tok tag;
+    struct Ident *tag;
     struct Binding *binding;
 };
 
 struct FnDecl {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct FnParams *params;
     NULLABLE_PTR(struct Type) return_type;
@@ -235,7 +236,7 @@ struct TypeParams {
 
 struct StructDecl {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct StructBody *body;
 };
@@ -258,13 +259,13 @@ struct Fields {
 
 struct Field {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     struct Type *type;
 };
 
 struct EnumDecl {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     struct Idents *alts;
 };
 
@@ -272,12 +273,12 @@ struct Idents {
     NodeID id;
     u32 len;
     u32 cap;
-    Tok *items;
+    struct Ident **items;
 };
 
 struct ErrDecl {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     struct Errs *errs;
 };
 
@@ -296,7 +297,7 @@ struct Err {
 
 struct UnionDecl {
     NodeID id;
-    Tok ident;
+    struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct Fields *alts;
 };
@@ -506,11 +507,16 @@ struct FnType {
     NULLABLE_PTR(struct Type) return_type;
 };
 
+struct Ident {
+    NodeID id;
+    Tok token;
+};
+
 struct ScopedIdent {
     NodeID id;
     u32 cap;
     u32 len;
-    Tok *items;
+    struct Ident **items;
 };
 
 typedef enum {
@@ -575,7 +581,7 @@ struct PostfixExpr {
 struct FieldAccess {
     NodeID id;
     struct Expr *lvalue;
-    Tok field;
+    struct Ident *field;
 };
 
 struct CollAccess {
@@ -647,7 +653,7 @@ typedef enum {
     CHILD_NODE,
 } ChildKind;
 
-typedef struct {
+typedef struct AnyNode {
     NodeID *data;
     NodeKind kind;
 } AnyNode;
@@ -704,6 +710,8 @@ typedef struct {
     NodeNames names;
     // Symbol table
     HashMapScopeAlloc scope_allocs;
+    // Map from id (ScopedIdent) -> resolved node
+    HashMapAnyNode resolved_nodes;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);
@@ -759,6 +767,9 @@ typedef struct {
 
 void dump_tree(TreeDumpCtx *ctx, NodeID id);
 void dump_symbols(const SourceCode *code, NodeMetadata *m);
+
+void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
+AnyNode get_resolved_node(NodeMetadata *m, NodeID id);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

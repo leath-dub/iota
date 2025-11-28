@@ -16,7 +16,9 @@ expectedf = Template("""
     decls {
       decl {
         fn_decl {
-          name='$name'
+          ident {
+            '$name'
+          }
 $body
           comp_stmt {}
         }
@@ -27,7 +29,9 @@ $body
 
 expected_paramf = Template("""fn_param {
   var_binding {
-    name='$name'
+    ident {
+      '$name'
+    }
   }$kind
   type {
     builtin_type {

@@ -81,6 +81,7 @@ FnType *parse_fn_type(ParseCtx *c);
 Idents *parse_idents(ParseCtx *c);
 Errs *parse_errs(ParseCtx *c);
 Err *parse_err(ParseCtx *c);
+Ident *parse_ident(ParseCtx *c, Toks follow);
 ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow);
 Expr *parse_expr(ParseCtx *c);
 Atom *parse_atom(ParseCtx *c);

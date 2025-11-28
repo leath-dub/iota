@@ -25,6 +25,7 @@ NodeMetadata new_node_metadata(void) {
                 .items = NULL,
             },
         .scope_allocs = hm_scope_alloc_new(128),
+        .resolved_nodes = hm_any_node_new(128),
         .offsets =
             {
                 .len = 0,
@@ -58,6 +59,7 @@ void node_metadata_free(NodeMetadata *m) {
         hm_scope_entry_free(&alloc->scope_ref->table);
     }
     hm_scope_alloc_free(&m->scope_allocs);
+    hm_any_node_free(&m->resolved_nodes);
     arena_free(&m->arena);
 }
 
@@ -177,9 +179,16 @@ void *expect_node(NodeKind kind, AnyNode node) {
     return node.data;
 }
 
+// This is kind of dirty! My hashmap only supports string keys, so we need
+// to convert non string keys into string. Also the hashmap does not own the
+// key consequently so you we need a reference to the node id.
+static string idtos(NodeID *id) {
+    return (string){.data = (char *)id, .len = sizeof(*id)};
+}
+
 Scope *scope_attach(NodeMetadata *m, AnyNode node) {
-    string id_ref = {.data = (char *)node.data, .len = sizeof(*node.data)};
-    ScopeAllocResult res = hm_scope_alloc_ensure(&m->scope_allocs, id_ref);
+    ScopeAllocResult res =
+        hm_scope_alloc_ensure(&m->scope_allocs, idtos(node.data));
     assert(res.inserted && "probably tried to insert a scope twice");
 
     Scope *scope = arena_alloc(&m->arena, sizeof(Scope), _Alignof(Scope));
@@ -192,7 +201,7 @@ Scope *scope_attach(NodeMetadata *m, AnyNode node) {
 }
 
 Scope *scope_get(NodeMetadata *m, NodeID id) {
-    string id_ref = {.data = (char *)&id, .len = sizeof(id)};
+    string id_ref = idtos(&id);
     if (hm_scope_alloc_contains(&m->scope_allocs, id_ref)) {
         ScopeAllocResult res = hm_scope_alloc_ensure(&m->scope_allocs, id_ref);
         assert(!res.inserted);
@@ -281,4 +290,13 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
     APPEND(&m->offsets, 0);
     *r = m->next_id++;
     return r;
+}
+
+void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
+    assert(node.kind == NODE_SCOPED_IDENT);
+    hm_any_node_put(&m->resolved_nodes, idtos(node.data), resolved_node);
+}
+
+AnyNode get_resolved_node(NodeMetadata *m, NodeID id) {
+    return *hm_any_node_get(&m->resolved_nodes, idtos(&id));
 }

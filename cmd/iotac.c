@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
     SourceFile *root = parse_source_file(&pc);
 
     AnyNode any_root = MAKE_ANY(root);
+    (void)any_root;
 
     do_build_symbol_table(&pc.meta, any_root);
     do_resolve_names(&code, &pc.meta, any_root);
@@ -83,11 +84,12 @@ int main(int argc, char *argv[]) {
     // printf("Has field: %.*s\n", field->ident.text.len,
     // field->ident.text.data);
 
-    TreeDumpCtx dump_ctx = {
-        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
-    dump_tree(&dump_ctx, root->id);
-    //
-    // dump_symbols(&code, &pc.meta);
+    // TreeDumpCtx dump_ctx = {
+    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
+    //     &pc.meta};
+    // dump_tree(&dump_ctx, root->id);
+
+    dump_symbols(&code, &pc.meta);
 
     report_all_errors(code);
 

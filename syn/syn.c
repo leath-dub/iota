@@ -68,7 +68,6 @@ DECLARE_FOLLOW_SET(TYPE, T_COMMA, T_RPAR, T_SCLN, T_RBRC, T_LBRC, T_EQ)
 DECLARE_FOLLOW_SET(IDENTS, T_RBRC)
 DECLARE_FOLLOW_SET(ERRS, T_RBRC)
 DECLARE_FOLLOW_SET(ERR, T_COMMA, T_RBRC)
-DECLARE_FOLLOW_SET(FIELD, T_IDENT, T_RBRC)
 DECLARE_FOLLOW_SET(STMTS, T_LBRC)
 DECLARE_FOLLOW_SET(STMT, T_LET, T_FUN, T_STRUCT, T_ENUM, T_ERROR, T_UNION,
                    T_LBRC /*, TODO FIRST(expression) */)
@@ -159,12 +158,7 @@ StructDecl *parse_struct_decl(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_STRUCT_DECL);
     StructDecl *n = expect_node(NODE_STRUCT_DECL, nc.node);
     assert(consume(c).t == T_STRUCT);
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_DECL);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", name);
+    n->name = parse_ident(c, TOKS(T_LBRC));
     n->body = parse_struct_body(c, FOLLOW_DECL);
     return end_node(c, nc);
 }
@@ -207,12 +201,7 @@ EnumDecl *parse_enum_decl(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_ENUM_DECL);
     EnumDecl *n = expect_node(NODE_ENUM_DECL, nc.node);
     assert(consume(c).t == T_ENUM);
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_DECL);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", name);
+    n->name = parse_ident(c, TOKS(T_LBRC));
     if (!expect(c, n->id, T_LBRC)) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
@@ -229,12 +218,7 @@ UnionDecl *parse_union_decl(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_UNION_DECL);
     UnionDecl *n = expect_node(NODE_UNION_DECL, nc.node);
     assert(consume(c).t == T_UNION);
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_DECL);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", name);
+    n->name = parse_ident(c, TOKS(T_LBRC));
     if (!expect(c, n->id, T_LBRC)) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
@@ -251,12 +235,7 @@ ErrDecl *parse_err_decl(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_ERR_DECL);
     ErrDecl *n = expect_node(NODE_ERR_DECL, nc.node);
     assert(consume(c).t == T_ERROR);
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_DECL);
-        return end_node(c, nc);
-    }
-    n->ident = name;
+    n->name = parse_ident(c, TOKS(T_LBRC));
     if (!expect(c, n->id, T_LBRC)) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
@@ -303,7 +282,7 @@ VarBinding *parse_var_binding(ParseCtx *c) {
             break;
         case T_IDENT: {
             n->t = VAR_BINDING_BASIC;
-            n->basic = token_attr(c, "name", consume(c));
+            n->basic = parse_ident(c, FOLLOW_VAR_BINDING);
             break;
         }
         default:
@@ -325,12 +304,7 @@ Binding *parse_binding(ParseCtx *c) {
             n->mod.value = token_attr(c, "modifier", consume(c));
         }
     }
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_BINDING);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", name);
+    n->name = parse_ident(c, FOLLOW_BINDING);
     return end_node(c, nc);
 }
 
@@ -385,12 +359,7 @@ UnpackUnion *parse_unpack_union(ParseCtx *c, Toks follow) {
     NodeCtx nc = start_node(c, NODE_UNPACK_UNION);
     UnpackUnion *n = expect_node(NODE_UNPACK_UNION, nc.node);
 
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, follow);
-        return end_node(c, nc);
-    }
-    n->tag = token_attr(c, "tag", name);
+    n->tag = parse_ident(c, TOKS(T_LPAR));
 
     if (!expect(c, n->id, T_LPAR)) {
         advance(c, follow);
@@ -442,12 +411,7 @@ FnDecl *parse_fn_decl(ParseCtx *c) {
     FnDecl *n = expect_node(NODE_FN_DECL, nc.node);
     assert(consume(c).t == T_FUN);
     // TODO type parameters
-    Tok name = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_DECL);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", name);
+    n->name = parse_ident(c, TOKS(T_LPAR));
     if (!expect(c, n->id, T_LPAR)) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
@@ -823,12 +787,13 @@ Fields *parse_fields(ParseCtx *c) {
 Field *parse_field(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_FIELD);
     Field *n = expect_node(NODE_FIELD, nc.node);
-    Tok tok = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, FOLLOW_FIELD);
-        return end_node(c, nc);
-    }
-    n->ident = token_attr(c, "name", tok);
+
+    Toks STARTS_TYPE =
+        TOKS(T_S8, T_U8, T_S16, T_U16, T_S32, T_U32, T_S64, T_U64, T_F32, T_F64,
+             T_BOOL, T_STRING, T_ANY, T_LBRK, T_STRUCT, T_UNION, T_ENUM,
+             T_ERROR, T_STAR, T_FUN, T_SCOPE, T_IDENT);
+
+    n->name = parse_ident(c, STARTS_TYPE);
     n->type = parse_type(c);
     return end_node(c, nc);
 }
@@ -913,12 +878,7 @@ Idents *parse_idents(ParseCtx *c) {
         if (looking_at(c, T_RBRC)) {
             break;
         }
-        Tok identifier = at(c);
-        if (!expect(c, n->id, T_IDENT)) {
-            advance(c, FOLLOW_IDENTS);
-            return end_node(c, nc);
-        }
-        APPEND(n, token_attr_anon(c, identifier));
+        APPEND(n, parse_ident(c, TOKS(T_COMMA, T_RBRC)));
         start = false;
     }
     if (n->len != 0) {
@@ -991,6 +951,20 @@ FnType *parse_fn_type(ParseCtx *c) {
     return end_node(c, nc);
 }
 
+Ident *parse_ident(ParseCtx *c, Toks follow) {
+    NodeCtx nc = start_node(c, NODE_IDENT);
+    Ident *n = expect_node(NODE_IDENT, nc.node);
+
+    Tok ident = at(c);
+    if (!expect(c, n->id, T_IDENT)) {
+        advance(c, follow);
+        return end_node(c, nc);
+    }
+
+    n->token = token_attr_anon(c, ident);
+    return end_node(c, nc);
+}
+
 // Some rules that are used in many contexts take a follow set from the
 // caller. This improves the error recovery as it has more context of what
 // it should be syncing on than just "whatever can follow is really common rule"
@@ -1003,23 +977,17 @@ ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
             .text = ZTOS(""),
             .offset = at(c).offset,
         };
-        APPEND(n, token_attr_anon(c, empty_str));
+        NodeCtx ident_ctx = start_node(c, NODE_IDENT);
+        Ident *ident = expect_node(NODE_IDENT, ident_ctx.node);
+        ident->token = empty_str;
+        APPEND(n, end_node(c, ident_ctx));
         next(c);  // skip the '::'
     }
-    Tok ident = at(c);
-    if (!expect(c, n->id, T_IDENT)) {
-        advance(c, follow);
-        return end_node(c, nc);
-    }
-    APPEND(n, token_attr_anon(c, ident));
+    // TODO: add '::' to follow
+    APPEND(n, parse_ident(c, follow));
     while (looking_at(c, T_SCOPE)) {
         next(c);
-        Tok ident = at(c);
-        if (!expect(c, n->id, T_IDENT)) {
-            advance(c, follow);
-            return end_node(c, nc);
-        }
-        APPEND(n, token_attr_anon(c, ident));
+        APPEND(n, parse_ident(c, follow));
     }
     arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
@@ -1225,14 +1193,8 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
             access->lvalue = attr(c, "lvalue", end_node(c, lhs_ctx));
 
             next(c);
-            Tok field = at(c);
-            if (!expect(c, access->id, T_IDENT)) {
-                advance(c, FOLLOW_ATOM);
-                goto yield_access_expr;
-            }
-            access->field = token_attr(c, "field", field);
+            access->field = parse_ident(c, FOLLOW_ATOM);
 
-        yield_access_expr:
             expr->t = EXPR_FIELD_ACCESS;
             expr->field_access = end_node(c, access_ctx);
             break;
