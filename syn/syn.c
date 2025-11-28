@@ -1194,11 +1194,11 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
             break;
         }
         case T_LPAR: {
-            NodeCtx call_ctx = start_node(c, NODE_FN_CALL);
-            FnCall *call = expect_node(NODE_FN_CALL, call_ctx.node);
+            NodeCtx call_ctx = start_node(c, NODE_CALL);
+            Call *call = expect_node(NODE_CALL, call_ctx.node);
 
             NodeCtx lhs_ctx = begin_node(c, lhs, NODE_EXPR);
-            call->lvalue = end_node(c, lhs_ctx);
+            call->callable = end_node(c, lhs_ctx);
 
             if (!expect(c, call->id, T_LPAR)) {
                 advance(c, FOLLOW_ATOM);
@@ -1212,8 +1212,8 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
             }
 
         yield_call_expr:
-            expr->t = EXPR_FN_CALL;
-            expr->fn_call = end_node(c, call_ctx);
+            expr->t = EXPR_CALL;
+            expr->call = end_node(c, call_ctx);
             break;
         }
         case T_DOT: {
@@ -1440,7 +1440,7 @@ Expr *parse_expr(ParseCtx *c) {
     return end_node(c, ctx);
 }
 
-static void set_atom_token(ParseCtx *c, Atom *atom) {
+static Tok get_atom_token(ParseCtx *c) {
     const char *attr_ = NULL;
     switch (at(c).t) {
         case T_IDENT:
@@ -1461,10 +1461,9 @@ static void set_atom_token(ParseCtx *c, Atom *atom) {
             break;
     }
     if (attr_) {
-        atom->token = token_attr(c, attr_, consume(c));
-    } else {
-        atom->token = token_attr_anon(c, consume(c));
+        return token_attr(c, attr_, consume(c));
     }
+    return token_attr_anon(c, consume(c));
 }
 
 Atom *parse_atom(ParseCtx *c) {
@@ -1477,37 +1476,28 @@ Atom *parse_atom(ParseCtx *c) {
             n->scoped_ident = parse_scoped_ident(c, TOKS(T_SCLN));
             return end_node(c, nc);
         }
-        case T_BTICK: {
-            next(c);
-
-            NodeCtx lit_ctx = start_node(c, NODE_BRACED_LIT);
-            BracedLit *braced_lit = expect_node(NODE_BRACED_LIT, lit_ctx.node);
-
-            if (!looking_at(c, T_LBRC)) {
-                braced_lit->type.ptr = parse_type(c);
-            }
-
-            if (!expect(c, n->id, T_LBRC)) {
-                advance(c, FOLLOW_ATOM);
-                goto yield_braced_lit;
-            }
-            braced_lit->init = parse_init(c, T_LBRC);
-
-            if (!expect(c, n->id, T_RBRC)) {
-                advance(c, FOLLOW_ATOM);
-                goto yield_braced_lit;
-            }
-
-        yield_braced_lit:
-            n->t = ATOM_BRACED_LIT;
-            n->braced_lit = end_node(c, lit_ctx);
-            return end_node(c, nc);
-        }
         case T_NUM:
         case T_CHAR:
         case T_STR:
+        case T_TRUE:
+        case T_FALSE:
             n->t = ATOM_TOKEN;
-            set_atom_token(c, n);
+            n->token = get_atom_token(c);
+            return end_node(c, nc);
+        case T_U8:
+        case T_S8:
+        case T_U16:
+        case T_S16:
+        case T_U32:
+        case T_S32:
+        case T_U64:
+        case T_S64:
+        case T_F32:
+        case T_F64:
+        case T_BOOL:
+        case T_STRING:
+            n->t = ATOM_BUILTIN_TYPE;
+            n->builtin_type = get_atom_token(c);
             return end_node(c, nc);
         default:
             break;

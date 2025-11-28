@@ -107,7 +107,7 @@ syntax_test(
             }
             stmt {
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {

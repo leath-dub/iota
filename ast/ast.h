@@ -76,13 +76,12 @@ typedef u32 NodeID;
     USE(Expr, EXPR, "expr")                              \
     USE(Atom, ATOM, "atom")                              \
     USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
-    USE(FnCall, FN_CALL, "fn_call")                      \
+    USE(Call, CALL, "call")                              \
     USE(Init, INIT, "init")                              \
     USE(FieldAccess, FIELD_ACCESS, "field_access")       \
     USE(CollAccess, COLL_ACCESS, "coll_access")          \
     USE(UnaryExpr, UNARY_EXPR, "unary_expr")             \
     USE(BinExpr, BIN_EXPR, "bin_expr")                   \
-    USE(BracedLit, BRACED_LIT, "braced_lit")             \
     USE(Index, INDEX, "index")
 
 #define FWD_DECL_NODE(NODE, ...) struct NODE;
@@ -517,7 +516,7 @@ struct ScopedIdent {
 typedef enum {
     EXPR_ATOM,
     EXPR_POSTFIX,
-    EXPR_FN_CALL,
+    EXPR_CALL,
     EXPR_FIELD_ACCESS,
     EXPR_COLL_ACCESS,
     EXPR_UNARY,
@@ -530,7 +529,7 @@ struct Expr {
     union {
         struct Atom *atom;
         struct PostfixExpr *postfix_expr;
-        struct FnCall *fn_call;
+        struct Call *call;
         struct FieldAccess *field_access;
         struct CollAccess *coll_access;
         struct UnaryExpr *unary_expr;
@@ -540,7 +539,7 @@ struct Expr {
 
 typedef enum {
     ATOM_TOKEN,
-    ATOM_BRACED_LIT,
+    ATOM_BUILTIN_TYPE,
     ATOM_SCOPED_IDENT,
 } AtomKind;
 
@@ -548,21 +547,15 @@ struct Atom {
     NodeID id;
     AtomKind t;
     union {
-        Tok token;  // Stores: identifier, number, string, enum, nil
+        Tok token;
+        Tok builtin_type;
         struct ScopedIdent *scoped_ident;
-        struct BracedLit *braced_lit;
     };
 };
 
-struct BracedLit {
+struct Call {
     NodeID id;
-    NULLABLE_PTR(struct Type) type;
-    struct Init *init;
-};
-
-struct FnCall {
-    NodeID id;
-    struct Expr *lvalue;
+    struct Expr *callable;
     struct Init *args;
 };
 

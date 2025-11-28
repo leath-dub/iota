@@ -358,7 +358,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -392,7 +392,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -434,7 +434,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -488,7 +488,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -543,7 +543,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -611,7 +611,7 @@ syntax_test(
               }
             value:
               expr {
-                fn_call {
+                call {
                   expr {
                     atom {
                       scoped_ident {
@@ -622,7 +622,7 @@ syntax_test(
                   args:
                     init {
                       expr {
-                        fn_call {
+                        call {
                           expr {
                             atom {
                               scoped_ident {
@@ -633,7 +633,7 @@ syntax_test(
                           args:
                             init {
                               expr {
-                                fn_call {
+                                call {
                                   expr {
                                     atom {
                                       scoped_ident {
@@ -644,7 +644,7 @@ syntax_test(
                                   args:
                                     init {
                                       expr {
-                                        fn_call {
+                                        call {
                                           expr {
                                             atom {
                                               scoped_ident {
@@ -655,7 +655,7 @@ syntax_test(
                                           args:
                                             init {
                                               expr {
-                                                fn_call {
+                                                call {
                                                   expr {
                                                     bin_expr {
                                                       op='+'
@@ -688,7 +688,7 @@ syntax_test(
                                         }
                                       }
                                       expr {
-                                        fn_call {
+                                        call {
                                           expr {
                                             atom {
                                               scoped_ident {
@@ -707,7 +707,7 @@ syntax_test(
                         }
                       }
                       expr {
-                        fn_call {
+                        call {
                           expr {
                             atom {
                               scoped_ident {
@@ -837,144 +837,144 @@ syntax_test(
     """,
 )
 
-syntax_test(
-    name="atom_braced_literal_ident",
-    source="let _ = `Foo{ 10 };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                atom {
-                  braced_lit {
-                    type {
-                      scoped_ident {
-                        'Foo'
-                      }
-                    }
-                    init {
-                      expr {
-                        atom {
-                          '10'
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
-    name="atom_braced_literal_scoped_ident",
-    source="let _ = `Foo::Bar::baz{ 10 };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                atom {
-                  braced_lit {
-                    type {
-                      scoped_ident {
-                        'Foo'
-                        'Bar'
-                        'baz'
-                      }
-                    }
-                    init {
-                      expr {
-                        atom {
-                          '10'
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
-    name="atom_braced_literal_array",
-    source="let _ = `[]u32{ x, y, z };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                atom {
-                  braced_lit {
-                    type {
-                      coll_type {
-                        type {
-                          builtin_type {
-                            'u32'
-                          }
-                        }
-                      }
-                    }
-                    init {
-                      expr {
-                        atom {
-                          scoped_ident {
-                            'x'
-                          }
-                        }
-                      }
-                      expr {
-                        atom {
-                          scoped_ident {
-                            'y'
-                          }
-                        }
-                      }
-                      expr {
-                        atom {
-                          scoped_ident {
-                            'z'
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
+# syntax_test(
+#     name="atom_braced_literal_ident",
+#     source="let _ = `Foo{ 10 };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 atom {
+#                   braced_lit {
+#                     type {
+#                       scoped_ident {
+#                         'Foo'
+#                       }
+#                     }
+#                     init {
+#                       expr {
+#                         atom {
+#                           '10'
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_scoped_ident",
+#     source="let _ = `Foo::Bar::baz{ 10 };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 atom {
+#                   braced_lit {
+#                     type {
+#                       scoped_ident {
+#                         'Foo'
+#                         'Bar'
+#                         'baz'
+#                       }
+#                     }
+#                     init {
+#                       expr {
+#                         atom {
+#                           '10'
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_array",
+#     source="let _ = `[]u32{ x, y, z };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 atom {
+#                   braced_lit {
+#                     type {
+#                       coll_type {
+#                         type {
+#                           builtin_type {
+#                             'u32'
+#                           }
+#                         }
+#                       }
+#                     }
+#                     init {
+#                       expr {
+#                         atom {
+#                           scoped_ident {
+#                             'x'
+#                           }
+#                         }
+#                       }
+#                       expr {
+#                         atom {
+#                           scoped_ident {
+#                             'y'
+#                           }
+#                         }
+#                       }
+#                       expr {
+#                         atom {
+#                           scoped_ident {
+#                             'z'
+#                           }
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
 
 syntax_test(
     name="atom_braced_literal_pointer_ambiguity0",
@@ -1018,211 +1018,211 @@ syntax_test(
     """,
 )
 
-syntax_test(
-    name="atom_braced_literal_pointer_ambiguity1",
-    source="let _ = x * (*`u32{ 10 });",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                bin_expr {
-                  op='*'
-                  left:
-                    expr {
-                      atom {
-                        scoped_ident {
-                          'x'
-                        }
-                      }
-                    }
-                  right:
-                    expr {
-                      unary_expr {
-                        op='*'
-                        expr {
-                          atom {
-                            braced_lit {
-                              type {
-                                builtin_type {
-                                  'u32'
-                                }
-                              }
-                              init {
-                                expr {
-                                  atom {
-                                    '10'
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
-    name="atom_braced_literal_pointer_ambiguity2",
-    source="let _ = x * `*u32{ 10 };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                bin_expr {
-                  op='*'
-                  left:
-                    expr {
-                      atom {
-                        scoped_ident {
-                          'x'
-                        }
-                      }
-                    }
-                  right:
-                    expr {
-                      atom {
-                        braced_lit {
-                          type {
-                            ptr_type {
-                              type {
-                                builtin_type {
-                                  'u32'
-                                }
-                              }
-                            }
-                          }
-                          init {
-                            expr {
-                              atom {
-                                '10'
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
-    name="atom_braced_literal_pointer_ambiguity3",
-    source="let _ = *`{ 10 };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                unary_expr {
-                  op='*'
-                  expr {
-                    atom {
-                      braced_lit {
-                        init {
-                          expr {
-                            atom {
-                              '10'
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
-
-syntax_test(
-    name="atom_braced_literal_no_type",
-    source="let _ = `{ x = 10 };",
-    expected="""
-    source_file {
-      imports {}
-      decls {
-        decl {
-          var_decl {
-            binding:
-              var_binding {
-                name='_'
-              }
-            value:
-              expr {
-                atom {
-                  braced_lit {
-                    init {
-                      expr {
-                        bin_expr {
-                          op='='
-                          left:
-                            expr {
-                              atom {
-                                scoped_ident {
-                                  'x'
-                                }
-                              }
-                            }
-                          right:
-                            expr {
-                              atom {
-                                '10'
-                              }
-                            }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-          }
-        }
-      }
-    }
-    """,
-)
+# syntax_test(
+#     name="atom_braced_literal_pointer_ambiguity1",
+#     source="let _ = x * (*`u32{ 10 });",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 bin_expr {
+#                   op='*'
+#                   left:
+#                     expr {
+#                       atom {
+#                         scoped_ident {
+#                           'x'
+#                         }
+#                       }
+#                     }
+#                   right:
+#                     expr {
+#                       unary_expr {
+#                         op='*'
+#                         expr {
+#                           atom {
+#                             braced_lit {
+#                               type {
+#                                 builtin_type {
+#                                   'u32'
+#                                 }
+#                               }
+#                               init {
+#                                 expr {
+#                                   atom {
+#                                     '10'
+#                                   }
+#                                 }
+#                               }
+#                             }
+#                           }
+#                         }
+#                       }
+#                     }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_pointer_ambiguity2",
+#     source="let _ = x * `*u32{ 10 };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 bin_expr {
+#                   op='*'
+#                   left:
+#                     expr {
+#                       atom {
+#                         scoped_ident {
+#                           'x'
+#                         }
+#                       }
+#                     }
+#                   right:
+#                     expr {
+#                       atom {
+#                         braced_lit {
+#                           type {
+#                             ptr_type {
+#                               type {
+#                                 builtin_type {
+#                                   'u32'
+#                                 }
+#                               }
+#                             }
+#                           }
+#                           init {
+#                             expr {
+#                               atom {
+#                                 '10'
+#                               }
+#                             }
+#                           }
+#                         }
+#                       }
+#                     }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_pointer_ambiguity3",
+#     source="let _ = *`{ 10 };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 unary_expr {
+#                   op='*'
+#                   expr {
+#                     atom {
+#                       braced_lit {
+#                         init {
+#                           expr {
+#                             atom {
+#                               '10'
+#                             }
+#                           }
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
+#
+# syntax_test(
+#     name="atom_braced_literal_no_type",
+#     source="let _ = `{ x = 10 };",
+#     expected="""
+#     source_file {
+#       imports {}
+#       decls {
+#         decl {
+#           var_decl {
+#             binding:
+#               var_binding {
+#                 name='_'
+#               }
+#             value:
+#               expr {
+#                 atom {
+#                   braced_lit {
+#                     init {
+#                       expr {
+#                         bin_expr {
+#                           op='='
+#                           left:
+#                             expr {
+#                               atom {
+#                                 scoped_ident {
+#                                   'x'
+#                                 }
+#                               }
+#                             }
+#                           right:
+#                             expr {
+#                               atom {
+#                                 '10'
+#                               }
+#                             }
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#           }
+#         }
+#       }
+#     }
+#     """,
+# )
 
 syntax_test(
     name="address_of",
-    source = "let _ = &(10 + 11) + &x - &`Foo{ 10 };",
+    source = "let _ = &(10 + 11) + &x - &Foo(10);",
     expected = """
     source_file {
       imports {}
@@ -1284,13 +1284,15 @@ syntax_test(
                       unary_expr {
                         op='&'
                         expr {
-                          atom {
-                            braced_lit {
-                              type {
+                          call {
+                            expr {
+                              atom {
                                 scoped_ident {
                                   'Foo'
                                 }
                               }
+                            }
+                            args:
                               init {
                                 expr {
                                   atom {
@@ -1298,7 +1300,6 @@ syntax_test(
                                   }
                                 }
                               }
-                            }
                           }
                         }
                       }
