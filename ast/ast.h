@@ -81,7 +81,8 @@ typedef u32 NodeID;
     USE(Atom, ATOM, "atom")                              \
     USE(PostfixExpr, POSTFIX_EXPR, "postfix_expr")       \
     USE(Call, CALL, "call")                              \
-    USE(Init, INIT, "init")                              \
+    USE(CallArgs, CALL_ARGS, "call_args")                \
+    USE(CallArg, CALL_ARG, "call_arg")                   \
     USE(FieldAccess, FIELD_ACCESS, "field_access")       \
     USE(CollAccess, COLL_ACCESS, "coll_access")          \
     USE(UnaryExpr, UNARY_EXPR, "unary_expr")             \
@@ -586,14 +587,21 @@ struct Atom {
 struct Call {
     NodeID id;
     struct Expr *callable;
-    struct Init *args;
+    struct CallArgs *args;
 };
 
-struct Init {
+struct CallArgs {
     NodeID id;
     u32 len;
     u32 cap;
-    struct AssignOrExpr **items;
+    struct CallArg **items;
+};
+
+struct CallArg {
+    NodeID id;
+    NULLABLE_PTR(struct Ident) name;
+    Tok assign_token;
+    struct Expr *value;
 };
 
 struct PostfixExpr {

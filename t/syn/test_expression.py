@@ -396,8 +396,7 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {}
+                  call_args {}
                 }
               }
           }
@@ -434,20 +433,19 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'x'
-                              }
+                  call_args {
+                    call_arg {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'x'
                             }
                           }
                         }
                       }
                     }
+                  }
                 }
               }
           }
@@ -484,25 +482,18 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'x'
-                              }
-                            }
-                          }
-                        }
-                        expr {
-                          atom {
-                            '10'
-                          }
+                  call_args {
+                    call_arg {
+                      ident {
+                        'x'
+                      }
+                      expr {
+                        atom {
+                          '10'
                         }
                       }
                     }
+                  }
                 }
               }
           }
@@ -539,31 +530,30 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'x'
-                              }
-                            }
-                          }
-                        }
-                      }
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'y'
-                              }
+                  call_args {
+                    call_arg {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'x'
                             }
                           }
                         }
                       }
                     }
+                    call_arg {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'y'
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
           }
@@ -606,47 +596,40 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'x'
-                              }
-                            }
-                          }
-                        }
-                      }
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'y'
-                              }
-                            }
-                          }
-                        }
-                        expr {
-                          atom {
-                            '10'
-                          }
-                        }
-                      }
-                      assign_or_expr {
-                        expr {
-                          atom {
-                            scoped_ident {
-                              ident {
-                                'y'
-                              }
+                  call_args {
+                    call_arg {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'x'
                             }
                           }
                         }
                       }
                     }
+                    call_arg {
+                      ident {
+                        'y'
+                      }
+                      expr {
+                        atom {
+                          '10'
+                        }
+                      }
+                    }
+                    call_arg {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'y'
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
           }
@@ -683,131 +666,124 @@ syntax_test(
                       }
                     }
                   }
-                  args:
-                    init {
-                      assign_or_expr {
-                        expr {
-                          call {
-                            expr {
-                              atom {
-                                scoped_ident {
-                                  ident {
-                                    'foo'
-                                  }
+                  call_args {
+                    call_arg {
+                      expr {
+                        call {
+                          expr {
+                            atom {
+                              scoped_ident {
+                                ident {
+                                  'foo'
                                 }
                               }
                             }
-                            args:
-                              init {
-                                assign_or_expr {
+                          }
+                          call_args {
+                            call_arg {
+                              expr {
+                                call {
                                   expr {
-                                    call {
+                                    atom {
+                                      scoped_ident {
+                                        ident {
+                                          'foo'
+                                        }
+                                      }
+                                    }
+                                  }
+                                  call_args {
+                                    call_arg {
                                       expr {
-                                        atom {
-                                          scoped_ident {
-                                            ident {
-                                              'foo'
+                                        call {
+                                          expr {
+                                            atom {
+                                              scoped_ident {
+                                                ident {
+                                                  'bar'
+                                                }
+                                              }
+                                            }
+                                          }
+                                          call_args {
+                                            call_arg {
+                                              expr {
+                                                call {
+                                                  expr {
+                                                    bin_expr {
+                                                      op='+'
+                                                      left:
+                                                        expr {
+                                                          unary_expr {
+                                                            op='*'
+                                                            expr {
+                                                              atom {
+                                                                scoped_ident {
+                                                                  ident {
+                                                                    'in'
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      right:
+                                                        expr {
+                                                          atom {
+                                                            '10'
+                                                          }
+                                                        }
+                                                    }
+                                                  }
+                                                  call_args {}
+                                                }
+                                              }
                                             }
                                           }
                                         }
                                       }
-                                      args:
-                                        init {
-                                          assign_or_expr {
-                                            expr {
-                                              call {
-                                                expr {
-                                                  atom {
-                                                    scoped_ident {
-                                                      ident {
-                                                        'bar'
-                                                      }
-                                                    }
-                                                  }
+                                    }
+                                    call_arg {
+                                      expr {
+                                        call {
+                                          expr {
+                                            atom {
+                                              scoped_ident {
+                                                ident {
+                                                  'foo'
                                                 }
-                                                args:
-                                                  init {
-                                                    assign_or_expr {
-                                                      expr {
-                                                        call {
-                                                          expr {
-                                                            bin_expr {
-                                                              op='+'
-                                                              left:
-                                                                expr {
-                                                                  unary_expr {
-                                                                    op='*'
-                                                                    expr {
-                                                                      atom {
-                                                                        scoped_ident {
-                                                                          ident {
-                                                                            'in'
-                                                                          }
-                                                                        }
-                                                                      }
-                                                                    }
-                                                                  }
-                                                                }
-                                                              right:
-                                                                expr {
-                                                                  atom {
-                                                                    '10'
-                                                                  }
-                                                                }
-                                                            }
-                                                          }
-                                                          args:
-                                                            init {}
-                                                        }
-                                                      }
-                                                    }
-                                                  }
                                               }
                                             }
                                           }
-                                          assign_or_expr {
-                                            expr {
-                                              call {
-                                                expr {
-                                                  atom {
-                                                    scoped_ident {
-                                                      ident {
-                                                        'foo'
-                                                      }
-                                                    }
-                                                  }
-                                                }
-                                                args:
-                                                  init {}
-                                              }
-                                            }
-                                          }
+                                          call_args {}
                                         }
+                                      }
                                     }
                                   }
                                 }
                               }
-                          }
-                        }
-                      }
-                      assign_or_expr {
-                        expr {
-                          call {
-                            expr {
-                              atom {
-                                scoped_ident {
-                                  ident {
-                                    'foo'
-                                  }
-                                }
-                              }
                             }
-                            args:
-                              init {}
                           }
                         }
                       }
                     }
+                    call_arg {
+                      expr {
+                        call {
+                          expr {
+                            atom {
+                              scoped_ident {
+                                ident {
+                                  'foo'
+                                }
+                              }
+                            }
+                          }
+                          call_args {}
+                        }
+                      }
+                    }
+                  }
                 }
               }
           }
@@ -1436,16 +1412,15 @@ syntax_test(
                                 }
                               }
                             }
-                            args:
-                              init {
-                                assign_or_expr {
-                                  expr {
-                                    atom {
-                                      '10'
-                                    }
+                            call_args {
+                              call_arg {
+                                expr {
+                                  atom {
+                                    '10'
                                   }
                                 }
                               }
+                            }
                           }
                         }
                       }

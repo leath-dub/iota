@@ -31,6 +31,8 @@ static bool one_of(TokKind t, Toks toks);
 static void advance(ParseCtx *c, Toks toks);
 static void expected(ParseCtx *c, NodeID in, const char *msg);
 static bool expect(ParseCtx *c, NodeID in, TokKind t);
+static ParseState set_marker(ParseCtx *c);
+static void backtrack(ParseCtx *c, ParseState marker);
 
 ParseCtx new_parse_ctx(SourceCode *code) {
     static NodeID root = 0;
@@ -1028,23 +1030,55 @@ ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow) {
     return end_node(c, nc);
 }
 
-Init *parse_init(ParseCtx *c, TokKind delim) {
-    NodeCtx nc = start_node(c, NODE_INIT);
-    Init *n = expect_node(NODE_INIT, nc.node);
-    // No items in list, just return
-    if (looking_at(c, delim)) {
+CallArgs *parse_call_args(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_CALL_ARGS);
+    CallArgs *n = expect_node(NODE_CALL_ARGS, nc.node);
+
+    if (!expect(c, n->id, T_LPAR)) {
+        advance(c, FOLLOW_EXPR);
         return end_node(c, nc);
     }
-    APPEND(n, parse_assign_or_expr(c));
+
+    // No arguments
+    if (looking_at(c, T_RPAR)) {
+        next(c);
+        return end_node(c, nc);
+    }
+
+    APPEND(n, parse_call_arg(c));
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
-        if (looking_at(c, delim)) {
+        if (looking_at(c, T_RPAR)) {
             break;
         }
-        APPEND(n, parse_assign_or_expr(c));
+        APPEND(n, parse_call_arg(c));
     }
     arena_own(&c->arena, n->items, n->cap);
+
+    if (!expect(c, n->id, T_RPAR)) {
+        advance(c, FOLLOW_EXPR);
+        return end_node(c, nc);
+    }
+
+    return end_node(c, nc);
+}
+
+CallArg *parse_call_arg(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_CALL_ARG);
+    CallArg *n = expect_node(NODE_CALL_ARG, nc.node);
+    ParseState start = set_marker(c);
+    if (looking_at(c, T_IDENT)) {
+        next(c);
+        if (looking_at(c, T_EQ)) {
+            backtrack(c, start);
+            n->name.ptr = parse_ident(c, TOKS(T_EQ));
+            n->assign_token = consume(c);
+        } else {
+            backtrack(c, start);
+        }
+    }
+    n->value = parse_expr(c);
     return end_node(c, nc);
 }
 
@@ -1201,19 +1235,8 @@ static NodeCtx parse_postfix(ParseCtx *c, Expr *lhs) {
 
             NodeCtx lhs_ctx = begin_node(c, lhs, NODE_EXPR);
             call->callable = end_node(c, lhs_ctx);
+            call->args = parse_call_args(c);
 
-            if (!expect(c, call->id, T_LPAR)) {
-                advance(c, FOLLOW_ATOM);
-                goto yield_call_expr;
-            }
-
-            call->args = attr(c, "args", parse_init(c, T_RPAR));
-
-            if (!expect(c, call->id, T_RPAR)) {
-                advance(c, FOLLOW_ATOM);
-            }
-
-        yield_call_expr:
             expr->t = EXPR_CALL;
             expr->call = end_node(c, call_ctx);
             break;
@@ -1552,9 +1575,8 @@ static void *end_node(ParseCtx *c, NodeCtx ctx) {
     return ctx.node.data;
 }
 
-// static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
-// static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex;
-// }
+static ParseState set_marker(ParseCtx *c) { return (ParseState){c->lex}; }
+static void backtrack(ParseCtx *c, ParseState marker) { c->lex = marker.lex; }
 
 static Tok tnext(ParseCtx *c) {
     Tok tok;

@@ -87,6 +87,7 @@ Ident *parse_ident(ParseCtx *c, Toks follow);
 ScopedIdent *parse_scoped_ident(ParseCtx *c, Toks follow);
 Expr *parse_expr(ParseCtx *c);
 Atom *parse_atom(ParseCtx *c);
-Init *parse_init(ParseCtx *c, TokKind delim);
+CallArgs *parse_call_args(ParseCtx *c);
+CallArg *parse_call_arg(ParseCtx *c);
 
 #endif

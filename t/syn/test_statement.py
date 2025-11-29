@@ -130,8 +130,7 @@ syntax_test(
                         }
                       }
                     }
-                    args:
-                      init {}
+                    call_args {}
                   }
                 }
               }
