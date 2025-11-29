@@ -118,19 +118,21 @@ syntax_test(
               }
             }
             stmt {
-              expr {
-                call {
-                  expr {
-                    atom {
-                      scoped_ident {
-                        ident {
-                          'do'
+              assign_or_expr {
+                expr {
+                  call {
+                    expr {
+                      atom {
+                        scoped_ident {
+                          ident {
+                            'do'
+                          }
                         }
                       }
                     }
+                    args:
+                      init {}
                   }
-                  args:
-                    init {}
                 }
               }
             }

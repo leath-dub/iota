@@ -65,6 +65,7 @@ typedef u32 NodeID;
     USE(DeferStmt, DEFER_STATEMENT, "defer_stmt")        \
     USE(CompStmt, COMP_STMT, "comp_stmt")                \
     USE(Else, ELSE, "else")                              \
+    USE(AssignOrExpr, ASSIGN_OR_EXPR, "assign_or_expr")  \
     USE(Type, TYPE, "type")                              \
     USE(BuiltinType, BUILTIN_TYPE, "builtin_type")       \
     USE(CollType, COLL_TYPE, "coll_type")                \
@@ -325,6 +326,7 @@ typedef enum {
     STMT_RETURN,
     STMT_COMP,
     STMT_EXPR,
+    STMT_ASSIGN_OR_EXPR,
 } StmtKind;
 
 struct Stmt {
@@ -336,9 +338,9 @@ struct Stmt {
         struct WhileStmt *while_stmt;
         struct CaseStmt *case_stmt;
         struct ReturnStmt *return_stmt;
-        struct Defer_Statement *defer_stmt;
+        struct DeferStmt *defer_stmt;
         struct CompStmt *comp_stmt;
-        struct Expr *expr;
+        struct AssignOrExpr *assign_or_expr;
     };
 };
 
@@ -440,6 +442,13 @@ struct CompStmt {
     u32 len;
     u32 cap;
     struct Stmt **items;
+};
+
+struct AssignOrExpr {
+    NodeID id;
+    struct Expr *lvalue;
+    Tok assign_token;
+    NULLABLE_PTR(struct Expr) rvalue;
 };
 
 typedef enum {
@@ -584,7 +593,7 @@ struct Init {
     NodeID id;
     u32 len;
     u32 cap;
-    struct Expr **items;
+    struct AssignOrExpr **items;
 };
 
 struct PostfixExpr {
@@ -639,6 +648,13 @@ EACH_NODE(TYPEDEF_NODE)
 typedef enum {
     EACH_NODE(DECL_NODE_KIND) NODE_KIND_COUNT,
 } NodeKind;
+
+// This lets us not accidently add a AST node without the id field at the top
+#define CHECK_NODE(NODE, ...)                                 \
+    _Static_assert(sizeof(((NODE *)0)->id) == sizeof(NodeID), \
+                   "AST node must define 'id' field of type NodeID");
+
+EACH_NODE(CHECK_NODE)
 
 typedef enum {
     NFLAG_NONE = 0,

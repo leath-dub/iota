@@ -518,8 +518,8 @@ Stmt *parse_stmt(ParseCtx *c) {
             n->case_stmt = parse_case_stmt(c);
             break;
         default:
-            n->t = STMT_EXPR;
-            n->expr = parse_expr(c);
+            n->t = STMT_ASSIGN_OR_EXPR;
+            n->assign_or_expr = parse_assign_or_expr(c);
             if (!expect(c, n->id, T_SCLN)) {
                 advance(c, FOLLOW_STMT);
                 return end_node(c, nc);
@@ -655,6 +655,17 @@ Else *parse_else(ParseCtx *c) {
     } else {
         n->t = ELSE_COMP;
         n->comp_stmt = parse_comp_stmt(c);
+    }
+    return end_node(c, nc);
+}
+
+AssignOrExpr *parse_assign_or_expr(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_ASSIGN_OR_EXPR);
+    AssignOrExpr *n = expect_node(NODE_ASSIGN_OR_EXPR, nc.node);
+    n->lvalue = parse_expr(c);
+    if (looking_at(c, T_EQ)) {
+        n->assign_token = consume(c);
+        n->rvalue.ptr = parse_expr(c);
     }
     return end_node(c, nc);
 }
@@ -1024,14 +1035,14 @@ Init *parse_init(ParseCtx *c, TokKind delim) {
     if (looking_at(c, delim)) {
         return end_node(c, nc);
     }
-    APPEND(n, parse_expr(c));
+    APPEND(n, parse_assign_or_expr(c));
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, delim)) {
             break;
         }
-        APPEND(n, parse_expr(c));
+        APPEND(n, parse_assign_or_expr(c));
     }
     arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
@@ -1060,7 +1071,6 @@ static bool is_infix_op(TokKind t) {
         case T_PERC:
         case T_STAR:
         case T_SLASH:
-        case T_EQ:
         case T_AND:
         case T_OR:
         case T_AMP:
@@ -1110,7 +1120,7 @@ typedef enum {
     PREC_BOR,
     PREC_AND,
     PREC_OR,
-    PREC_ASSIGNMENT,
+    // PREC_ASSIGNMENT,
     PREC_COUNT,
 } Precendence_Group;
 
@@ -1126,7 +1136,7 @@ static const Power binding_power_of[PREC_COUNT] = {
     [PREC_BOR] = {7, 8},
     [PREC_AND] = {5, 6},
     [PREC_OR] = {3, 4},
-    [PREC_ASSIGNMENT] = {2, 1},
+    // [PREC_ASSIGNMENT] = {2, 1},
 };
 
 static Index *parse_index(ParseCtx *c) {
@@ -1254,8 +1264,6 @@ static Maybe_Power infix_bpow(TokKind op) {
         case T_STAR:
         case T_SLASH:
             return (Maybe_Power){binding_power_of[PREC_MULTIPLICATIVE], true};
-        case T_EQ:
-            return (Maybe_Power){binding_power_of[PREC_ASSIGNMENT], true};
         case T_AND:
             return (Maybe_Power){binding_power_of[PREC_AND], true};
         case T_OR:

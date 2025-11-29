@@ -65,6 +65,7 @@ CaseBranches *parse_case_branches(ParseCtx *c);
 CaseStmt *parse_case_stmt(ParseCtx *c);
 ReturnStmt *parse_return_stmt(ParseCtx *c);
 Else *parse_else(ParseCtx *c);
+AssignOrExpr *parse_assign_or_expr(ParseCtx *c);
 Cond *parse_cond(ParseCtx *c);
 UnionTagCond *parse_union_tag_cond(ParseCtx *c);
 CompStmt *parse_comp_stmt(ParseCtx *c);

@@ -84,12 +84,11 @@ int main(int argc, char *argv[]) {
     // printf("Has field: %.*s\n", field->ident.text.len,
     // field->ident.text.data);
 
-    // TreeDumpCtx dump_ctx = {
-    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
-    //     &pc.meta};
-    // dump_tree(&dump_ctx, root->id);
+    TreeDumpCtx dump_ctx = {
+        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
+    dump_tree(&dump_ctx, root->id);
 
-    dump_symbols(&code, &pc.meta);
+    // dump_symbols(&code, &pc.meta);
 
     report_all_errors(code);
 
