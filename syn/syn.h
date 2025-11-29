@@ -45,6 +45,7 @@ UnionDecl *parse_union_decl(ParseCtx *c);
 ErrDecl *parse_err_decl(ParseCtx *c);
 VarDecl *parse_var_decl(ParseCtx *c);
 FnDecl *parse_fn_decl(ParseCtx *c);
+FnMods *parse_mods(ParseCtx *c);
 FnParams *parse_fn_params(ParseCtx *c);
 FnParam *parse_fn_param(ParseCtx *c);
 VarBinding *parse_var_binding(ParseCtx *c);

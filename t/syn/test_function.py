@@ -68,9 +68,9 @@ class FunDef:
         if self.trailing_comma:
             params_txt += ","
 
-        return_type_txt = self.return_type
+        return_type_txt = ""
         if len(self.return_type) != 0:
-            return_type_txt += " "
+            return_type_txt = "-> " + self.return_type
         return funf.substitute(name=self.name, params=params_txt, return_type=return_type_txt)
 
     def generate_expected(self) -> str:
@@ -91,7 +91,7 @@ class FunDef:
         if len(self.return_type) != 0:
             return_type = f"type {{\n  builtin_type {{\n    '{self.return_type}'\n  }}\n}}"
 
-        body = "\n".join((params_txt, return_type))
+        body = "\n".join((params_txt, "fn_mods {}", return_type))
         body = textwrap.indent(body, "  " * 5).rstrip()
 
         return expectedf.substitute(name=self.name, body=body)

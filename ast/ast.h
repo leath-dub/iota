@@ -28,6 +28,8 @@ typedef u32 NodeID;
     USE(Decl, DECL, "decl")                              \
     USE(VarDecl, VAR_DECL, "var_decl")                   \
     USE(FnDecl, FN_DECL, "fn_decl")                      \
+    USE(FnMods, FN_MODS, "fn_mods")                      \
+    USE(FnMod, FN_MOD, "fn_mod")                         \
     USE(TypeParams, TYPE_PARAMS, "type_params")          \
     USE(StructDecl, STRUCT_DECL, "struct_decl")          \
     USE(StructBody, STRUCT_BODY, "struct_body")          \
@@ -211,8 +213,21 @@ struct FnDecl {
     struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct FnParams *params;
+    struct FnMods *mods;
     NULLABLE_PTR(struct Type) return_type;
     struct CompStmt *body;
+};
+
+struct FnMods {
+    NodeID id;
+    u32 len;
+    u32 cap;
+    struct FnMod **items;
+};
+
+struct FnMod {
+    NodeID id;
+    Tok mod;
 };
 
 struct FnParams {

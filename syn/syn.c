@@ -421,10 +421,34 @@ FnDecl *parse_fn_decl(ParseCtx *c) {
         advance(c, FOLLOW_DECL);
         return end_node(c, nc);
     }
-    if (!looking_at(c, T_LBRC)) {
+    n->mods = parse_mods(c);
+    if (looking_at(c, T_ARROW)) {
+        next(c);
         n->return_type.ptr = parse_type(c);
     }
     n->body = parse_comp_stmt(c);
+    return end_node(c, nc);
+}
+
+static bool is_mod(TokKind t) {
+    switch (t) {
+        case T_EXTERN:
+            return true;
+        default:
+            return false;
+    }
+}
+
+FnMods *parse_mods(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_FN_MODS);
+    FnMods *n = expect_node(NODE_FN_MODS, nc.node);
+    while (is_mod(at(c).t)) {
+        NodeCtx mod_ctx = start_node(c, NODE_FN_MOD);
+        FnMod *mod = expect_node(NODE_FN_MOD, mod_ctx.node);
+        mod->mod = token_attr_anon(c, consume(c));
+        APPEND(n, end_node(c, mod_ctx));
+    }
+    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 

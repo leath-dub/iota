@@ -78,6 +78,7 @@
     KEYWORD(TRUE, "true")                     \
     KEYWORD(FALSE, "false")                   \
     KEYWORD(CAST, "cast")                     \
+    KEYWORD(EXTERN, "extern")                 \
     KEYWORD(ANY, "any")
 
 typedef enum {
