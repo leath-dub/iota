@@ -260,6 +260,7 @@ VarDecl *parse_var_decl(ParseCtx *c) {
         n->type = parse_type(c);
     }
     if (looking_at(c, T_EQ)) {
+        n->init.ok = true;
         n->init.assign_token = consume(c);
         n->init.expr = attr(c, "value", parse_expr(c));
     }
