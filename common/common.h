@@ -144,6 +144,10 @@ void stack_pop(Stack *stack);
 #define PRINTF_CHECK(fmti, arg0) __attribute__((format(printf, fmti, arg0)))
 #endif
 
+#define SPLAT(STR) (STR).len, (STR).data
+
+char *allocf(Arena *a, const char *fmt, ...) PRINTF_CHECK(2, 3);
+
 #define MAYBE(T) \
     struct {     \
         bool ok; \

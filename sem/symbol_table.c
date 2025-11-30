@@ -1,7 +1,7 @@
 #include "../ast/ast.h"
 
-static void build_symbol_table_enter(void *_ctx, NodeMetadata *m, AnyNode node);
-static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node);
+static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node);
+static DfsCtrl build_symbol_table_exit(void *_ctx, AnyNode node);
 
 typedef struct {
     NodeMetadata *meta;
@@ -40,9 +40,7 @@ static void exit_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt);
 static void enter_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt);
 static void exit_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt);
 
-static void build_symbol_table_enter(void *_ctx, NodeMetadata *m,
-                                     AnyNode node) {
-    (void)m;
+static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node) {
     SymbolTableCtx *ctx = _ctx;
     switch (node.kind) {
         case NODE_SOURCE_FILE:
@@ -69,10 +67,10 @@ static void build_symbol_table_enter(void *_ctx, NodeMetadata *m,
         default:
             break;
     }
+    return DFS_CTRL_KEEP_GOING;
 }
 
-static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node) {
-    (void)m;
+static DfsCtrl build_symbol_table_exit(void *_ctx, AnyNode node) {
     SymbolTableCtx *ctx = _ctx;
     switch (node.kind) {
         case NODE_SOURCE_FILE:
@@ -99,6 +97,7 @@ static void build_symbol_table_exit(void *_ctx, NodeMetadata *m, AnyNode node) {
         default:
             break;
     }
+    return DFS_CTRL_KEEP_GOING;
 }
 
 static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {

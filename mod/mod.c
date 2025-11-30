@@ -53,6 +53,7 @@ SourceCode new_source_code(string file_path, string text) {
         .lines = new_lines(text),
         .text = text,
         .error_stream = stderr,
+        .error_arena = new_arena(),
     };
 }
 
@@ -92,6 +93,7 @@ void source_code_free(SourceCode *code) {
         free(code->errors.items);
     }
     memset(code, 0, sizeof(*code));
+    arena_free(&code->error_arena);
 }
 
 void raise_error(SourceCode *code, Error error) {
@@ -148,7 +150,7 @@ void report_error(SourceCode code, Error error) {
         }
         case ERROR_SEMANTIC: {
             SemanticError semantic_error = error.semantic_error;
-            reportf(code, semantic_error.at, "error: %s",
+            reportf(code, semantic_error.at, "%s: %s", semantic_error.banner,
                     semantic_error.message);
             break;
         }
@@ -159,4 +161,10 @@ void report_all_errors(SourceCode code) {
     for (u32 i = 0; i < code.errors.len; i++) {
         report_error(code, code.errors.items[i]);
     }
+}
+
+void flush_errors(SourceCode *code) {
+    report_all_errors(*code);
+    code->errors.len = 0;
+    arena_reset(&code->error_arena);
 }

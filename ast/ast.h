@@ -787,11 +787,21 @@ typedef enum {
     LOOKUP_MODE_DIRECT,
 } ScopeLookupMode;
 
-ScopeEntry *scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode);
+typedef struct {
+    ScopeEntry *entry;
+    Scope *found_in;
+} ScopeLookup;
+
+ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode);
+
+typedef enum {
+    DFS_CTRL_KEEP_GOING,
+    DFS_CTRL_SKIP_SUBTREE,
+} DfsCtrl;
 
 typedef struct {
-    void (*enter)(void *ctx, NodeMetadata *m, AnyNode node);
-    void (*exit)(void *ctx, NodeMetadata *m, AnyNode node);
+    DfsCtrl (*enter)(void *ctx, AnyNode node);
+    DfsCtrl (*exit)(void *ctx, AnyNode node);
 } EnterExitVTable;
 
 void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,

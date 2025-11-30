@@ -227,14 +227,14 @@ void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
     res.entry->shadows = old_entry;
 }
 
-ScopeEntry *scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
+ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
     ScopeEntry *entry = hm_scope_entry_try_get(&scope->table, symbol);
     if (entry) {
-        return entry;
+        return (ScopeLookup){entry, scope};
     }
     // If not doing lexical lookup, just fail here
     if (mode == LOOKUP_MODE_DIRECT) {
-        return NULL;
+        return (ScopeLookup){NULL, NULL};
     }
 
     // Otherwise for lexical lookup check the enclosing scopes backwards
@@ -242,32 +242,35 @@ ScopeEntry *scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
     while (it->enclosing_scope.ptr) {
         entry = hm_scope_entry_try_get(&it->enclosing_scope.ptr->table, symbol);
         if (entry) {
-            return entry;
+            return (ScopeLookup){entry, it->enclosing_scope.ptr};
         }
         it = it->enclosing_scope.ptr;
     }
 
-    return NULL;
+    return (ScopeLookup){NULL, NULL};
 }
 
 void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
                       EnterExitVTable vtable) {
+    DfsCtrl ctrl = DFS_CTRL_KEEP_GOING;
     if (vtable.enter && !has_error(m, root.data)) {
-        vtable.enter(ctx, m, root);
+        ctrl = vtable.enter(ctx, root);
     }
-    const NodeChildren *children = get_node_children(m, *root.data);
-    for (u32 i = 0; i < children->len; i++) {
-        NodeChild child = children->items[i];
-        switch (child.t) {
-            case CHILD_NODE:
-                ast_traverse_dfs(ctx, child.node, m, vtable);
-                break;
-            default:
-                break;
+    if (ctrl == DFS_CTRL_KEEP_GOING) {
+        const NodeChildren *children = get_node_children(m, *root.data);
+        for (u32 i = 0; i < children->len; i++) {
+            NodeChild child = children->items[i];
+            switch (child.t) {
+                case CHILD_NODE:
+                    ast_traverse_dfs(ctx, child.node, m, vtable);
+                    break;
+                default:
+                    break;
+            }
         }
     }
     if (vtable.exit && !has_error(m, root.data)) {
-        vtable.exit(ctx, m, root);
+        (void)vtable.exit(ctx, root);
     }
 }
 
@@ -293,7 +296,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
 }
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
-    assert(node.kind == NODE_SCOPED_IDENT);
+    assert(node.kind == NODE_IDENT);
     hm_any_node_put(&m->resolved_nodes, idtos(node.data), resolved_node);
 }
 

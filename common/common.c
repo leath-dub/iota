@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,4 +159,20 @@ void arena_own(Arena *a, void *alloc, u32 size) {
                                    .used = size,
                                    .alloc = alloc,
                                });
+}
+
+#define SCRATCH_CAP 4196
+
+char *allocf(Arena *a, const char *fmt, ...) {
+    static char scratch[SCRATCH_CAP];
+    va_list vargs;
+    va_start(vargs, fmt);
+    int len = vsnprintf(scratch, SCRATCH_CAP, fmt, vargs);
+    va_end(vargs);
+
+    assert(len >= 0);
+    char *buf = arena_alloc(a, len + 1, _Alignof(char));
+    memcpy(buf, scratch, len + 1);
+
+    return buf;
 }

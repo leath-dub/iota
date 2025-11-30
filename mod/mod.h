@@ -18,6 +18,7 @@ typedef struct {
 
 typedef struct {
     u32 at;
+    const char *banner;
     const char *message;
 } SemanticError;
 
@@ -61,6 +62,7 @@ typedef struct {
     string text;
     Lines lines;
     FILE *error_stream;
+    Arena error_arena;  // Used to store error message data
     Errors errors;
 } SourceCode;
 
@@ -86,5 +88,7 @@ void raise_lexical_error(SourceCode *code, LexicalError error);
 void raise_semantic_error(SourceCode *code, SemanticError error);
 void report_error(SourceCode code, Error error);
 void report_all_errors(SourceCode code);
+// Like report_all_errors except it will also reset the list of errors
+void flush_errors(SourceCode *code);
 
 #endif
