@@ -76,9 +76,9 @@ int main(int argc, char *argv[]) {
     //     &pc.meta};
     // dump_tree(&dump_ctx, root->id);
 
-    // dump_symbols(&code, &pc.meta);
-
     flush_errors(&code);
+
+    dump_symbols(&code, &pc.meta);
 
     source_code_free(&code);
     parse_ctx_free(&pc);

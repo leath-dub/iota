@@ -818,7 +818,7 @@ void dump_tree(TreeDumpCtx *ctx, NodeID id);
 void dump_symbols(const SourceCode *code, NodeMetadata *m);
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
-AnyNode get_resolved_node(NodeMetadata *m, NodeID id);
+AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

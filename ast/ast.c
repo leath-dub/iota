@@ -296,10 +296,10 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
 }
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
-    assert(node.kind == NODE_IDENT);
+    assert(node.kind == NODE_IDENT || node.kind == NODE_SCOPED_IDENT);
     hm_any_node_put(&m->resolved_nodes, idtos(node.data), resolved_node);
 }
 
-AnyNode get_resolved_node(NodeMetadata *m, NodeID id) {
-    return *hm_any_node_get(&m->resolved_nodes, idtos(&id));
+AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id) {
+    return hm_any_node_try_get(&m->resolved_nodes, idtos(&id));
 }
