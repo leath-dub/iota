@@ -738,6 +738,56 @@ typedef struct ScopeAlloc {
     Scope *scope_ref;
 } ScopeAlloc;
 
+typedef enum {
+    STORAGE_U8,
+    STORAGE_S8,
+    STORAGE_U16,
+    STORAGE_S16,
+    STORAGE_U32,
+    STORAGE_S32,
+    STORAGE_U64,
+    STORAGE_S64,
+    STORAGE_F32,
+    STORAGE_F64,
+    STORAGE_UNIT,
+    STORAGE_PTR,
+    STORAGE_FN,
+} TypeStorage;
+
+struct TypeRepr;
+
+typedef struct {
+    struct TypeRepr *referent;
+} PtrT;
+
+typedef struct {
+    bool variadic;
+    struct TypeRepr *type;
+} FnTParam;
+
+typedef struct {
+    u32 len;
+    u32 cap;
+    FnTParam *items;
+} FnTParams;
+
+typedef struct {
+    FnTParams params;
+    struct TypeRepr *return_type;
+} FnT;
+
+typedef struct TypeRepr {
+    TypeStorage t;
+    union {
+        FnT fn;
+        PtrT ptr;
+    };
+} TypeRepr;
+
+typedef struct TypeReprRef {
+    TypeRepr *type;
+} TypeReprRef;
+
 typedef struct {
     Arena arena;
     NodeID next_id;
@@ -751,6 +801,8 @@ typedef struct {
     HashMapScopeAlloc scope_allocs;
     // Map from id (ScopedIdent) -> resolved node
     HashMapAnyNode resolved_nodes;
+    // Map from id (Concrete expression type) -> resolved type
+    HashMapTypeReprRef types;
 } NodeMetadata;
 
 const char *node_kind_name(NodeKind kind);
@@ -781,6 +833,13 @@ void *expect_node(NodeKind kind, AnyNode node);
 Scope *scope_attach(NodeMetadata *m, AnyNode node);
 void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node);
 Scope *scope_get(NodeMetadata *m, NodeID id);
+
+void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
+AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id);
+
+TypeRepr *type_alloc(NodeMetadata *m);
+void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type);
+TypeRepr *type_try_get(NodeMetadata *m, NodeID id);
 
 typedef enum {
     LOOKUP_MODE_LEXICAL,
@@ -816,9 +875,6 @@ typedef struct {
 
 void dump_tree(TreeDumpCtx *ctx, NodeID id);
 void dump_symbols(const SourceCode *code, NodeMetadata *m);
-
-void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
-AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

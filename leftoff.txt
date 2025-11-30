@@ -1,6 +1,18 @@
-* Have a cleanup pass like before that will make designated initializers
-  no longer expressions. This makes it easier to ignore them during name resolution
-  as they need to be deferred to type  checking.
+* Fleshing out 'sem'. Right now working on type resolution and checking.
+  Will probably need pre-pass for global variables. Right now I am using
+  exit function on each expression to validate them, which means post
+  order validation from leaves up to the top of the tree.
+
+The following inference feature:
+
+```
+let foo Some_Enum = ::bar;
+```
+
+Will work by setting `Some_Enum` as the inferred namespace in the context and
+at type res/check time the `::bar` symbol will be resolved in this namespace
+before having its type resolved.
+
 
 * Remove unecessary passing of id to functions in syn
   - what node we are working on is now kept track of anyway with the new API

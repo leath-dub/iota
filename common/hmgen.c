@@ -7,10 +7,7 @@
 
 // Put any types you need to specialize the hash map with in here
 static const char *types[] = {
-    "Point",
-    "ScopeAlloc",
-    "ScopeEntry",
-    "AnyNode",
+    "Point", "ScopeAlloc", "ScopeEntry", "AnyNode", "TypeReprRef",
 };
 static const int types_len = sizeof(types) / sizeof(*types);
 

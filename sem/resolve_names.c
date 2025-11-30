@@ -153,7 +153,8 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
         }
         scope = scope_get(ctx->meta, *lookup.entry->node.data);
 
-        // Prevent access the identifiers inside of a function
+        // Prevent access to the identifiers inside of a function when
+        // not inside its body
         if (lookup.entry->node.kind == NODE_FN_DECL &&
             i != scoped_ident->len - 1) {
             FnDecl *res_fn = (FnDecl *)lookup.entry->node.data;
@@ -181,12 +182,6 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
             // Reached the end, no candidate was valid.
             sem_raise(ctx, defined_at, "error", "could not resolve name");
         }
-    }
-
-    Ident *leaf = scoped_ident->items[scoped_ident->len - 1];
-    AnyNode *res = try_get_resolved_node(ctx->meta, leaf->id);
-    if (res) {
-        set_resolved_node(ctx->meta, MAKE_ANY(scoped_ident), *res);
     }
 }
 

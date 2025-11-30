@@ -26,6 +26,7 @@ NodeMetadata new_node_metadata(void) {
             },
         .scope_allocs = hm_scope_alloc_new(128),
         .resolved_nodes = hm_any_node_new(128),
+        .types = hm_type_repr_ref_new(128),
         .offsets =
             {
                 .len = 0,
@@ -296,10 +297,42 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
 }
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
-    assert(node.kind == NODE_IDENT || node.kind == NODE_SCOPED_IDENT);
+    assert(node.kind == NODE_IDENT);
     hm_any_node_put(&m->resolved_nodes, idtos(node.data), resolved_node);
 }
 
 AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id) {
     return hm_any_node_try_get(&m->resolved_nodes, idtos(&id));
+}
+
+TypeRepr *type_alloc(NodeMetadata *m) {
+    return arena_alloc(&m->arena, sizeof(TypeRepr), _Alignof(TypeRepr));
+}
+
+void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type) {
+    switch (node.kind) {
+        case NODE_ATOM:
+        case NODE_POSTFIX_EXPR:
+        case NODE_CALL:
+        case NODE_FIELD_ACCESS:
+        case NODE_COLL_ACCESS:
+        case NODE_UNARY_EXPR:
+        case NODE_BIN_EXPR:
+        case NODE_VAR_DECL:
+            break;
+        default:
+            assert(false &&
+                   "can only set type on concrete expression or variable "
+                   "declaration");
+    }
+    hm_type_repr_ref_put(&m->types, idtos(node.data),
+                         (TypeReprRef){.type = type});
+}
+
+TypeRepr *type_try_get(NodeMetadata *m, NodeID id) {
+    TypeReprRef *ref = hm_type_repr_ref_try_get(&m->types, idtos(&id));
+    if (ref) {
+        return ref->type;
+    }
+    return NULL;
 }

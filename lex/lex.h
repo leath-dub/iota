@@ -75,6 +75,7 @@
     KEYWORD(BOOL, "bool")                     \
     KEYWORD(RETURN, "return")                 \
     KEYWORD(STRING, "string")                 \
+    KEYWORD(UNIT, "unit")                     \
     KEYWORD(TRUE, "true")                     \
     KEYWORD(FALSE, "false")                   \
     KEYWORD(CAST, "cast")                     \

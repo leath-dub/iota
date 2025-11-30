@@ -723,6 +723,7 @@ Type *parse_type(ParseCtx *c) {
         case T_F64:
         case T_BOOL:
         case T_STRING:
+        case T_UNIT:
         case T_ANY: {
             {
                 NodeCtx builtin_ctx = start_node(c, NODE_BUILTIN_TYPE);
@@ -1512,6 +1513,7 @@ Atom *parse_atom(ParseCtx *c) {
         case T_F32:
         case T_F64:
         case T_BOOL:
+        case T_UNIT:
         case T_STRING:
             n->t = ATOM_BUILTIN_TYPE;
             n->builtin_type = get_atom_token(c);
