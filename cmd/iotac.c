@@ -66,18 +66,17 @@ int main(int argc, char *argv[]) {
 
     flush_errors(&code);
 
-    do_build_symbol_table(&pc.meta, any_root);
-    do_resolve_names(&code, &pc.meta, any_root);
-    do_check_types(&code, &pc.meta, any_root);
+    // do_build_symbol_table(&pc.meta, any_root);
+    // do_resolve_names(&code, &pc.meta, any_root);
+    // do_check_types(&code, &pc.meta, any_root);
 
-    // TreeDumpCtx dump_ctx = {
-    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
-    //     &pc.meta};
-    // dump_tree(&dump_ctx, root->id);
+    TreeDumpCtx dump_ctx = {
+        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
+    dump_tree(&dump_ctx, root->id);
 
     flush_errors(&code);
 
-    dump_symbols(&code, &pc.meta);
+    // dump_symbols(&code, &pc.meta);
 
     source_code_free(&code);
     parse_ctx_free(&pc);
