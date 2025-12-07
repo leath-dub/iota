@@ -148,6 +148,18 @@ Tok lex_peek(Lexer *l) {
             }
             return new_tok(l, T_BANG, 1);
         }
+        case '<': {
+            if (ahead(l, '=')) {
+                return new_tok(l, T_LTEQ, 2);
+            }
+            return new_tok(l, T_LT, 1);
+        }
+        case '>': {
+            if (ahead(l, '=')) {
+                return new_tok(l, T_GTEQ, 2);
+            }
+            return new_tok(l, T_GT, 1);
+        }
         case '/': {
             if (ahead(l, '/')) {
                 // Its a comment look for '\n' or eof

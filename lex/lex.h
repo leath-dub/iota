@@ -34,6 +34,10 @@
     TOKEN(EQ, "'='")                          \
     TOKEN(EQEQ, "'=='")                       \
     TOKEN(NEQ, "'!='")                        \
+    TOKEN(LT, "'<'")                          \
+    TOKEN(LTEQ, "'<='")                       \
+    TOKEN(GT, "'>'")                          \
+    TOKEN(GTEQ, "'>='")                       \
     TOKEN(PIPE, "'|'")                        \
     TOKEN(AMP, "'&'")                         \
     TOKEN(PERC, "'%'")                        \

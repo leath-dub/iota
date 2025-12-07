@@ -1069,6 +1069,10 @@ static bool is_infix_op(TokKind t) {
         case T_PIPE:
         case T_NEQ:
         case T_EQEQ:
+        case T_LT:
+        case T_GT:
+        case T_LTEQ:
+        case T_GTEQ:
             return true;
         default:
             return false;
@@ -1253,6 +1257,11 @@ static Maybe_Power infix_bpow(TokKind op) {
         case T_NEQ:
         case T_EQEQ:
             return (Maybe_Power){binding_power_of[PREC_EQUALITY], true};
+        case T_LT:
+        case T_GT:
+        case T_LTEQ:
+        case T_GTEQ:
+            return (Maybe_Power){binding_power_of[PREC_RELATIONAL], true};
         default:
             return (Maybe_Power){.ok = false};
     }
