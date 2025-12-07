@@ -33,6 +33,7 @@ static void expected(ParseCtx *c, NodeID in, const char *msg);
 static bool expect_one_of(ParseCtx *c, NodeID in, Toks toks,
                           const char *message);
 static bool skip_if(ParseCtx *c, NodeID in, TokKind t);
+// static void sync_if_none_of(ParseCtx *c, Toks toks);
 static bool expect(ParseCtx *c, NodeID in, TokKind t);
 static ParseState set_marker(ParseCtx *c);
 static void backtrack(ParseCtx *c, ParseState marker);
@@ -230,6 +231,7 @@ VarDecl *parse_var_decl(ParseCtx *c) {
         // Must have a type
         n->type = parse_type(c);
     }
+    // sync_if_none_of(c, TOKS(T_EQ, T_SCLN));
     if (looking_at(c, T_EQ)) {
         n->init.ok = true;
         n->init.assign_token = consume(c);
@@ -477,7 +479,7 @@ Stmt *parse_stmt(ParseCtx *c) {
             n->return_stmt = parse_return_stmt(c);
             break;
         case T_WHILE:
-            n->t = STMT_RETURN;
+            n->t = STMT_WHILE;
             n->while_stmt = parse_while_stmt(c);
             break;
         case T_CASE:
@@ -1608,6 +1610,8 @@ static bool expect(ParseCtx *c, NodeID in, TokKind t) {
         }
         c->panic_mode = true;
         expected(c, in, tok_to_string[t].data);
+    } else {
+        c->panic_mode = false;
     }
     return match;
 }
@@ -1619,6 +1623,14 @@ static bool skip_if(ParseCtx *c, NodeID in, TokKind t) {
     }
     return false;
 }
+
+// static void sync_if_none_of(ParseCtx *c, Toks toks) {
+//     ParseState m = set_marker(c);
+//     advance(c, toks);
+//     if (!one_of(at(c).t, toks)) {
+//         backtrack(c, m);
+//     }
+// }
 
 static bool expect_one_of(ParseCtx *c, NodeID in, Toks toks,
                           const char *message) {
@@ -1642,7 +1654,7 @@ static bool expect_one_of(ParseCtx *c, NodeID in, Toks toks,
         c->panic_mode = true;
         expected(c, in, message);
     } else {
-        next(c);
+        c->panic_mode = false;
     }
     return match;
 }
