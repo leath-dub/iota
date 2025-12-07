@@ -145,6 +145,8 @@ void stack_pop(Stack *stack);
 #endif
 
 #define SPLAT(STR) (STR).len, (STR).data
+#define RSPLAT(STR) (STR).data, (STR).len
+#define RSPLATU(STR) (uint8_t *)(STR).data, (STR).len
 
 char *allocf(Arena *a, const char *fmt, ...) PRINTF_CHECK(2, 3);
 

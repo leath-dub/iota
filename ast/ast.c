@@ -24,9 +24,9 @@ NodeMetadata new_node_metadata(void) {
                 .cap = 0,
                 .items = NULL,
             },
-        .scope_allocs = hm_scope_alloc_new(128),
-        .resolved_nodes = hm_any_node_new(128),
-        .types = hm_type_repr_ref_new(128),
+        .scope_allocs = scope_map_create(128),
+        .resolved_nodes = any_node_map_create(128),
+        .types = type_repr_map_create(128),
         .offsets =
             {
                 .len = 0,
@@ -54,13 +54,15 @@ void node_metadata_free(NodeMetadata *m) {
     if (m->offsets.items != NULL) {
         free(m->offsets.items);
     }
-    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scope_allocs);
-    ScopeAlloc *alloc = NULL;
-    while ((alloc = hm_cursor_scope_alloc_next(&it))) {
-        hm_scope_entry_free(&alloc->scope_ref->table);
+
+    MapCursor it = map_cursor_create(m->scope_allocs);
+    while (map_cursor_next(&it)) {
+        Scope *scope = *(Scope **)it.current;
+        scope_entry_map_delete(scope->table);
     }
-    hm_scope_alloc_free(&m->scope_allocs);
-    hm_any_node_free(&m->resolved_nodes);
+    scope_map_delete(m->scope_allocs);
+    any_node_map_delete(m->resolved_nodes);
+    type_repr_map_delete(m->types);
     arena_free(&m->arena);
 }
 
@@ -180,58 +182,53 @@ void *expect_node(NodeKind kind, AnyNode node) {
     return node.data;
 }
 
-// This is kind of dirty! My hashmap only supports string keys, so we need
-// to convert non string keys into string. Also the hashmap does not own the
-// key consequently so you we need a reference to the node id.
-static string idtos(NodeID *id) {
-    return (string){.data = (char *)id, .len = sizeof(*id)};
-}
-
 Scope *scope_attach(NodeMetadata *m, AnyNode node) {
-    ScopeAllocResult res =
-        hm_scope_alloc_ensure(&m->scope_allocs, idtos(node.data));
-    assert(res.inserted && "probably tried to insert a scope twice");
+    bool inserted = false;
+    Scope **scope_ref =
+        scope_map_get_or_insert(&m->scope_allocs, *node.data, &inserted);
+    assert(inserted && "probably tried to insert a scope twice");
 
     Scope *scope = arena_alloc(&m->arena, sizeof(Scope), _Alignof(Scope));
     scope->self = node;
-    scope->table = hm_scope_entry_new(128);
+    scope->table = scope_entry_map_create(128);
     scope->enclosing_scope.ptr = NULL;
-    res.entry->scope_ref = scope;
+    *scope_ref = scope;
 
     return scope;
 }
 
 Scope *scope_get(NodeMetadata *m, NodeID id) {
-    string id_ref = idtos(&id);
-    if (hm_scope_alloc_contains(&m->scope_allocs, id_ref)) {
-        ScopeAllocResult res = hm_scope_alloc_ensure(&m->scope_allocs, id_ref);
-        assert(!res.inserted);
-        return res.entry->scope_ref;
-    }
-    return NULL;
+    Scope **res = scope_map_get(m->scope_allocs, id);
+    return res ? *res : NULL;
 }
 
 void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
-    ScopeEntryResult res = hm_scope_entry_ensure(&scope->table, symbol);
-    if (res.inserted) {
-        res.entry->node = node;
-        res.entry->shadows = NULL;
+    bool inserted = false;
+    ScopeEntry **entry_ref = scope_entry_map_get_or_insert(
+        &scope->table, (bytes){RSPLATU(symbol)}, &inserted);
+    if (inserted) {
+        *entry_ref =
+            arena_alloc(&m->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
+        (*entry_ref)->node = node;
+        (*entry_ref)->shadows = NULL;
         return;
     }
 
     // Allocate a new entry and copy the old head into it.
     ScopeEntry *old_entry =
         arena_alloc(&m->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
-    *old_entry = *res.entry;
+    *old_entry = **entry_ref;
 
-    res.entry->node = node;
-    res.entry->shadows = old_entry;
+    (*entry_ref)->node = node;
+    (*entry_ref)->shadows = old_entry;
 }
 
 ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
-    ScopeEntry *entry = hm_scope_entry_try_get(&scope->table, symbol);
+    bytes symbol_bytes = {RSPLATU(symbol)};
+
+    ScopeEntry **entry = scope_entry_map_get(scope->table, symbol_bytes);
     if (entry) {
-        return (ScopeLookup){entry, scope};
+        return (ScopeLookup){*entry, scope};
     }
     // If not doing lexical lookup, just fail here
     if (mode == LOOKUP_MODE_DIRECT) {
@@ -241,9 +238,10 @@ ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
     // Otherwise for lexical lookup check the enclosing scopes backwards
     Scope *it = scope;
     while (it->enclosing_scope.ptr) {
-        entry = hm_scope_entry_try_get(&it->enclosing_scope.ptr->table, symbol);
+        entry =
+            scope_entry_map_get(it->enclosing_scope.ptr->table, symbol_bytes);
         if (entry) {
-            return (ScopeLookup){entry, it->enclosing_scope.ptr};
+            return (ScopeLookup){*entry, it->enclosing_scope.ptr};
         }
         it = it->enclosing_scope.ptr;
     }
@@ -298,11 +296,12 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
     assert(node.kind == NODE_IDENT);
-    hm_any_node_put(&m->resolved_nodes, idtos(node.data), resolved_node);
+    *any_node_map_get_or_insert(&m->resolved_nodes, *node.data, NULL) =
+        resolved_node;
 }
 
 AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id) {
-    return hm_any_node_try_get(&m->resolved_nodes, idtos(&id));
+    return any_node_map_get(m->resolved_nodes, id);
 }
 
 TypeRepr *type_alloc(NodeMetadata *m) {
@@ -325,14 +324,9 @@ void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type) {
                    "can only set type on concrete expression or variable "
                    "declaration");
     }
-    hm_type_repr_ref_put(&m->types, idtos(node.data),
-                         (TypeReprRef){.type = type});
+    *type_repr_map_get_or_insert(&m->types, *node.data, NULL) = *type;
 }
 
 TypeRepr *type_try_get(NodeMetadata *m, NodeID id) {
-    TypeReprRef *ref = hm_type_repr_ref_try_get(&m->types, idtos(&id));
-    if (ref) {
-        return ref->type;
-    }
-    return NULL;
+    return type_repr_map_get(m->types, id);
 }

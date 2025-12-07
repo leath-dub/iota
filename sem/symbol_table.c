@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "../ast/ast.h"
 
 static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node);

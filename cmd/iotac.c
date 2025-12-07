@@ -59,8 +59,6 @@ int main(int argc, char *argv[]) {
     SourceCode code = new_source_code(ztos(path), source);
     ParseCtx pc = new_parse_ctx(&code);
 
-    assert(pc.meta.scope_allocs.base.entries.len != 0);
-
     SourceFile *root = parse_source_file(&pc);
 
     AnyNode any_root = MAKE_ANY(root);

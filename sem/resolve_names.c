@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "../ast/ast.h"
 
 static DfsCtrl resolve_names_enter(void *_ctx, AnyNode node);

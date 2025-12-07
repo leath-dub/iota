@@ -2,7 +2,7 @@
 #define AST_H
 
 #include "../common/common.h"
-#include "../common/hmtypes.h"
+#include "../common/map.h"
 #include "../lex/lex.h"
 #include "../mod/mod.h"
 
@@ -730,13 +730,11 @@ typedef struct ScopeEntry {
 
 typedef struct Scope {
     AnyNode self;
-    HashMapScopeEntry table;
+    ScopeEntry **table;
     NULLABLE_PTR(struct Scope) enclosing_scope;
 } Scope;
 
-typedef struct ScopeAlloc {
-    Scope *scope_ref;
-} ScopeAlloc;
+MAP_BYTES_DEFINE(scope_entry_map, ScopeEntry *)
 
 typedef enum {
     STORAGE_U8,
@@ -784,10 +782,6 @@ typedef struct TypeRepr {
     };
 } TypeRepr;
 
-typedef struct TypeReprRef {
-    TypeRepr *type;
-} TypeReprRef;
-
 typedef struct {
     Arena arena;
     NodeID next_id;
@@ -798,12 +792,16 @@ typedef struct {
     // Used to label nodes in the AST for pretty printer (ast/dump.c)
     NodeNames names;
     // Symbol table
-    HashMapScopeAlloc scope_allocs;
+    Scope **scope_allocs;
     // Map from id (ScopedIdent) -> resolved node
-    HashMapAnyNode resolved_nodes;
+    AnyNode *resolved_nodes;
     // Map from id (Concrete expression type) -> resolved type
-    HashMapTypeReprRef types;
+    TypeRepr *types;
 } NodeMetadata;
+
+MAP_DEFINE(scope_map, NodeID, Scope *)
+MAP_DEFINE(any_node_map, NodeID, AnyNode)
+MAP_DEFINE(type_repr_map, NodeID, TypeRepr)
 
 const char *node_kind_name(NodeKind kind);
 NodeMetadata new_node_metadata(void);

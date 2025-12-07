@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "sem.h"
 
 static DfsCtrl check_types_enter(void *_ctx, AnyNode node);
@@ -270,6 +272,8 @@ static void check_bin_expr(TypeCheckCtx *ctx, BinExpr *bin_expr) {
     if (lt->t != rt->t) {
         sem_raise(ctx, bin_expr->op.offset, "type error", "mismatched types");
     }
+
+    type_set(ctx->meta, MAKE_ANY(bin_expr), lt);
 }
 
 static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {

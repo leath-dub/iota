@@ -60,34 +60,34 @@ void dump_tree(TreeDumpCtx *ctx, NodeID id) {
 }
 
 void dump_symbols(const SourceCode *code, NodeMetadata *m) {
-    HashMapCursorScopeAlloc it = hm_cursor_scope_alloc_new(&m->scope_allocs);
-    ScopeAlloc *alloc = NULL;
-    while ((alloc = hm_cursor_scope_alloc_next(&it))) {
-        Entry *entry = it.base.current_entry;
-        assert(entry->key.len == sizeof(NodeID));
+    MapCursor it = map_cursor_create(m->scope_allocs);
+    while (map_cursor_next(&it)) {
+        Scope **item = it.current;
+        NodeID id = *(NodeID *)map_key_of(m->scope_allocs, item);
 
-        NodeID id = *(NodeID *)it.base.current_entry->key.data;
         printf("scope: [node_id = %d]\n", id);
         printf("  node_type: <%s>\n", get_node_name(m, id));
 
-        Scope *enclosing_scope = alloc->scope_ref->enclosing_scope.ptr;
+        Scope *scope = *item;
+        Scope *enclosing_scope = scope->enclosing_scope.ptr;
         if (enclosing_scope) {
             printf("  enclosing_scope: [node_id = %d]\n",
                    *(NodeID *)enclosing_scope->self.data);
         }
 
         bool first = true;
-        HashMapCursorScopeEntry subit =
-            hm_cursor_scope_entry_new(&alloc->scope_ref->table);
-        ScopeEntry *scope_entry = NULL;
-        while ((scope_entry = hm_cursor_scope_entry_next(&subit))) {
+        MapCursor subit = map_cursor_create(scope->table);
+        while (map_cursor_next(&subit)) {
             if (first) {
                 printf("  + Entries:\n");
                 first = false;
             }
-            string key = subit.base.current_entry->key;
-            printf("  | \"%.*s\":\n", key.len, key.data);
-            ScopeEntry *scope_entry_it = scope_entry;
+
+            ScopeEntry **item = subit.current;
+            bytes key = *(bytes *)map_key_of(scope->table, item);
+
+            printf("  | \"%.*s\":\n", key.length, key.data);
+            ScopeEntry *scope_entry_it = *item;
             while (scope_entry_it) {
                 NodeID entry_id = *(NodeID *)scope_entry_it->node.data;
                 u32 offset = get_node_offset(m, entry_id);

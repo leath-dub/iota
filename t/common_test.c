@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "../common/hmtypes.h"
+#include "../common/map.h"
 #include "test.h"
 
 void test_arena(void) {
@@ -48,45 +48,52 @@ typedef struct Point {
     const char *name;
 } Point;
 
-void test_hashmap(void) {
-    HashMapPoint pm = hm_point_new(HM_INIT_SLOTS);
+MAP_BYTES_DEFINE(point_map, Point)
 
-    Point *point = hm_point_ensure(&pm, S("mypoint")).entry;
+#define BYTES(s) {.data = (uint8_t *)(s), .length = sizeof(s) - 1}
+#define B(s) ((bytes)BYTES(s))
+
+void test_hashmap(void) {
+    Point *pm = point_map_create(HM_INIT_SLOTS);
+
+    Point *point = point_map_get_or_insert(&pm, B("mypoint"), NULL);
     point->x = 20;
     point->y = 30;
     point->name = "hello";
-    hm_point_put(&pm, S("other"), ((Point){.x = 10, .y = 12}));
-    (void)hm_point_ensure(&pm, S("foo"));
-    (void)hm_point_ensure(&pm, S("bar"));
-    (void)hm_point_ensure(&pm, S("baz"));
-    (void)hm_point_ensure(&pm, S("billy"));
+    *point_map_get_or_insert(&pm, B("other"), NULL) = (Point){.x = 10, .y = 12};
+    (void)point_map_get_or_insert(&pm, B("foo"), NULL);
+    (void)point_map_get_or_insert(&pm, B("bar"), NULL);
+    (void)point_map_get_or_insert(&pm, B("baz"), NULL);
+    (void)point_map_get_or_insert(&pm, B("billy"), NULL);
 
-    ASSERT(hm_point_contains(&pm, S("mypoint")));
-    ASSERT(hm_point_contains(&pm, S("other")));
-    ASSERT(hm_point_contains(&pm, S("foo")));
-    ASSERT(hm_point_contains(&pm, S("bar")));
-    ASSERT(hm_point_contains(&pm, S("baz")));
-    ASSERT(hm_point_contains(&pm, S("billy")));
+    ASSERT(point_map_get(pm, B("mypoint")) != NULL);
+    ASSERT(point_map_get(pm, B("other")) != NULL);
+    ASSERT(point_map_get(pm, B("foo")) != NULL);
+    ASSERT(point_map_get(pm, B("bar")) != NULL);
+    ASSERT(point_map_get(pm, B("baz")) != NULL);
+    ASSERT(point_map_get(pm, B("billy")) != NULL);
 
-    Point *mypoint = hm_point_get(&pm, S("mypoint"));
+    Point *mypoint = point_map_get(pm, B("mypoint"));
+    ASSERT(mypoint != NULL);
     ASSERT(mypoint->x == 20);
     ASSERT(mypoint->y == 30);
     ASSERT_STREQL(ztos((char *)mypoint->name), S("hello"));
 
-    Point *other = hm_point_get(&pm, S("other"));
+    Point *other = point_map_get(pm, B("other"));
+    ASSERT(other != NULL);
     ASSERT(other->x == 10);
     ASSERT(other->y == 12);
 
-    HashMapCursor cursor = hm_cursor_unsafe_new(&pm.base);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) != NULL);
-    ASSERT(hm_cursor_unsafe_next(&cursor) == NULL);
+    MapCursor cursor = map_cursor_create(pm);
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(map_cursor_next(&cursor));
+    ASSERT(!map_cursor_next(&cursor));
 
-    hm_point_free(&pm);
+    point_map_delete(pm);
 }
 
 void test_stack(void) {
