@@ -296,8 +296,7 @@ void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
 
 void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
     assert(node.kind == NODE_IDENT);
-    *any_node_map_get_or_insert(&m->resolved_nodes, *node.data, NULL) =
-        resolved_node;
+    any_node_map_put(&m->resolved_nodes, *node.data, resolved_node);
 }
 
 AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id) {
@@ -324,7 +323,7 @@ void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type) {
                    "can only set type on concrete expression or variable "
                    "declaration");
     }
-    *type_repr_map_get_or_insert(&m->types, *node.data, NULL) = *type;
+    type_repr_map_put(&m->types, *node.data, *type);
 }
 
 TypeRepr *type_try_get(NodeMetadata *m, NodeID id) {

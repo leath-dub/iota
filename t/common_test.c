@@ -61,6 +61,7 @@ void test_hashmap(void) {
     point->y = 30;
     point->name = "hello";
     *point_map_get_or_insert(&pm, B("other"), NULL) = (Point){.x = 10, .y = 12};
+    point_map_put(&pm, B("other"), (Point){.x = 10, .y = 12});
     (void)point_map_get_or_insert(&pm, B("foo"), NULL);
     (void)point_map_get_or_insert(&pm, B("bar"), NULL);
     (void)point_map_get_or_insert(&pm, B("baz"), NULL);

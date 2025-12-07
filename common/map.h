@@ -40,6 +40,9 @@ void *map_bytes_get_or_insert(void **values, bytes *key, bool *inserted);
     }                                                                          \
     static inline V *name##_get_or_insert(V **values, K key, bool *inserted) { \
         return map_get_or_insert((void **)values, (void *)&key, inserted);     \
+    }                                                                          \
+    static inline void name##_put(V **values, K key, V value) {                \
+        *name##_get_or_insert(values, key, NULL) = value;                      \
     }
 
 #define MAP_BYTES_DEFINE(name, V)                                        \
@@ -53,6 +56,9 @@ void *map_bytes_get_or_insert(void **values, bytes *key, bool *inserted);
     static inline V *name##_get_or_insert(V **values, bytes key,         \
                                           bool *inserted) {              \
         return map_bytes_get_or_insert((void **)values, &key, inserted); \
+    }                                                                    \
+    static inline void name##_put(V **values, bytes key, V value) {      \
+        *name##_get_or_insert(values, key, NULL) = value;                \
     }
 
 #endif
