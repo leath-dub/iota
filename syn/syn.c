@@ -67,6 +67,10 @@ Imports *parse_imports(ParseCtx *c) {
     Imports *n = expect_node(NODE_IMPORTS, nc.node);
     while (looking_at(c, T_IMPORT)) {
         APPEND(n, parse_import(c));
+        // Stop potential infinite loop
+        if (c->panic_mode) {
+            next(c);
+        }
     }
     arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
@@ -88,6 +92,10 @@ Decls *parse_decls(ParseCtx *c) {
     Decls *n = expect_node(NODE_DECLS, nc.node);
     while (!looking_at(c, T_EOF)) {
         APPEND(n, parse_decl(c));
+        // Stop potential infinite loop
+        if (c->panic_mode) {
+            next(c);
+        }
     }
     arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);

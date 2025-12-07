@@ -70,9 +70,10 @@ int main(int argc, char *argv[]) {
     // do_resolve_names(&code, &pc.meta, any_root);
     // do_check_types(&code, &pc.meta, any_root);
 
-    TreeDumpCtx dump_ctx = {
-        .fs = stdout, .indent_level = 0, .indent_width = 2, .meta = &pc.meta};
-    dump_tree(&dump_ctx, root->id);
+    // TreeDumpCtx dump_ctx = {
+    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
+    //     &pc.meta};
+    // dump_tree(&dump_ctx, root->id);
 
     flush_errors(&code);
 
