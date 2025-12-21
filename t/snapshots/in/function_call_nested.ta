@@ -1,0 +1,1 @@
+let _ = foo(foo(foo(bar((*in + 10)()), foo())), foo());

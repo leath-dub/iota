@@ -1,0 +1,93 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            bin_expr {
+              op='-'
+              left:
+                expr {
+                  bin_expr {
+                    op='+'
+                    left:
+                      expr {
+                        unary_expr {
+                          op='&'
+                          expr {
+                            bin_expr {
+                              op='+'
+                              left:
+                                expr {
+                                  atom {
+                                    '10'
+                                  }
+                                }
+                              right:
+                                expr {
+                                  atom {
+                                    '11'
+                                  }
+                                }
+                            }
+                          }
+                        }
+                      }
+                    right:
+                      expr {
+                        unary_expr {
+                          op='&'
+                          expr {
+                            atom {
+                              scoped_ident {
+                                ident {
+                                  'x'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                  }
+                }
+              right:
+                expr {
+                  unary_expr {
+                    op='&'
+                    expr {
+                      call {
+                        expr {
+                          atom {
+                            scoped_ident {
+                              ident {
+                                'Foo'
+                              }
+                            }
+                          }
+                        }
+                        call_args {
+                          call_arg {
+                            expr {
+                              atom {
+                                '10'
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+            }
+          }
+      }
+    }
+  }
+}

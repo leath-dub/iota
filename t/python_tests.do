@@ -1,9 +1,10 @@
 TESTS=""
-for test in syn/*; do
+for test in snapshots/in/*; do
   case $test in
     *.py)
-      TESTS="$TESTS ${test%.py}"
+      TESTS="$TESTS ${test%.ta}"
   esac
 done
 
-redo-ifchange $TESTS
+redo-ifchange $TESTS ./snaps.py
+./snaps.py test

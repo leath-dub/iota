@@ -1,0 +1,6 @@
+let _ = foo[10];
+
+fun main() {
+    let y = unit(30);
+    let x = 10 + y;
+}

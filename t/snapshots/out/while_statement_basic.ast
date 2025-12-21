@@ -1,0 +1,32 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      fn_decl {
+        ident {
+          '_'
+        }
+        fn_params {}
+        fn_mods {}
+        comp_stmt {
+          stmt {
+            while_stmt {
+              cond {
+                expr {
+                  atom {
+                    scoped_ident {
+                      ident {
+                        'foo'
+                      }
+                    }
+                  }
+                }
+              }
+              comp_stmt {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

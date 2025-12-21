@@ -1,0 +1,41 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            field_access {
+              lvalue:
+                expr {
+                  field_access {
+                    lvalue:
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'foo'
+                            }
+                          }
+                        }
+                      }
+                    ident {
+                      'bar'
+                    }
+                  }
+                }
+              ident {
+                'baz'
+              }
+            }
+          }
+      }
+    }
+  }
+}

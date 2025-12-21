@@ -1,0 +1,42 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            call {
+              expr {
+                atom {
+                  scoped_ident {
+                    ident {
+                      'foo'
+                    }
+                  }
+                }
+              }
+              call_args {
+                call_arg {
+                  expr {
+                    atom {
+                      scoped_ident {
+                        ident {
+                          'x'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+      }
+    }
+  }
+}

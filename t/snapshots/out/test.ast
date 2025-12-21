@@ -1,0 +1,112 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            coll_access {
+              expr {
+                atom {
+                  scoped_ident {
+                    ident {
+                      'foo'
+                    }
+                  }
+                }
+              }
+              index {
+                expr {
+                  atom {
+                    '10'
+                  }
+                }
+              }
+            }
+          }
+      }
+    }
+    decl {
+      fn_decl {
+        ident {
+          'main'
+        }
+        fn_params {}
+        fn_mods {}
+        comp_stmt {
+          stmt {
+            decl {
+              var_decl {
+                binding:
+                  var_binding {
+                    ident {
+                      'y'
+                    }
+                  }
+                value:
+                  expr {
+                    call {
+                      expr {
+                        atom {
+                          keyword='unit'
+                        }
+                      }
+                      call_args {
+                        call_arg {
+                          expr {
+                            atom {
+                              '30'
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+              }
+            }
+          }
+          stmt {
+            decl {
+              var_decl {
+                binding:
+                  var_binding {
+                    ident {
+                      'x'
+                    }
+                  }
+                value:
+                  expr {
+                    bin_expr {
+                      op='+'
+                      left:
+                        expr {
+                          atom {
+                            '10'
+                          }
+                        }
+                      right:
+                        expr {
+                          atom {
+                            scoped_ident {
+                              ident {
+                                'y'
+                              }
+                            }
+                          }
+                        }
+                    }
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

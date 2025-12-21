@@ -1,0 +1,41 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      fn_decl {
+        ident {
+          '_'
+        }
+        fn_params {}
+        fn_mods {}
+        comp_stmt {
+          stmt {
+            return_stmt {
+              expr {
+                bin_expr {
+                  op='+'
+                  left:
+                    expr {
+                      atom {
+                        scoped_ident {
+                          ident {
+                            'x'
+                          }
+                        }
+                      }
+                    }
+                  right:
+                    expr {
+                      atom {
+                        '12'
+                      }
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

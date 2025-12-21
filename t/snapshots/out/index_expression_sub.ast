@@ -1,0 +1,52 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            coll_access {
+              expr {
+                bin_expr {
+                  op='+'
+                  left:
+                    expr {
+                      atom {
+                        scoped_ident {
+                          ident {
+                            'foo'
+                          }
+                        }
+                      }
+                    }
+                  right:
+                    expr {
+                      atom {
+                        scoped_ident {
+                          ident {
+                            'bar'
+                          }
+                        }
+                      }
+                    }
+                }
+              }
+              index {
+                expr {
+                  atom {
+                    '10'
+                  }
+                }
+              }
+            }
+          }
+      }
+    }
+  }
+}

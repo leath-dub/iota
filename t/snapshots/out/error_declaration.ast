@@ -1,0 +1,36 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      err_decl {
+        ident {
+          'Parse_Error'
+        }
+        errs {
+          err {
+            scoped_ident {
+              ident {
+                'Missing_Semicolon'
+              }
+            }
+          }
+          err {
+            scoped_ident {
+              ident {
+                'Unmatched_Quote'
+              }
+            }
+          }
+          err {
+            kind='!'
+            scoped_ident {
+              ident {
+                'IO_Error'
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      enum_decl {
+        ident {
+          'Direction'
+        }
+        idents {
+          ident {
+            'north'
+          }
+          ident {
+            'south'
+          }
+          ident {
+            'east'
+          }
+          ident {
+            'west'
+          }
+        }
+      }
+    }
+  }
+}

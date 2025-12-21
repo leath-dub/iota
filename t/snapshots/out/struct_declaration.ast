@@ -1,0 +1,36 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      struct_decl {
+        ident {
+          'Point'
+        }
+        struct_body {
+          fields {
+            field {
+              ident {
+                'x'
+              }
+              type {
+                builtin_type {
+                  'f32'
+                }
+              }
+            }
+            field {
+              ident {
+                'y'
+              }
+              type {
+                builtin_type {
+                  'f32'
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

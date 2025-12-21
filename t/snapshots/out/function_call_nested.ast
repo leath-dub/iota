@@ -1,0 +1,147 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            call {
+              expr {
+                atom {
+                  scoped_ident {
+                    ident {
+                      'foo'
+                    }
+                  }
+                }
+              }
+              call_args {
+                call_arg {
+                  expr {
+                    call {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'foo'
+                            }
+                          }
+                        }
+                      }
+                      call_args {
+                        call_arg {
+                          expr {
+                            call {
+                              expr {
+                                atom {
+                                  scoped_ident {
+                                    ident {
+                                      'foo'
+                                    }
+                                  }
+                                }
+                              }
+                              call_args {
+                                call_arg {
+                                  expr {
+                                    call {
+                                      expr {
+                                        atom {
+                                          scoped_ident {
+                                            ident {
+                                              'bar'
+                                            }
+                                          }
+                                        }
+                                      }
+                                      call_args {
+                                        call_arg {
+                                          expr {
+                                            call {
+                                              expr {
+                                                bin_expr {
+                                                  op='+'
+                                                  left:
+                                                    expr {
+                                                      unary_expr {
+                                                        op='*'
+                                                        expr {
+                                                          atom {
+                                                            scoped_ident {
+                                                              ident {
+                                                                'in'
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  right:
+                                                    expr {
+                                                      atom {
+                                                        '10'
+                                                      }
+                                                    }
+                                                }
+                                              }
+                                              call_args {}
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                                call_arg {
+                                  expr {
+                                    call {
+                                      expr {
+                                        atom {
+                                          scoped_ident {
+                                            ident {
+                                              'foo'
+                                            }
+                                          }
+                                        }
+                                      }
+                                      call_args {}
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                call_arg {
+                  expr {
+                    call {
+                      expr {
+                        atom {
+                          scoped_ident {
+                            ident {
+                              'foo'
+                            }
+                          }
+                        }
+                      }
+                      call_args {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+      }
+    }
+  }
+}

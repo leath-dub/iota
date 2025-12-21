@@ -1,0 +1,21 @@
+source_file {
+  imports {}
+  decls {
+    decl {
+      var_decl {
+        binding:
+          var_binding {
+            ident {
+              '_'
+            }
+          }
+        value:
+          expr {
+            atom {
+              '10'
+            }
+          }
+      }
+    }
+  }
+}
