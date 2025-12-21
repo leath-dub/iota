@@ -43,7 +43,6 @@ char *ffi_parse(void (*parse_fn)(void), const char *srcz, bool delim) {
     fflush(memfs);
     fclose(memfs);
 
-    parse_ctx_delete(&ctx);
     ast_delete(ast);
     arena_free(&arena);
     source_code_free(&code);

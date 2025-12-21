@@ -19,7 +19,6 @@ typedef struct {
 
 typedef struct {
     Lexer lex;
-    Arena arena;
     Ast *ast;
     AstNode *current;
     bool panic_mode;
@@ -32,7 +31,6 @@ typedef struct {
 void check_allocs(void);
 
 ParseCtx parse_ctx_create(Ast *ast, SourceCode *code);
-void parse_ctx_delete(ParseCtx *c);
 
 SourceFile *parse_source_file(ParseCtx *c);
 Imports *parse_imports(ParseCtx *c);

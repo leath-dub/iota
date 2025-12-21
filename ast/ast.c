@@ -102,8 +102,8 @@ typedef struct {
     Layout layout;
 } NodeDescriptor;
 
-Scope *scope_create(Arena *a) {
-    Scope *res = arena_alloc(a, sizeof(Scope), _Alignof(Scope));
+Scope *ast_scope_create(Ast *ast) {
+    Scope *res = arena_alloc(ast->arena, sizeof(Scope), _Alignof(Scope));
     res->self = NULL;
     res->table = NULL;
     res->enclosing_scope.ptr = NULL;

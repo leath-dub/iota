@@ -43,14 +43,11 @@ static void ensure_progress(ParseCtx *c, ParseFn parse_fn);
 ParseCtx parse_ctx_create(Ast *ast, SourceCode *code) {
     return (ParseCtx){
         .lex = new_lexer(code),
-        .arena = new_arena(),
         .ast = ast,
         .current = NULL,
         .panic_mode = false,
     };
 }
-
-void parse_ctx_delete(ParseCtx *c) { arena_free(&c->arena); }
 
 SourceFile *parse_source_file(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_SOURCE_FILE);
