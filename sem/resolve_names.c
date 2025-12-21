@@ -109,9 +109,9 @@ static bool ref_can_resolve_to(NameResCtx *ctx, ScopeLookup lookup, Ident *ref,
 }
 
 static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
-    assert(scoped_ident->len != 0);
+    assert(da_length(scoped_ident->head.children) != 0);
 
-    Tok first = scoped_ident->items[0]->token;
+    Tok first = child_ident_at(&scoped_ident->head, 0)->token;
     if (first.t == T_EMPTY_STRING) {
         // Inferred reference
         return;
@@ -119,15 +119,16 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
     assert(first.t == T_IDENT);
 
     Arena *erra = &ctx->code->error_arena;
+    AstNode *h = &scoped_ident->head;
 
     Scope *scope = get_curr_scope(ctx);
-    for (u32 i = 0; i < scoped_ident->len; i++) {
-        Ident *ident = scoped_ident->items[i];
+    for (u32 i = 0; i < da_length(h->children); i++) {
+        Ident *ident = child_ident_at(&scoped_ident->head, i);
         u32 defined_at = ident->token.offset;
         string ident_text = ident->token.text;
 
         if (!scope) {
-            string supposed_scope = scoped_ident->items[i - 1]->token.text;
+            string supposed_scope = child_ident_at(h, i - 1)->token.text;
             sem_raise(ctx, defined_at, "error",
                       allocf(erra,
                              "cannot resolve '%.*s' in '%.*s' as '%.*s' does "
@@ -142,7 +143,7 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
                          i == 0 ? LOOKUP_MODE_LEXICAL : LOOKUP_MODE_DIRECT);
         if (!lookup.entry) {
             if (i != 0) {
-                string parent = scoped_ident->items[i - 1]->token.text;
+                string parent = child_ident_at(h, i - 1)->token.text;
                 sem_raise(ctx, defined_at, "error",
                           allocf(erra, "'%.*s' not found inside scope '%.*s'",
                                  SPLAT(ident_text), SPLAT(parent)));
@@ -158,7 +159,7 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
         // Prevent access to the identifiers inside of a function when
         // not inside its body
         if (lookup.entry->node->kind == NODE_FN_DECL &&
-            i != scoped_ident->len - 1) {
+            i != da_length(h->children) - 1) {
             FnDecl *res_fn = (FnDecl *)lookup.entry->node;
             FnDecl *curr_fn = ctx->curr_fn.ptr;
             if (curr_fn == NULL || curr_fn != res_fn) {

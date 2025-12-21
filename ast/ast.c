@@ -47,6 +47,17 @@ void tree_data_delete(TreeData td) {
     type_map_delete(td.type);
 }
 
+#define IMPL_CHILD_ACCESS(NODE, UPPER_NAME, lower_name)       \
+    NODE *child_##lower_name##_at(AstNode *n, size_t index) { \
+        assert(da_length(n->children) != 0);                  \
+        Child *ch = children_at(n->children, index);          \
+        assert(ch->t == CHILD_NODE);                          \
+        assert(ch->node->kind == NODE_##UPPER_NAME);          \
+        return (NODE *)ch->node;                              \
+    }
+
+EACH_NODE(IMPL_CHILD_ACCESS)
+
 Child child_token_create(Tok tok) {
     return (Child){
         .t = CHILD_TOKEN,
@@ -187,7 +198,7 @@ void ast_traverse_dfs(void *ctx, Ast *ast, EnterExitVTable vtable) {
 }
 
 #define DESCRIBE_NODE(TYPE, UPPER_NAME, REPR) \
-    [NODE_##UPPER_NAME] = {REPR, LAYOUT_OF(TYPE)},
+    [NODE_##UPPER_NAME] = {#REPR, LAYOUT_OF(TYPE)},
 
 static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
     EACH_NODE(DESCRIBE_NODE)};

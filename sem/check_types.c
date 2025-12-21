@@ -166,8 +166,10 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol) {
 
             fn_type->t = STORAGE_FN;
 
-            for (u32 i = 0; i < fn->params->len; i++) {
-                FnParam *param = fn->params->items[i];
+            AstNode *h = &fn->params->head;
+
+            for (u32 i = 0; i < da_length(h->children); i++) {
+                FnParam *param = child_fn_param_at(h, i);
                 FnTParam tparam = {
                     .type = type_from_tree(ctx, param->type),
                     .variadic = param->variadic,
@@ -202,10 +204,10 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol) {
 
 static AstNode *get_scoped_ident_symbol(TypeCheckCtx *ctx,
                                         ScopedIdent *scoped_ident) {
-    assert(scoped_ident->items[0]->token.t != T_EMPTY_STRING &&
-           "TODO inferred");
+    AstNode *h = &scoped_ident->head;
+    assert(child_ident_at(h, 0)->token.t != T_EMPTY_STRING && "TODO inferred");
     AstNode *node = ast_resolves_to_get(
-        ctx->ast, scoped_ident->items[scoped_ident->len - 1]);
+        ctx->ast, child_ident_at(h, da_length(h->children) - 1));
     assert(node);
     return node;
 }

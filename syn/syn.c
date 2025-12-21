@@ -37,6 +37,9 @@ static bool expect(ParseCtx *c, AstNode *in, TokKind t);
 static ParseState set_marker(ParseCtx *c);
 static void backtrack(ParseCtx *c, ParseState marker);
 
+typedef AstNode *(*ParseFn)(ParseCtx *);
+static void ensure_progress(ParseCtx *c, ParseFn parse_fn);
+
 ParseCtx parse_ctx_create(Ast *ast, SourceCode *code) {
     return (ParseCtx){
         .lex = new_lexer(code),
@@ -59,15 +62,9 @@ SourceFile *parse_source_file(ParseCtx *c) {
 
 Imports *parse_imports(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_IMPORTS);
-    Imports *n = (Imports *)nc.node;
     while (looking_at(c, T_IMPORT)) {
-        APPEND(n, parse_import(c));
-        // Stop potential infinite loop
-        if (c->panic_mode) {
-            next(c);
-        }
+        ensure_progress(c, (ParseFn)parse_import);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -84,15 +81,9 @@ Import *parse_import(ParseCtx *c) {
 
 Decls *parse_decls(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_DECLS);
-    Decls *n = (Decls *)nc.node;
     while (!looking_at(c, T_EOF)) {
-        APPEND(n, parse_decl(c));
-        // Stop potential infinite loop
-        if (c->panic_mode) {
-            next(c);
-        }
+        ensure_progress(c, (ParseFn)parse_decl);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -171,8 +162,8 @@ again:
             }
             break;
         default:
-            if (expect_one_of(c, &n->head, TOKS(T_LBRC, T_LPAR),
-                              "a struct or tuple body")) {
+            if (!expect_one_of(c, &n->head, TOKS(T_LBRC, T_LPAR),
+                               "a struct or tuple body")) {
                 goto again;
             }
             break;
@@ -350,33 +341,29 @@ UnpackUnion *parse_unpack_union(ParseCtx *c) {
 
 AliasBindings *parse_alias_bindings(ParseCtx *c, TokKind end) {
     NodeCtx nc = start_node(c, NODE_ALIAS_BINDINGS);
-    AliasBindings *n = (AliasBindings *)nc.node;
-    APPEND(n, parse_alias_binding(c));
+    (void)parse_alias_binding(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, end)) {
             break;
         }
-        APPEND(n, parse_alias_binding(c));
+        (void)parse_alias_binding(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
 Bindings *parse_bindings(ParseCtx *c, TokKind end) {
     NodeCtx nc = start_node(c, NODE_BINDINGS);
-    Bindings *n = (Bindings *)nc.node;
-    APPEND(n, parse_binding(c));
+    (void)parse_binding(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, end)) {
             break;
         }
-        APPEND(n, parse_binding(c));
+        (void)parse_binding(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -413,33 +400,29 @@ static bool is_mod(TokKind t) {
 
 FnMods *parse_mods(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_FN_MODS);
-    FnMods *n = (FnMods *)nc.node;
     while (is_mod(at(c).t)) {
         NodeCtx mod_ctx = start_node(c, NODE_FN_MOD);
         FnMod *mod = (FnMod *)mod_ctx.node;
         mod->mod = token_attr_anon(c, consume(c));
-        APPEND(n, end_node(c, mod_ctx));
+        (void)end_node(c, mod_ctx);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
 FnParams *parse_fn_params(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_FN_PARAMS);
-    FnParams *n = (FnParams *)nc.node;
     if (looking_at(c, T_RPAR)) {
         return end_node(c, nc);
     }
-    APPEND(n, parse_fn_param(c));
+    (void)parse_fn_param(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, T_RPAR)) {
             break;
         }
-        APPEND(n, parse_fn_param(c));
+        (void)parse_fn_param(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -511,9 +494,8 @@ CompStmt *parse_comp_stmt(ParseCtx *c) {
             expected(c, &n->head, "a statement");
             break;
         }
-        APPEND(n, parse_stmt(c));
+        (void)parse_stmt(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     next(c);
     return end_node(c, nc);
 }
@@ -582,9 +564,8 @@ CaseBranches *parse_case_branches(ParseCtx *c) {
             expected(c, &n->head, "a case branch");
             break;
         }
-        APPEND(n, parse_case_branch(c));
+        (void)parse_case_branch(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     next(c);
     return end_node(c, nc);
 }
@@ -775,20 +756,18 @@ StructType *parse_struct_type(ParseCtx *c) {
 
 Fields *parse_fields(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_FIELDS);
-    Fields *n = (Fields *)nc.node;
     if (looking_at(c, T_RBRC)) {
         return end_node(c, nc);
     }
-    APPEND(n, parse_field(c));
+    (void)parse_field(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, T_RBRC)) {
             break;
         }
-        APPEND(n, parse_field(c));
+        (void)parse_field(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -802,20 +781,18 @@ Field *parse_field(ParseCtx *c) {
 
 Types *parse_types(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_TYPES);
-    Types *n = (Types *)nc.node;
     if (looking_at(c, T_RPAR)) {
         return end_node(c, nc);
     }
-    APPEND(n, parse_type(c));
+    (void)parse_type(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, T_RPAR)) {
             break;
         }
-        APPEND(n, parse_type(c));
+        (void)parse_type(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -873,11 +850,8 @@ Idents *parse_idents(ParseCtx *c) {
         if (looking_at(c, T_RBRC)) {
             break;
         }
-        APPEND(n, parse_ident(c));
+        (void)parse_ident(c);
         start = false;
-    }
-    if (n->len != 0) {
-        arena_own(&c->arena, n->items, n->cap);
     }
     return end_node(c, nc);
 }
@@ -894,11 +868,8 @@ Errs *parse_errs(ParseCtx *c) {
         if (looking_at(c, T_RBRC)) {
             break;
         }
-        APPEND(n, parse_err(c));
+        (void)parse_err(c);
         start = false;
-    }
-    if (n->len != 0) {
-        arena_own(&c->arena, n->items, n->cap);
     }
     return end_node(c, nc);
 }
@@ -961,7 +932,6 @@ Ident *parse_ident(ParseCtx *c) {
 // it should be syncing on than just "whatever can follow is really common rule"
 ScopedIdent *parse_scoped_ident(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_SCOPED_IDENT);
-    ScopedIdent *n = (ScopedIdent *)nc.node;
     if (looking_at(c, T_SCOPE)) {
         Tok empty_str = {
             .t = T_EMPTY_STRING,
@@ -971,16 +941,15 @@ ScopedIdent *parse_scoped_ident(ParseCtx *c) {
         NodeCtx ident_ctx = start_node(c, NODE_IDENT);
         Ident *ident = (Ident *)ident_ctx.node;
         ident->token = empty_str;
-        APPEND(n, end_node(c, ident_ctx));
+        (void)end_node(c, ident_ctx);
         next(c);  // skip the '::'
     }
     // TODO: add '::' to follow
-    APPEND(n, parse_ident(c));
+    (void)parse_ident(c);
     while (looking_at(c, T_SCOPE)) {
         next(c);
-        APPEND(n, parse_ident(c));
+        (void)parse_ident(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
     return end_node(c, nc);
 }
 
@@ -998,16 +967,15 @@ CallArgs *parse_call_args(ParseCtx *c) {
         return end_node(c, nc);
     }
 
-    APPEND(n, parse_call_arg(c));
+    (void)parse_call_arg(c);
     while (looking_at(c, T_COMMA)) {
         next(c);
         // Ignore trailing comma
         if (looking_at(c, T_RPAR)) {
             break;
         }
-        APPEND(n, parse_call_arg(c));
+        (void)parse_call_arg(c);
     }
-    arena_own(&c->arena, n->items, n->cap);
 
     if (!skip_if(c, &n->head, T_RPAR)) {
         return end_node(c, nc);
@@ -1661,6 +1629,7 @@ static bool expect_one_of(ParseCtx *c, AstNode *in, Toks toks,
                 c->panic_mode = false;
                 return true;
             }
+            in->has_error = true;
             backtrack(c, m);
             return false;
         }
@@ -1670,4 +1639,13 @@ static bool expect_one_of(ParseCtx *c, AstNode *in, Toks toks,
         c->panic_mode = false;
     }
     return match;
+}
+
+static void ensure_progress(ParseCtx *c, ParseFn parse_fn) {
+    u32 cursor = c->lex.cursor;
+    (void)parse_fn(c);
+    bool no_progress_made = cursor == c->lex.cursor;
+    if (no_progress_made) {
+        next(c);
+    }
 }
