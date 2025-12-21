@@ -2,27 +2,27 @@
 
 #include "sem.h"
 
-static DfsCtrl check_types_enter(void *_ctx, AnyNode node);
-static DfsCtrl check_types_exit(void *_ctx, AnyNode node);
+static DfsCtrl check_types_enter(void *_ctx, AstNode *node);
+static DfsCtrl check_types_exit(void *_ctx, AstNode *node);
 
 typedef struct {
+    Ast *ast;
     SourceCode *code;
-    NodeMetadata *meta;
 } TypeCheckCtx;
 
-void do_check_types(SourceCode *code, NodeMetadata *m, AnyNode root) {
+void do_check_types(Ast *ast, SourceCode *code) {
     TypeCheckCtx ctx = {
-        .meta = m,
+        .ast = ast,
         .code = code,
     };
-    ast_traverse_dfs(&ctx, root, m,
+    ast_traverse_dfs(&ctx, ast,
                      (EnterExitVTable){
                          .enter = check_types_enter,
                          .exit = check_types_exit,
                      });
 }
 
-static DfsCtrl check_types_enter(void *_ctx, AnyNode node) {
+static DfsCtrl check_types_enter(void *_ctx, AstNode *node) {
     (void)_ctx;
     (void)node;
     // TODO: add "inferred_scope" context on entry of certain nodes:
@@ -43,31 +43,31 @@ static void check_call(TypeCheckCtx *ctx, Call *call);
 static void check_bin_expr(TypeCheckCtx *ctx, BinExpr *bin_expr);
 static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl);
 
-static DfsCtrl check_types_exit(void *_ctx, AnyNode node) {
+static DfsCtrl check_types_exit(void *_ctx, AstNode *node) {
     TypeCheckCtx *ctx = _ctx;
-    switch (node.kind) {
+    switch (node->kind) {
         case NODE_VAR_DECL:
-            check_var_decl(ctx, (VarDecl *)node.data);
+            check_var_decl(ctx, (VarDecl *)node);
             break;
         case NODE_ATOM:
-            check_atom(ctx, (Atom *)node.data);
+            check_atom(ctx, (Atom *)node);
             break;
         // case EXPR_POSTFIX:
-        //     check_postfix_expr(ctx, (PostfixExpr *)node.data);
+        //     check_postfix_expr(ctx, (PostfixExpr *)node);
         case NODE_CALL:
-            check_call(ctx, (Call *)node.data);
+            check_call(ctx, (Call *)node);
             break;
         // case EXPR_FIELD_ACCESS:
-        //     check_field_access(ctx, (FieldAccess *)node.data);
+        //     check_field_access(ctx, (FieldAccess *)node);
         //     break;
         // case EXPR_COLL_ACCESS:
-        //     check_coll_access(ctx, (CollAccess *)node.data);
+        //     check_coll_access(ctx, (CollAccess *)node);
         //     break;
         // case EXPR_UNARY:
-        //     check_unary_expr(ctx, (UnaryExpr *)node.data);
+        //     check_unary_expr(ctx, (UnaryExpr *)node);
         //     break;
         case NODE_BIN_EXPR:
-            check_bin_expr(ctx, (BinExpr *)node.data);
+            check_bin_expr(ctx, (BinExpr *)node);
             break;
         default:
             break;
@@ -75,12 +75,12 @@ static DfsCtrl check_types_exit(void *_ctx, AnyNode node) {
     return DFS_CTRL_KEEP_GOING;
 }
 
-static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AnyNode symbol);
-static AnyNode get_scoped_ident_symbol(TypeCheckCtx *ctx,
-                                       ScopedIdent *scoped_ident);
+static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol);
+static AstNode *get_scoped_ident_symbol(TypeCheckCtx *ctx,
+                                        ScopedIdent *scoped_ident);
 
 static TypeRepr *type_from_token(TypeCheckCtx *ctx, Tok token) {
-    TypeRepr *type = type_alloc(ctx->meta);
+    TypeRepr *type = type_create(ctx->ast->arena);
     switch (token.t) {
         case T_U8:
             type->t = STORAGE_U8;
@@ -122,7 +122,7 @@ static TypeRepr *type_from_token(TypeCheckCtx *ctx, Tok token) {
 }
 
 static TypeRepr *type_from_lit(TypeCheckCtx *ctx, Tok lit) {
-    TypeRepr *type = type_alloc(ctx->meta);
+    TypeRepr *type = type_create(ctx->ast->arena);
     switch (lit.t) {
         case T_NUM:
             type->t = STORAGE_S32;
@@ -138,7 +138,7 @@ static TypeRepr *type_from_tree(TypeCheckCtx *ctx, Type *tree) {
         case TYPE_BUILTIN:
             return type_from_token(ctx, tree->builtin_type->token);
         case TYPE_PTR: {
-            TypeRepr *type = type_alloc(ctx->meta);
+            TypeRepr *type = type_create(ctx->ast->arena);
             type->t = STORAGE_PTR;
             type->ptr.referent = type_from_tree(ctx, tree->ptr_type->ref_type);
             return type;
@@ -157,12 +157,12 @@ static TypeRepr *type_from_tree(TypeCheckCtx *ctx, Type *tree) {
     assert(false && "TODO");
 }
 
-static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AnyNode symbol) {
-    switch (symbol.kind) {
+static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol) {
+    switch (symbol->kind) {
         case NODE_FN_DECL: {
-            FnDecl *fn = (FnDecl *)symbol.data;
+            FnDecl *fn = (FnDecl *)symbol;
 
-            TypeRepr *fn_type = type_alloc(ctx->meta);
+            TypeRepr *fn_type = type_create(ctx->ast->arena);
 
             fn_type->t = STORAGE_FN;
 
@@ -172,14 +172,14 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AnyNode symbol) {
                     .type = type_from_tree(ctx, param->type),
                     .variadic = param->variadic,
                 };
-                APPEND(&fn_type->fn.params, tparam);
+                fnt_params_append(&fn_type->fn.params, tparam);
             }
 
             TypeRepr *return_type = NULL;
             if (fn->return_type.ptr != NULL) {
                 return_type = type_from_tree(ctx, fn->return_type.ptr);
             } else {
-                return_type = type_alloc(ctx->meta);
+                return_type = type_create(ctx->ast->arena);
                 return_type->t = STORAGE_UNIT;
             }
 
@@ -188,9 +188,9 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AnyNode symbol) {
             return fn_type;
         }
         case NODE_VAR_DECL: {
-            VarDecl *var = (VarDecl *)symbol.data;
+            VarDecl *var = (VarDecl *)symbol;
             assert(var->binding->t == VAR_BINDING_BASIC && "TODO");
-            TypeRepr *type = type_try_get(ctx->meta, var->id);
+            TypeRepr *type = ast_type_get(ctx->ast, &var->head);
             assert(type);
             return type;
         }
@@ -200,26 +200,26 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AnyNode symbol) {
     assert(false && "TODO");
 }
 
-static AnyNode get_scoped_ident_symbol(TypeCheckCtx *ctx,
-                                       ScopedIdent *scoped_ident) {
+static AstNode *get_scoped_ident_symbol(TypeCheckCtx *ctx,
+                                        ScopedIdent *scoped_ident) {
     assert(scoped_ident->items[0]->token.t != T_EMPTY_STRING &&
            "TODO inferred");
-    AnyNode *node = try_get_resolved_node(
-        ctx->meta, scoped_ident->items[scoped_ident->len - 1]->id);
+    AstNode *node = ast_resolves_to_get(
+        ctx->ast, scoped_ident->items[scoped_ident->len - 1]);
     assert(node);
-    return *node;
+    return node;
 }
 
 static void check_atom(TypeCheckCtx *ctx, Atom *atom) {
     switch (atom->t) {
         case ATOM_TOKEN:
-            type_set(ctx->meta, MAKE_ANY(atom),
-                     type_from_lit(ctx, atom->builtin_type));
+            ast_type_set(ctx->ast, &atom->head,
+                         type_from_lit(ctx, atom->builtin_type));
             break;
         case ATOM_SCOPED_IDENT:
-            type_set(ctx->meta, MAKE_ANY(atom),
-                     type_from_symbol(ctx, get_scoped_ident_symbol(
-                                               ctx, atom->scoped_ident)));
+            ast_type_set(ctx->ast, &atom->head,
+                         type_from_symbol(ctx, get_scoped_ident_symbol(
+                                                   ctx, atom->scoped_ident)));
             break;
         default:
             break;
@@ -227,10 +227,11 @@ static void check_atom(TypeCheckCtx *ctx, Atom *atom) {
 }
 
 static TypeRepr *type_of_expr(TypeCheckCtx *ctx, Expr *expr) {
-    NodeChildren *children = get_node_children(ctx->meta, expr->id);
-    NodeChild child = children->items[0];
-    assert(child.t == CHILD_NODE);
-    return type_try_get(ctx->meta, *child.node.data);
+    Child *children = expr->head.children;
+    assert(da_length(children) != 0);
+    Child *child = children_at(children, 0);
+    assert(child->t == CHILD_NODE);
+    return ast_type_get(ctx->ast, child->node);
 }
 
 static void sem_raise(TypeCheckCtx *ctx, u32 at, const char *banner,
@@ -250,7 +251,7 @@ static void check_call(TypeCheckCtx *ctx, Call *call) {
         if (atom->t == ATOM_BUILTIN_TYPE) {
             // Cast to builtin type
             TypeRepr *type = type_from_token(ctx, atom->builtin_type);
-            type_set(ctx->meta, MAKE_ANY(call), type);
+            ast_type_set(ctx->ast, &call->head, type);
         }
     }
 }
@@ -273,7 +274,7 @@ static void check_bin_expr(TypeCheckCtx *ctx, BinExpr *bin_expr) {
         sem_raise(ctx, bin_expr->op.offset, "type error", "mismatched types");
     }
 
-    type_set(ctx->meta, MAKE_ANY(bin_expr), lt);
+    ast_type_set(ctx->ast, &bin_expr->head, lt);
 }
 
 static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {
@@ -286,8 +287,8 @@ static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {
     if (var_decl->type) {
         TypeRepr *expected_type = type_from_tree(ctx, var_decl->type);
         if (resolved_type != BAD_PTR && expected_type->t != resolved_type->t) {
-            sem_raise(ctx, get_node_offset(ctx->meta, var_decl->type->id),
-                      "type error", "expression does not match declared type");
+            sem_raise(ctx, var_decl->head.offset, "type error",
+                      "expression does not match declared type");
         }
         resolved_type = expected_type;
     }
@@ -295,5 +296,5 @@ static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {
     assert(resolved_type != BAD_PTR);
 
     // Set type inferred from right-hand side
-    type_set(ctx->meta, MAKE_ANY(var_decl), resolved_type);
+    ast_type_set(ctx->ast, &var_decl->head, resolved_type);
 }

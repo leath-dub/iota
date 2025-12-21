@@ -2,11 +2,10 @@
 #define AST_H
 
 #include "../common/common.h"
+#include "../common/dynamic_array.h"
 #include "../common/map.h"
 #include "../lex/lex.h"
 #include "../mod/mod.h"
-
-typedef u32 NodeID;
 
 // There are a bunch of places where we need to do something for every AST node
 // type:
@@ -93,26 +92,58 @@ typedef u32 NodeID;
 
 EACH_NODE(FWD_DECL_NODE)
 
+#define DECL_NODE_KIND(_, UPPER_NAME, ...) NODE_##UPPER_NAME,
+
+typedef enum {
+    EACH_NODE(DECL_NODE_KIND) NODE_KIND_COUNT,
+} NodeKind;
+
+struct AstNode;
+
+typedef enum {
+    CHILD_TOKEN,
+    CHILD_NODE,
+} ChildKind;
+
+typedef struct {
+    ChildKind t;
+    union {
+        Tok token;
+        struct AstNode *node;
+    };
+    NULLABLE_PTR(const char) name;
+} Child;
+
+typedef struct AstNode {
+    NodeKind kind;
+    Child *children;
+    NULLABLE_PTR(struct AstNode) parent;
+    size_t offset;
+    bool has_error;
+} AstNode;
+
+DA_DEFINE(children, Child)
+
 struct SourceFile {
-    NodeID id;
+    AstNode head;
     struct Imports *imports;
     struct Decls *decls;
 };
 
 struct Imports {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Import **items;
 };
 
 struct Import {
-    NodeID id;
+    AstNode head;
     struct ScopedIdent *module;
 };
 
 struct Decls {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Decl **items;
@@ -128,7 +159,7 @@ typedef enum {
 } DeclKind;
 
 struct Decl {
-    NodeID id;
+    AstNode head;
     DeclKind t;
     union {
         struct VarDecl *var_decl;
@@ -141,7 +172,7 @@ struct Decl {
 };
 
 struct VarDecl {
-    NodeID id;
+    AstNode head;
     struct VarBinding *binding;
     struct Type *type;  // nullable
     struct {
@@ -158,7 +189,7 @@ typedef enum {
 } VarBindingKind;
 
 struct VarBinding {
-    NodeID id;
+    AstNode head;
     VarBindingKind t;
     union {
         struct Ident *basic;
@@ -168,50 +199,50 @@ struct VarBinding {
 };
 
 struct AliasBinding {
-    NodeID id;
+    AstNode head;
     struct Binding *binding;
     MAYBE(Tok) alias;
 };
 
 struct AliasBindings {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct AliasBinding **items;
 };
 
 struct Binding {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     MAYBE(Tok) ref;  // could be a '*' meaning the binding is a reference
     MAYBE(Tok) mod;
 };
 
 struct Bindings {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Binding **items;
 };
 
 struct UnpackTuple {
-    NodeID id;
+    AstNode head;
     struct Bindings *bindings;
 };
 
 struct UnpackStruct {
-    NodeID id;
+    AstNode head;
     struct AliasBindings *bindings;
 };
 
 struct UnpackUnion {
-    NodeID id;
+    AstNode head;
     struct Ident *tag;
     struct Binding *binding;
 };
 
 struct FnDecl {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct FnParams *params;
@@ -221,45 +252,45 @@ struct FnDecl {
 };
 
 struct FnMods {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct FnMod **items;
 };
 
 struct FnMod {
-    NodeID id;
+    AstNode head;
     Tok mod;
 };
 
 struct FnParams {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct FnParam **items;
 };
 
 struct FnParam {
-    NodeID id;
+    AstNode head;
     struct VarBinding *binding;
     struct Type *type;
     bool variadic;
 };
 
 struct TypeParams {
-    NodeID id;
+    AstNode head;
     struct Types *types;
 };
 
 struct StructDecl {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct StructBody *body;
 };
 
 struct StructBody {
-    NodeID id;
+    AstNode head;
     bool tuple_like;
     union {
         struct Types *types;
@@ -268,52 +299,52 @@ struct StructBody {
 };
 
 struct Fields {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Field **items;
 };
 
 struct Field {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     struct Type *type;
 };
 
 struct EnumDecl {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     struct Idents *alts;
 };
 
 struct Idents {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Ident **items;
 };
 
 struct ErrDecl {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     struct Errs *errs;
 };
 
 struct Errs {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Err **items;
 };
 
 struct Err {
-    NodeID id;
+    AstNode head;
     bool embedded;  // e.g. !Foo
     struct ScopedIdent *scoped_ident;
 };
 
 struct UnionDecl {
-    NodeID id;
+    AstNode head;
     struct Ident *name;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct Fields *alts;
@@ -331,7 +362,7 @@ typedef enum {
 } StmtKind;
 
 struct Stmt {
-    NodeID id;
+    AstNode head;
     StmtKind t;
     union {
         struct Decl *decl;
@@ -346,14 +377,14 @@ struct Stmt {
 };
 
 struct IfStmt {
-    NodeID id;
+    AstNode head;
     struct Cond *cond;
     struct CompStmt *true_branch;
     NULLABLE_PTR(struct Else) else_branch;
 };
 
 struct WhileStmt {
-    NodeID id;
+    AstNode head;
     struct Cond *cond;
     struct CompStmt *true_branch;
 };
@@ -365,7 +396,7 @@ typedef enum {
 } CasePattKind;
 
 struct CasePatt {
-    NodeID id;
+    AstNode head;
     CasePattKind t;
     union {
         struct Expr *expr;
@@ -375,20 +406,20 @@ struct CasePatt {
 };
 
 struct CaseBranch {
-    NodeID id;
+    AstNode head;
     struct CasePatt *patt;
     struct Stmt *action;
 };
 
 struct CaseBranches {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct CaseBranch **items;
 };
 
 struct CaseStmt {
-    NodeID id;
+    AstNode head;
     struct Expr *expr;
     struct CaseBranches *branches;
 };
@@ -399,7 +430,7 @@ typedef enum {
 } CondKind;
 
 struct Cond {
-    NodeID id;
+    AstNode head;
     CondKind t;
     union {
         struct UnionTagCond *union_tag;
@@ -408,7 +439,7 @@ struct Cond {
 };
 
 struct UnionTagCond {
-    NodeID id;
+    AstNode head;
     struct UnpackUnion *trigger;
     Tok assign_token;
     struct Expr *expr;
@@ -420,7 +451,7 @@ typedef enum {
 } ElseKind;
 
 struct Else {
-    NodeID id;
+    AstNode head;
     ElseKind t;
     union {
         struct IfStmt *if_stmt;
@@ -429,24 +460,24 @@ struct Else {
 };
 
 struct ReturnStmt {
-    NodeID id;
+    AstNode head;
     NULLABLE_PTR(struct Expr) expr;
 };
 
 struct DeferStmt {
-    NodeID id;
+    AstNode head;
     struct Stmt *stmt;
 };
 
 struct CompStmt {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Stmt **items;
 };
 
 struct AssignOrExpr {
-    NodeID id;
+    AstNode head;
     struct Expr *lvalue;
     Tok assign_token;
     NULLABLE_PTR(struct Expr) rvalue;
@@ -465,7 +496,7 @@ typedef enum {
 } TypeKind;
 
 struct Type {
-    NodeID id;
+    AstNode head;
     TypeKind t;
     union {
         struct BuiltinType *builtin_type;
@@ -481,64 +512,64 @@ struct Type {
 };
 
 struct BuiltinType {
-    NodeID id;
+    AstNode head;
     Tok token;  // just stores the keyword token
 };
 
 struct CollType {
-    NodeID id;
+    AstNode head;
     NULLABLE_PTR(struct Expr) index_expr;
     struct Type *element_type;
 };
 
 struct StructType {
-    NodeID id;
+    AstNode head;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct StructBody *body;
 };
 
 struct Types {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct Type **items;
 };
 
 struct UnionType {
-    NodeID id;
+    AstNode head;
     NULLABLE_PTR(struct TypeParams) type_params;
     struct Fields *fields;
 };
 
 struct EnumType {
-    NodeID id;
+    AstNode head;
     struct Idents *alts;
 };
 
 struct ErrType {
-    NodeID id;
+    AstNode head;
     struct Errs *errs;
 };
 
 struct PtrType {
-    NodeID id;
+    AstNode head;
     MAYBE(Tok) ro;
     struct Type *ref_type;
 };
 
 struct FnType {
-    NodeID id;
+    AstNode head;
     struct Types *params;
     NULLABLE_PTR(struct Type) return_type;
 };
 
 struct Ident {
-    NodeID id;
+    AstNode head;
     Tok token;
 };
 
 struct ScopedIdent {
-    NodeID id;
+    AstNode head;
     u32 cap;
     u32 len;
     struct Ident **items;
@@ -555,7 +586,7 @@ typedef enum {
 } ExprKind;
 
 struct Expr {
-    NodeID id;
+    AstNode head;
     ExprKind t;
     union {
         struct Atom *atom;
@@ -575,7 +606,7 @@ typedef enum {
 } AtomKind;
 
 struct Atom {
-    NodeID id;
+    AstNode head;
     AtomKind t;
     union {
         Tok token;
@@ -585,39 +616,39 @@ struct Atom {
 };
 
 struct Call {
-    NodeID id;
+    AstNode head;
     struct Expr *callable;
     struct CallArgs *args;
 };
 
 struct CallArgs {
-    NodeID id;
+    AstNode head;
     u32 len;
     u32 cap;
     struct CallArg **items;
 };
 
 struct CallArg {
-    NodeID id;
+    AstNode head;
     NULLABLE_PTR(struct Ident) name;
     Tok assign_token;
     struct Expr *value;
 };
 
 struct PostfixExpr {
-    NodeID id;
+    AstNode head;
     struct Expr *sub_expr;
     Tok op;
 };
 
 struct FieldAccess {
-    NodeID id;
+    AstNode head;
     struct Expr *lvalue;
     struct Ident *field;
 };
 
 struct CollAccess {
-    NodeID id;
+    AstNode head;
     struct Expr *lvalue;
     struct Index *index;
 };
@@ -628,20 +659,20 @@ typedef enum {
 } IndexKind;
 
 struct Index {
-    NodeID id;
+    AstNode head;
     IndexKind t;
     NULLABLE_PTR(struct Expr) start;
     NULLABLE_PTR(struct Expr) end;
 };
 
 struct UnaryExpr {
-    NodeID id;
+    AstNode head;
     Tok op;
     struct Expr *sub_expr;
 };
 
 struct BinExpr {
-    NodeID id;
+    AstNode head;
     Tok op;
     struct Expr *left;
     struct Expr *right;
@@ -651,85 +682,20 @@ struct BinExpr {
 
 EACH_NODE(TYPEDEF_NODE)
 
-#define DECL_NODE_KIND(_, UPPER_NAME, ...) NODE_##UPPER_NAME,
-
-typedef enum {
-    EACH_NODE(DECL_NODE_KIND) NODE_KIND_COUNT,
-} NodeKind;
-
 // This lets us not accidently add a AST node without the id field at the top
-#define CHECK_NODE(NODE, ...)                                 \
-    _Static_assert(sizeof(((NODE *)0)->id) == sizeof(NodeID), \
+#define CHECK_NODE(NODE, ...)                                    \
+    _Static_assert(sizeof(((NODE *)0)->head) == sizeof(AstNode), \
                    "AST node must define 'id' field of type NodeID");
 
 EACH_NODE(CHECK_NODE)
 
-typedef enum {
-    NFLAG_NONE = 0,
-    NFLAG_ERROR = 1,
-} NodeFlag;
-
-typedef struct {
-    NodeFlag *items;
-    u32 cap;
-    u32 len;
-} NodeFlags;
-
-typedef struct {
-    u32 *items;
-    u32 cap;
-    u32 len;
-} NodeOffsets;
-
-typedef struct {
-    const char **items;
-    u32 cap;
-    u32 len;
-} NodeNames;
-
-typedef enum {
-    CHILD_TOKEN,
-    CHILD_NODE,
-} ChildKind;
-
-typedef struct AnyNode {
-    NodeID *data;
-    NodeKind kind;
-} AnyNode;
-
-typedef struct {
-    ChildKind t;
-    union {
-        Tok token;
-        AnyNode node;
-    };
-    NULLABLE_PTR(const char) name;
-} NodeChild;
-
-typedef struct {
-    NodeChild *items;
-    u32 cap;
-    u32 len;
-} NodeChildren;
-
-typedef struct {
-    NodeChildren children;
-    MAYBE(AnyNode) parent;
-} NodeTreeItem;
-
-typedef struct {
-    NodeTreeItem *items;
-    u32 cap;
-    u32 len;
-} NodeTree;
-
 typedef struct ScopeEntry {
-    AnyNode node;
+    AstNode *node;
     struct ScopeEntry *shadows;
 } ScopeEntry;
 
 typedef struct Scope {
-    AnyNode self;
+    AstNode *self;
     ScopeEntry **table;
     NULLABLE_PTR(struct Scope) enclosing_scope;
 } Scope;
@@ -764,15 +730,11 @@ typedef struct {
 } FnTParam;
 
 typedef struct {
-    u32 len;
-    u32 cap;
-    FnTParam *items;
-} FnTParams;
-
-typedef struct {
-    FnTParams params;
+    FnTParam *params;
     struct TypeRepr *return_type;
 } FnT;
+
+DA_DEFINE(fnt_params, FnTParam)
 
 typedef struct TypeRepr {
     TypeStorage t;
@@ -783,61 +745,85 @@ typedef struct TypeRepr {
 } TypeRepr;
 
 typedef struct {
-    Arena arena;
-    NodeID next_id;
-    NodeFlags flags;
-    NodeOffsets offsets;
-    // Used to store parent-child relation between AST nodes
-    NodeTree tree;
-    // Used to label nodes in the AST for pretty printer (ast/dump.c)
-    NodeNames names;
-    // Symbol table
-    Scope **scope_allocs;
-    // Map from id (ScopedIdent) -> resolved node
-    AnyNode *resolved_nodes;
-    // Map from id (Concrete expression type) -> resolved type
-    TypeRepr *types;
-} NodeMetadata;
+    Arena *arena;
+    Scope **scope;
+    AstNode **resolves_to;
+    TypeRepr **type;
+} TreeData;
 
-MAP_DEFINE(scope_map, NodeID, Scope *)
-MAP_DEFINE(any_node_map, NodeID, AnyNode)
-MAP_DEFINE(type_repr_map, NodeID, TypeRepr)
+MAP_DEFINE(scope_map, AstNode *, Scope *)
+MAP_DEFINE(resolves_to_map, Ident *, AstNode *)
+MAP_DEFINE(type_map, AstNode *, TypeRepr *)
 
-const char *node_kind_name(NodeKind kind);
-NodeMetadata new_node_metadata(void);
-void node_metadata_free(NodeMetadata *m);
-void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
-void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags);
-bool has_error(NodeMetadata *m, void *node);
+TreeData tree_data_create(Arena *a);
+void tree_data_delete(TreeData td);
 
-void set_node_offset(NodeMetadata *m, NodeID id, u32 pos);
-u32 get_node_offset(NodeMetadata *m, NodeID id);
+Child child_token_create(Tok tok);
+Child child_token_named_create(const char *name, Tok tok);
+Child child_node_create(AstNode *n);
+Child child_node_named_create(const char *name, AstNode *n);
 
-void add_child(NodeMetadata *m, NodeID id, NodeChild child);
-NodeChild child_token(Tok token);
-NodeChild child_token_named(const char *name, Tok token);
-NodeChild child_node(AnyNode node);
-NodeChild child_node_named(const char *name, AnyNode node);
-void remove_child(NodeMetadata *m, NodeID from, NodeID child);
+const char *node_kind_to_string(NodeKind kind);
 
-const char *get_node_name(NodeMetadata *m, NodeID id);
-NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
-void set_node_parent(NodeMetadata *m, NodeID id, AnyNode parent);
-AnyNode get_node_parent(NodeMetadata *m, NodeID id);
-NodeChild *last_child(NodeMetadata *m, NodeID id);
+typedef struct {
+    Arena *arena;
+    AstNode *root;
+    TreeData tree_data;
+} Ast;
 
-void *expect_node(NodeKind kind, AnyNode node);
+Ast ast_create(Arena *a);
+void ast_delete(Ast ast);
 
-Scope *scope_attach(NodeMetadata *m, AnyNode node);
-void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node);
-Scope *scope_get(NodeMetadata *m, NodeID id);
+void ast_scope_set(Ast *ast, AstNode *n, Scope *scope);
+Scope *ast_scope_get(Ast *ast, AstNode *n);
 
-void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
-AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id);
+void ast_resolves_to_set(Ast *ast, Ident *ident, AstNode *to);
+AstNode *ast_resolves_to_get(Ast *ast, Ident *ident);
 
-TypeRepr *type_alloc(NodeMetadata *m);
-void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type);
-TypeRepr *type_try_get(NodeMetadata *m, NodeID id);
+TypeRepr *type_create(Arena *a);
+void ast_type_set(Ast *ast, AstNode *n, TypeRepr *type);
+TypeRepr *ast_type_get(Ast *ast, AstNode *n);
+
+Scope *ast_scope_create(Ast *ast);
+void ast_scope_insert(Ast *ast, Scope *s, string name, AstNode *n);
+
+AstNode *ast_node_create(Ast *ast, NodeKind kind);
+void ast_node_child_add(AstNode *node, Child child);
+
+// const char *node_kind_name(NodeKind kind);
+// NodeMetadata new_node_metadata(void);
+// void node_metadata_free(NodeMetadata *m);
+// void *new_node(NodeMetadata *m, Arena *a, NodeKind kind);
+// void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags);
+// bool has_error(NodeMetadata *m, void *node);
+//
+// void set_node_offset(NodeMetadata *m, NodeID id, u32 pos);
+// u32 get_node_offset(NodeMetadata *m, NodeID id);
+//
+// void add_child(NodeMetadata *m, NodeID id, NodeChild child);
+// NodeChild child_token(Tok token);
+// NodeChild child_token_named(const char *name, Tok token);
+// NodeChild child_node(AnyNode node);
+// NodeChild child_node_named(const char *name, AnyNode node);
+// void remove_child(NodeMetadata *m, NodeID from, NodeID child);
+//
+// NodeChildren *get_node_children(NodeMetadata *m, NodeID id);
+// void set_node_parent(NodeMetadata *m, NodeID id, AnyNode parent);
+// AnyNode get_node_parent(NodeMetadata *m, NodeID id);
+// NodeChild *last_child(NodeMetadata *m, NodeID id);
+//
+// void *expect_node(NodeKind kind, AnyNode node);
+//
+// Scope *scope_attach(NodeMetadata *m, AnyNode node);
+// void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode
+// node); Scope *scope_get(NodeMetadata *m, NodeID id);
+//
+// void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node);
+// AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id);
+//
+// TypeRepr *type_alloc(NodeMetadata *m);
+// void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type);
+// TypeRepr *type_try_get(NodeMetadata *m, NodeID id);
 
 typedef enum {
     LOOKUP_MODE_LEXICAL,
@@ -849,7 +835,7 @@ typedef struct {
     Scope *found_in;
 } ScopeLookup;
 
-ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode);
+ScopeLookup scope_lookup(Scope *scope, string name, ScopeLookupMode mode);
 
 typedef enum {
     DFS_CTRL_KEEP_GOING,
@@ -857,22 +843,21 @@ typedef enum {
 } DfsCtrl;
 
 typedef struct {
-    DfsCtrl (*enter)(void *ctx, AnyNode node);
-    DfsCtrl (*exit)(void *ctx, AnyNode node);
+    DfsCtrl (*enter)(void *ctx, AstNode *node);
+    DfsCtrl (*exit)(void *ctx, AstNode *node);
 } EnterExitVTable;
 
-void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
-                      EnterExitVTable vtable);
+void ast_traverse_dfs(void *ctx, Ast *ast, EnterExitVTable vtable);
 
 typedef struct {
     FILE *fs;
     u32 indent_level;
     u8 indent_width;
-    NodeMetadata *meta;
+    Ast *ast;
 } TreeDumpCtx;
 
-void dump_tree(TreeDumpCtx *ctx, NodeID id);
-void dump_symbols(const SourceCode *code, NodeMetadata *m);
+void dump_tree(TreeDumpCtx *ctx, AstNode *n);
+void dump_symbols(Ast *ast, const SourceCode *code);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 
@@ -881,7 +866,8 @@ void dump_symbols(const SourceCode *code, NodeMetadata *m);
         EACH_NODE(NODE_GENERIC_CASE) default: assert( \
                  false && "not a pointer to a node"))
 
-#define MAKE_ANY(NODE_PTR) \
-    (AnyNode) { (NodeID *)(NODE_PTR), GET_NODE_KIND(NODE_PTR) }
+#define REIFY_AS(node, type)                                             \
+    (assert(node->kind == GET_NODE_KIND((type *)0x0) && "invalid cast"), \
+     (type *)node)
 
 #endif

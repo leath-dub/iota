@@ -3,118 +3,78 @@
 #include <assert.h>
 #include <string.h>
 
-NodeMetadata new_node_metadata(void) {
-    return (NodeMetadata){
-        .next_id = 0,
-        .flags =
-            {
-                .len = 0,
-                .cap = 0,
-                .items = NULL,
-            },
-        .tree =
-            {
-                .len = 0,
-                .cap = 0,
-                .items = NULL,
-            },
-        .names =
-            {
-                .len = 0,
-                .cap = 0,
-                .items = NULL,
-            },
-        .scope_allocs = scope_map_create(128),
-        .resolved_nodes = any_node_map_create(128),
-        .types = type_repr_map_create(128),
-        .offsets =
-            {
-                .len = 0,
-                .cap = 0,
-                .items = NULL,
-            },
-        .arena = new_arena(),
+Ast ast_create(Arena *a) {
+    return (Ast){
+        .arena = a,
+        .root = NULL,
+        .tree_data = tree_data_create(a),
     };
 }
 
-void node_metadata_free(NodeMetadata *m) {
-    if (m->flags.items != NULL) {
-        free(m->flags.items);
+static DfsCtrl ast_node_delete(void *ctx, AstNode *node) {
+    (void)ctx;
+    if (node->children) {
+        children_delete(node->children);
     }
-    if (m->tree.items != NULL) {
-        for (u32 id = 0; id < m->tree.len; id++) {
-            NodeChildren *children = get_node_children(m, id);
-            free(children->items);
-        }
-        free(m->tree.items);
-    }
-    if (m->names.items != NULL) {
-        free(m->names.items);
-    }
-    if (m->offsets.items != NULL) {
-        free(m->offsets.items);
-    }
+    return DFS_CTRL_KEEP_GOING;
+}
 
-    MapCursor it = map_cursor_create(m->scope_allocs);
+void ast_delete(Ast ast) {
+    ast_traverse_dfs(NULL, &ast,
+                     (EnterExitVTable){
+                         .exit = ast_node_delete,
+                     });
+    tree_data_delete(ast.tree_data);
+}
+
+TreeData tree_data_create(Arena *a) {
+    return (TreeData){
+        .arena = a,
+        .scope = scope_map_create(128),
+        .resolves_to = resolves_to_map_create(128),
+        .type = type_map_create(128),
+    };
+}
+
+void tree_data_delete(TreeData td) {
+    MapCursor it = map_cursor_create(td.scope);
     while (map_cursor_next(&it)) {
-        Scope *scope = *(Scope **)it.current;
-        scope_entry_map_delete(scope->table);
+        Scope **scope = it.current;
+        scope_entry_map_delete((*scope)->table);
     }
-    scope_map_delete(m->scope_allocs);
-    any_node_map_delete(m->resolved_nodes);
-    type_repr_map_delete(m->types);
-    arena_free(&m->arena);
+    scope_map_delete(td.scope);
+    resolves_to_map_delete(td.resolves_to);
+    type_map_delete(td.type);
 }
 
-void add_node_flags(NodeMetadata *m, NodeID id, NodeFlag flags) {
-    m->flags.items[id] |= flags;
-}
-
-bool has_error(NodeMetadata *m, void *node) {
-    assert(node != NULL);
-    NodeID *id = node;
-    return m->flags.items[*id] & NFLAG_ERROR;
-}
-
-void set_node_offset(NodeMetadata *m, NodeID id, u32 pos) {
-    *AT(m->offsets, id) = pos;
-}
-
-u32 get_node_offset(NodeMetadata *m, NodeID id) { return *AT(m->offsets, id); }
-
-void add_child(NodeMetadata *m, NodeID id, NodeChild child) {
-    NodeChildren *children = &m->tree.items[id].children;
-    APPEND(children, child);
-}
-
-NodeChild child_token(Tok token) {
-    return (NodeChild){
+Child child_token_create(Tok tok) {
+    return (Child){
         .t = CHILD_TOKEN,
-        .token = token,
+        .token = tok,
         .name.ptr = NULL,
     };
 }
 
-NodeChild child_token_named(const char *name, Tok token) {
-    return (NodeChild){
+Child child_token_named_create(const char *name, Tok token) {
+    return (Child){
         .t = CHILD_TOKEN,
         .token = token,
         .name.ptr = name,
     };
 }
 
-NodeChild child_node(AnyNode node) {
-    return (NodeChild){
+Child child_node_create(AstNode *n) {
+    return (Child){
         .t = CHILD_NODE,
-        .node = node,
+        .node = n,
         .name.ptr = NULL,
     };
 }
 
-NodeChild child_node_named(const char *name, AnyNode node) {
-    return (NodeChild){
+Child child_node_named_create(const char *name, AstNode *n) {
+    return (Child){
         .t = CHILD_NODE,
-        .node = node,
+        .node = n,
         .name.ptr = name,
     };
 }
@@ -131,102 +91,54 @@ typedef struct {
     Layout layout;
 } NodeDescriptor;
 
-const char *get_node_name(NodeMetadata *m, NodeID id) {
-    return *AT(m->names, id);
+Scope *scope_create(Arena *a) {
+    Scope *res = arena_alloc(a, sizeof(Scope), _Alignof(Scope));
+    res->self = NULL;
+    res->table = NULL;
+    res->enclosing_scope.ptr = NULL;
+    return res;
 }
 
-NodeChildren *get_node_children(NodeMetadata *m, NodeID id) {
-    return &AT(m->tree, id)->children;
+void ast_scope_set(Ast *ast, AstNode *n, Scope *scope) {
+    bool ins = false;
+    Scope **sr = scope_map_get_or_insert(&ast->tree_data.scope, n, &ins);
+    assert(ins && "probably tried to insert scope twice");
+    scope->self = n;
+    *sr = scope;
 }
 
-void set_node_parent(NodeMetadata *m, NodeID id, AnyNode parent) {
-    NodeTreeItem *item = AT(m->tree, id);
-    assert(!item->parent.ok && "parent node already set");
-    item->parent.ok = true;
-    item->parent.value = parent;
-}
-
-AnyNode get_node_parent(NodeMetadata *m, NodeID id) {
-    NodeTreeItem *item = AT(m->tree, id);
-    assert(item->parent.ok);
-    return item->parent.value;
-}
-
-NodeChild *last_child(NodeMetadata *m, NodeID id) {
-    NodeChildren *children = get_node_children(m, id);
-    return AT(*children, children->len - 1);
-}
-
-void remove_child(NodeMetadata *m, NodeID from, NodeID child) {
-    NodeChildren *children = get_node_children(m, from);
-    int child_index = -1;
-    for (u32 i = 0; i < children->len; i++) {
-        NodeChild *check = &children->items[i];
-        bool child_to_remove =
-            check->t == CHILD_NODE && *check->node.data == child;
-        if (child_to_remove) {
-            child_index = i;
-            break;
-        }
-    }
-    assert(child_index != -1 && "Child not found");
-
-    NodeChild *child_ptr = &children->items[child_index];
-    memmove(child_ptr, child_ptr + 1,
-            (children->len - child_index - 1) * sizeof(NodeChild));
-    children->len--;
-}
-
-void *expect_node(NodeKind kind, AnyNode node) {
-    assert(kind == node.kind);
-    return node.data;
-}
-
-Scope *scope_attach(NodeMetadata *m, AnyNode node) {
-    bool inserted = false;
-    Scope **scope_ref =
-        scope_map_get_or_insert(&m->scope_allocs, *node.data, &inserted);
-    assert(inserted && "probably tried to insert a scope twice");
-
-    Scope *scope = arena_alloc(&m->arena, sizeof(Scope), _Alignof(Scope));
-    scope->self = node;
-    scope->table = scope_entry_map_create(128);
-    scope->enclosing_scope.ptr = NULL;
-    *scope_ref = scope;
-
-    return scope;
-}
-
-Scope *scope_get(NodeMetadata *m, NodeID id) {
-    Scope **res = scope_map_get(m->scope_allocs, id);
+Scope *ast_scope_get(Ast *ast, AstNode *n) {
+    Scope **res = scope_map_get(ast->tree_data.scope, n);
     return res ? *res : NULL;
 }
 
-void scope_insert(NodeMetadata *m, Scope *scope, string symbol, AnyNode node) {
-    bool inserted = false;
-    ScopeEntry **entry_ref = scope_entry_map_get_or_insert(
-        &scope->table, (bytes){RSPLATU(symbol)}, &inserted);
-    if (inserted) {
-        *entry_ref =
-            arena_alloc(&m->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
-        (*entry_ref)->node = node;
-        (*entry_ref)->shadows = NULL;
+void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n) {
+    if (scope->table == NULL) {
+        scope->table = scope_entry_map_create(128);
+    }
+    bool ins = false;
+    ScopeEntry **er = scope_entry_map_get_or_insert(
+        &scope->table, (bytes){RSPLATU(name)}, &ins);
+    if (ins) {
+        *er = arena_alloc(ast->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
+        (*er)->node = n;
+        (*er)->shadows = NULL;
         return;
     }
 
     // Allocate a new entry and copy the old head into it.
-    ScopeEntry *old_entry =
-        arena_alloc(&m->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
-    *old_entry = **entry_ref;
+    ScopeEntry *old_ent =
+        arena_alloc(ast->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
+    *old_ent = **er;
 
-    (*entry_ref)->node = node;
-    (*entry_ref)->shadows = old_entry;
+    (*er)->node = n;
+    (*er)->shadows = old_ent;
 }
 
-ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
-    bytes symbol_bytes = {RSPLATU(symbol)};
+ScopeLookup scope_lookup(Scope *scope, string name, ScopeLookupMode mode) {
+    bytes name_bytes = {RSPLATU(name)};
 
-    ScopeEntry **entry = scope_entry_map_get(scope->table, symbol_bytes);
+    ScopeEntry **entry = scope_entry_map_get(scope->table, name_bytes);
     if (entry) {
         return (ScopeLookup){*entry, scope};
     }
@@ -238,8 +150,7 @@ ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
     // Otherwise for lexical lookup check the enclosing scopes backwards
     Scope *it = scope;
     while (it->enclosing_scope.ptr) {
-        entry =
-            scope_entry_map_get(it->enclosing_scope.ptr->table, symbol_bytes);
+        entry = scope_entry_map_get(it->enclosing_scope.ptr->table, name_bytes);
         if (entry) {
             return (ScopeLookup){*entry, it->enclosing_scope.ptr};
         }
@@ -249,27 +160,29 @@ ScopeLookup scope_lookup(Scope *scope, string symbol, ScopeLookupMode mode) {
     return (ScopeLookup){NULL, NULL};
 }
 
-void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
-                      EnterExitVTable vtable) {
+void ast_traverse_dfs(void *ctx, Ast *ast, EnterExitVTable vtable) {
     DfsCtrl ctrl = DFS_CTRL_KEEP_GOING;
-    if (vtable.enter && !has_error(m, root.data)) {
-        ctrl = vtable.enter(ctx, root);
+    if (vtable.enter && !ast->root->has_error) {
+        ctrl = vtable.enter(ctx, ast->root);
     }
     if (ctrl == DFS_CTRL_KEEP_GOING) {
-        const NodeChildren *children = get_node_children(m, *root.data);
-        for (u32 i = 0; i < children->len; i++) {
-            NodeChild child = children->items[i];
+        Child *children = ast->root->children;
+        for (size_t i = 0; i < da_length(children); i++) {
+            Child child = children[i];
             switch (child.t) {
-                case CHILD_NODE:
-                    ast_traverse_dfs(ctx, child.node, m, vtable);
+                case CHILD_NODE: {
+                    Ast sub_tree = *ast;
+                    sub_tree.root = child.node;
+                    ast_traverse_dfs(ctx, &sub_tree, vtable);
                     break;
+                }
                 default:
                     break;
             }
         }
     }
-    if (vtable.exit && !has_error(m, root.data)) {
-        (void)vtable.exit(ctx, root);
+    if (vtable.exit && !ast->root->has_error) {
+        (void)vtable.exit(ctx, ast->root);
     }
 }
 
@@ -279,36 +192,39 @@ void ast_traverse_dfs(void *ctx, AnyNode root, NodeMetadata *m,
 static NodeDescriptor node_descriptors[NODE_KIND_COUNT] = {
     EACH_NODE(DESCRIBE_NODE)};
 
-const char *node_kind_name(NodeKind kind) {
+const char *node_kind_to_string(NodeKind kind) {
     return node_descriptors[kind].name;
 }
 
-void *new_node(NodeMetadata *m, Arena *a, NodeKind kind) {
+AstNode *ast_node_create(Ast *ast, NodeKind kind) {
     Layout layout = node_descriptors[kind].layout;
-    NodeID *r = arena_alloc(a, layout.size, layout.align);
-    APPEND(&m->flags, 0);
-    APPEND(&m->names, node_kind_name(kind));
-    APPEND(&m->tree, (NodeTreeItem){0});
-    APPEND(&m->offsets, 0);
-    *r = m->next_id++;
-    return r;
+    AstNode *res = arena_alloc(ast->arena, layout.size, layout.align);
+    res->kind = kind;
+    return res;
 }
 
-void set_resolved_node(NodeMetadata *m, AnyNode node, AnyNode resolved_node) {
-    assert(node.kind == NODE_IDENT);
-    any_node_map_put(&m->resolved_nodes, *node.data, resolved_node);
+void ast_node_child_add(AstNode *node, Child child) {
+    if (!node->children) {
+        node->children = children_create();
+    }
+    children_append(&node->children, child);
 }
 
-AnyNode *try_get_resolved_node(NodeMetadata *m, NodeID id) {
-    return any_node_map_get(m->resolved_nodes, id);
+void ast_resolves_to_set(Ast *ast, Ident *ident, AstNode *to) {
+    resolves_to_map_put(&ast->tree_data.resolves_to, ident, to);
 }
 
-TypeRepr *type_alloc(NodeMetadata *m) {
-    return arena_alloc(&m->arena, sizeof(TypeRepr), _Alignof(TypeRepr));
+AstNode *ast_resolves_to_get(Ast *ast, Ident *ident) {
+    AstNode **res = resolves_to_map_get(ast->tree_data.resolves_to, ident);
+    return res ? *res : NULL;
 }
 
-void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type) {
-    switch (node.kind) {
+TypeRepr *type_create(Arena *a) {
+    return arena_alloc(a, sizeof(TypeRepr), _Alignof(TypeRepr));
+}
+
+void ast_type_set(Ast *ast, AstNode *n, TypeRepr *type) {
+    switch (n->kind) {
         case NODE_ATOM:
         case NODE_POSTFIX_EXPR:
         case NODE_CALL:
@@ -323,9 +239,10 @@ void type_set(NodeMetadata *m, AnyNode node, TypeRepr *type) {
                    "can only set type on concrete expression or variable "
                    "declaration");
     }
-    type_repr_map_put(&m->types, *node.data, *type);
+    type_map_put(&ast->tree_data.type, n, type);
 }
 
-TypeRepr *type_try_get(NodeMetadata *m, NodeID id) {
-    return type_repr_map_get(m->types, id);
+TypeRepr *ast_type_get(Ast *ast, AstNode *n) {
+    TypeRepr **res = type_map_get(ast->tree_data.type, n);
+    return res ? *res : NULL;
 }

@@ -57,12 +57,13 @@ int main(int argc, char *argv[]) {
     string source = read_file(path);
 
     SourceCode code = new_source_code(ztos(path), source);
-    ParseCtx pc = new_parse_ctx(&code);
 
-    SourceFile *root = parse_source_file(&pc);
+    Arena arena = new_arena();
+    Ast ast = ast_create(&arena);
+    ParseCtx parse_ctx = parse_ctx_create(&ast, &code);
 
-    AnyNode any_root = MAKE_ANY(root);
-    (void)any_root;
+    SourceFile *root = parse_source_file(&parse_ctx);
+    (void)root;
 
     flush_errors(&code);
 
@@ -70,16 +71,17 @@ int main(int argc, char *argv[]) {
     // do_resolve_names(&code, &pc.meta, any_root);
     // do_check_types(&code, &pc.meta, any_root);
 
-    // TreeDumpCtx dump_ctx = {
-    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .meta =
-    //     &pc.meta};
-    // dump_tree(&dump_ctx, root->id);
+    TreeDumpCtx dump_ctx = {
+        .fs = stdout, .indent_level = 0, .indent_width = 2, .ast = &ast};
+    dump_tree(&dump_ctx, &root->head);
 
     flush_errors(&code);
 
     // dump_symbols(&code, &pc.meta);
 
+    parse_ctx_delete(&parse_ctx);
+    ast_delete(ast);
+    arena_free(&arena);
     source_code_free(&code);
-    parse_ctx_free(&pc);
     free(source.data);
 }

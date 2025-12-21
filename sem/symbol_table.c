@@ -2,20 +2,20 @@
 
 #include "../ast/ast.h"
 
-static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node);
-static DfsCtrl build_symbol_table_exit(void *_ctx, AnyNode node);
+static DfsCtrl build_symbol_table_enter(void *_ctx, AstNode *node);
+static DfsCtrl build_symbol_table_exit(void *_ctx, AstNode *node);
 
 typedef struct {
-    NodeMetadata *meta;
+    Ast *ast;
     Stack scope_node_ctx;
 } SymbolTableCtx;
 
-void do_build_symbol_table(NodeMetadata *m, AnyNode root) {
+void do_build_symbol_table(Ast *ast) {
     SymbolTableCtx ctx = {
-        .meta = m,
+        .ast = ast,
         .scope_node_ctx = stack_new(),
     };
-    ast_traverse_dfs(&ctx, root, m,
+    ast_traverse_dfs(&ctx, ast,
                      (EnterExitVTable){
                          .enter = build_symbol_table_enter,
                          .exit = build_symbol_table_exit,
@@ -26,7 +26,7 @@ void do_build_symbol_table(NodeMetadata *m, AnyNode root) {
     assert(ctx.scope_node_ctx.top == NULL);
 }
 
-static void subscope_start(SymbolTableCtx *ctx, string symbol, AnyNode node);
+static void subscope_start(SymbolTableCtx *ctx, string symbol, AstNode *node);
 static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
 static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
 static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl);
@@ -42,29 +42,29 @@ static void exit_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt);
 static void enter_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt);
 static void exit_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt);
 
-static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node) {
+static DfsCtrl build_symbol_table_enter(void *_ctx, AstNode *node) {
     SymbolTableCtx *ctx = _ctx;
-    switch (node.kind) {
+    switch (node->kind) {
         case NODE_SOURCE_FILE:
-            enter_source_file(ctx, (SourceFile *)node.data);
+            enter_source_file(ctx, (SourceFile *)node);
             break;
         case NODE_STRUCT_DECL:
-            enter_struct_decl(ctx, (StructDecl *)node.data);
+            enter_struct_decl(ctx, (StructDecl *)node);
             break;
         case NODE_FIELD:
-            enter_field(ctx, (Field *)node.data);
+            enter_field(ctx, (Field *)node);
             break;
         case NODE_FN_DECL:
-            enter_fn_decl(ctx, (FnDecl *)node.data);
+            enter_fn_decl(ctx, (FnDecl *)node);
             break;
         case NODE_IF_STMT:
-            enter_if_stmt(ctx, (IfStmt *)node.data);
+            enter_if_stmt(ctx, (IfStmt *)node);
             break;
         case NODE_COMP_STMT:
-            enter_comp_stmt(ctx, (CompStmt *)node.data);
+            enter_comp_stmt(ctx, (CompStmt *)node);
             break;
         case NODE_WHILE_STMT:
-            enter_while_stmt(ctx, (WhileStmt *)node.data);
+            enter_while_stmt(ctx, (WhileStmt *)node);
             break;
         default:
             break;
@@ -72,29 +72,29 @@ static DfsCtrl build_symbol_table_enter(void *_ctx, AnyNode node) {
     return DFS_CTRL_KEEP_GOING;
 }
 
-static DfsCtrl build_symbol_table_exit(void *_ctx, AnyNode node) {
+static DfsCtrl build_symbol_table_exit(void *_ctx, AstNode *node) {
     SymbolTableCtx *ctx = _ctx;
-    switch (node.kind) {
+    switch (node->kind) {
         case NODE_SOURCE_FILE:
-            exit_source_file(ctx, (SourceFile *)node.data);
+            exit_source_file(ctx, (SourceFile *)node);
             break;
         case NODE_STRUCT_DECL:
-            exit_struct_decl(ctx, (StructDecl *)node.data);
+            exit_struct_decl(ctx, (StructDecl *)node);
             break;
         case NODE_FN_DECL:
-            exit_fn_decl(ctx, (FnDecl *)node.data);
+            exit_fn_decl(ctx, (FnDecl *)node);
             break;
         case NODE_VAR_DECL:
-            exit_var_decl(ctx, (VarDecl *)node.data);
+            exit_var_decl(ctx, (VarDecl *)node);
             break;
         case NODE_IF_STMT:
-            exit_if_stmt(ctx, (IfStmt *)node.data);
+            exit_if_stmt(ctx, (IfStmt *)node);
             break;
         case NODE_COMP_STMT:
-            exit_comp_stmt(ctx, (CompStmt *)node.data);
+            exit_comp_stmt(ctx, (CompStmt *)node);
             break;
         case NODE_WHILE_STMT:
-            exit_while_stmt(ctx, (WhileStmt *)node.data);
+            exit_while_stmt(ctx, (WhileStmt *)node);
             break;
         default:
             break;
@@ -103,10 +103,10 @@ static DfsCtrl build_symbol_table_exit(void *_ctx, AnyNode node) {
 }
 
 static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
-    AnyNode *node =
-        stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
-    *node = MAKE_ANY(source_file);
-    (void)scope_attach(ctx->meta, *node);
+    AstNode **node = stack_push(&ctx->scope_node_ctx, sizeof(AstNode *),
+                                _Alignof(AstNode *));
+    *node = &source_file->head;
+    ast_scope_set(ctx->ast, *node, ast_scope_create(ctx->ast));
 }
 
 static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
@@ -115,43 +115,44 @@ static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file) {
 }
 
 static void scope_insert_enclosing(SymbolTableCtx *ctx, string symbol,
-                                   AnyNode node) {
-    AnyNode *enclosing_node = stack_top(&ctx->scope_node_ctx);
-    Scope *enclosing_scope = scope_get(ctx->meta, *enclosing_node->data);
+                                   AstNode *node) {
+    AstNode **enclosing_node = stack_top(&ctx->scope_node_ctx);
+    Scope *enclosing_scope = ast_scope_get(ctx->ast, *enclosing_node);
     assert(enclosing_scope);
-    scope_insert(ctx->meta, enclosing_scope, symbol, node);
+    ast_scope_insert(ctx->ast, enclosing_scope, symbol, node);
 }
 
-static void subscope_start(SymbolTableCtx *ctx, string symbol, AnyNode node) {
+static void subscope_start(SymbolTableCtx *ctx, string symbol, AstNode *node) {
     scope_insert_enclosing(ctx, symbol, node);
 
-    AnyNode *enclosing_node = stack_top(&ctx->scope_node_ctx);
-    Scope *enclosing_scope = scope_get(ctx->meta, *enclosing_node->data);
+    AstNode **enclosing_node = stack_top(&ctx->scope_node_ctx);
+    Scope *enclosing_scope = ast_scope_get(ctx->ast, *enclosing_node);
     assert(enclosing_scope);
 
-    AnyNode *entry =
-        stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
+    AstNode **entry = stack_push(&ctx->scope_node_ctx, sizeof(AstNode *),
+                                 _Alignof(AstNode *));
     *entry = node;
 
-    Scope *sub_scope = scope_attach(ctx->meta, *entry);
+    Scope *sub_scope = ast_scope_create(ctx->ast);
     sub_scope->enclosing_scope.ptr = enclosing_scope;
+    ast_scope_set(ctx->ast, *entry, sub_scope);
 }
 
-static void anon_subscope_start(SymbolTableCtx *ctx, AnyNode node) {
-    Scope *anon_scope = scope_attach(ctx->meta, node);
+static void anon_subscope_start(SymbolTableCtx *ctx, AstNode *node) {
+    Scope *anon_scope = ast_scope_create(ctx->ast);
     if (!stack_empty(&ctx->scope_node_ctx)) {
-        AnyNode *enclosing_node = stack_top(&ctx->scope_node_ctx);
+        AstNode **enclosing_node = stack_top(&ctx->scope_node_ctx);
         anon_scope->enclosing_scope.ptr =
-            scope_get(ctx->meta, *enclosing_node->data);
+            ast_scope_get(ctx->ast, *enclosing_node);
     }
-    AnyNode *entry =
-        stack_push(&ctx->scope_node_ctx, sizeof(AnyNode), _Alignof(AnyNode));
+    ast_scope_set(ctx->ast, node, anon_scope);
+    AstNode **entry = stack_push(&ctx->scope_node_ctx, sizeof(AstNode *),
+                                 _Alignof(AstNode *));
     *entry = node;
 }
 
 static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
-    AnyNode self = MAKE_ANY(decl);
-    subscope_start(ctx, decl->name->token.text, self);
+    subscope_start(ctx, decl->name->token.text, &decl->head);
 }
 
 static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
@@ -160,12 +161,11 @@ static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
 }
 
 static void enter_field(SymbolTableCtx *ctx, Field *field) {
-    scope_insert_enclosing(ctx, field->name->token.text, MAKE_ANY(field));
+    scope_insert_enclosing(ctx, field->name->token.text, &field->head);
 }
 
 static void enter_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
-    AnyNode self = MAKE_ANY(fn_decl);
-    subscope_start(ctx, fn_decl->name->token.text, self);
+    subscope_start(ctx, fn_decl->name->token.text, &fn_decl->head);
 }
 
 static void exit_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
@@ -178,7 +178,7 @@ static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl) {
     switch (binding->t) {
         case VAR_BINDING_BASIC:
             scope_insert_enclosing(ctx, binding->basic->token.text,
-                                   MAKE_ANY(var_decl));
+                                   &var_decl->head);
             break;
         default:
             TODO("other variable bindings");
@@ -186,7 +186,7 @@ static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl) {
 }
 
 static void enter_if_stmt(SymbolTableCtx *ctx, IfStmt *if_stmt) {
-    anon_subscope_start(ctx, MAKE_ANY(if_stmt));
+    anon_subscope_start(ctx, &if_stmt->head);
 }
 
 static void exit_if_stmt(SymbolTableCtx *ctx, IfStmt *if_stmt) {
@@ -201,21 +201,23 @@ static void enter_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt) {
     //
     // This needs to be special cased as only bare compound statements insert
     // their own anonymous scope.
-    AnyNode parent = get_node_parent(ctx->meta, comp_stmt->id);
-    if (parent.kind == NODE_STMT) {
-        anon_subscope_start(ctx, MAKE_ANY(comp_stmt));
+    AstNode *parent = comp_stmt->head.parent.ptr;
+    assert(parent);
+    if (parent->kind == NODE_STMT) {
+        anon_subscope_start(ctx, &comp_stmt->head);
     }
 }
 
 static void exit_comp_stmt(SymbolTableCtx *ctx, CompStmt *comp_stmt) {
-    AnyNode parent = get_node_parent(ctx->meta, comp_stmt->id);
-    if (parent.kind == NODE_STMT) {
+    AstNode *parent = comp_stmt->head.parent.ptr;
+    assert(parent);
+    if (parent->kind == NODE_STMT) {
         stack_pop(&ctx->scope_node_ctx);
     }
 }
 
 static void enter_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt) {
-    anon_subscope_start(ctx, MAKE_ANY(while_stmt));
+    anon_subscope_start(ctx, &while_stmt->head);
 }
 
 static void exit_while_stmt(SymbolTableCtx *ctx, WhileStmt *while_stmt) {

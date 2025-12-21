@@ -7,15 +7,17 @@
 #include "../ast/ast.h"
 #include "../syn/syn.h"
 
-typedef NodeID *(*ParseFn)(ParseCtx *);
-typedef NodeID *(*ParseFnDelim)(ParseCtx *, Toks toks);
+typedef AstNode *(*ParseFn)(ParseCtx *);
+typedef AstNode *(*ParseFnDelim)(ParseCtx *, Toks toks);
 
 char *ffi_parse(void (*parse_fn)(void), const char *srcz, bool delim) {
     string src = ztos((char *)srcz);
     SourceCode code = new_source_code(ztos("<string>"), src);
-    ParseCtx ctx = new_parse_ctx(&code);
+    Arena arena = new_arena();
+    Ast ast = ast_create(&arena);
+    ParseCtx ctx = parse_ctx_create(&ast, &code);
 
-    NodeID *root;
+    AstNode *root;
     if (delim) {
         ParseFnDelim parse_fn_delim = (ParseFnDelim)parse_fn;
         root = parse_fn_delim(&ctx, TOKS(T_EOF));
@@ -35,14 +37,16 @@ char *ffi_parse(void (*parse_fn)(void), const char *srcz, bool delim) {
     FILE *memfs = open_memstream(&buf, &len);
 
     TreeDumpCtx dump_ctx = {
-        .fs = memfs, .indent_level = 0, .indent_width = 2, .meta = &ctx.meta};
-    dump_tree(&dump_ctx, *root);
+        .fs = memfs, .indent_level = 0, .indent_width = 2, .ast = &ast};
+    dump_tree(&dump_ctx, root);
 
     fflush(memfs);
     fclose(memfs);
 
+    parse_ctx_delete(&ctx);
+    ast_delete(ast);
+    arena_free(&arena);
     source_code_free(&code);
-    parse_ctx_free(&ctx);
 
     return buf;
 }

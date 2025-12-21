@@ -9,23 +9,23 @@ static void deindent(TreeDumpCtx *ctx) {
     ctx->indent_level--;
 }
 
-void dump_tree(TreeDumpCtx *ctx, NodeID id) {
-    const NodeChildren *children = get_node_children(ctx->meta, id);
+void dump_tree(TreeDumpCtx *ctx, AstNode *n) {
+    Child *children = n->children;
 
-    if (ctx->meta->flags.items[id] & NFLAG_ERROR) {
+    if (n->has_error) {
         fprintf(ctx->fs, "%*s%s(error!) {",
                 ctx->indent_level * ctx->indent_width, "",
-                get_node_name(ctx->meta, id));
+                node_kind_to_string(n->kind));
     } else {
         fprintf(ctx->fs, "%*s%s {", ctx->indent_level * ctx->indent_width, "",
-                get_node_name(ctx->meta, id));
+                node_kind_to_string(n->kind));
     }
-    if (children->len != 0) {
+    if (da_length(children) != 0) {
         fprintf(ctx->fs, "\n");
     }
 
-    for (u32 i = 0; i < children->len; i++) {
-        NodeChild child = children->items[i];
+    for (u32 i = 0; i < da_length(children); i++) {
+        Child child = children[i];
         indent(ctx);
         switch (child.t) {
             case CHILD_NODE:
@@ -35,7 +35,7 @@ void dump_tree(TreeDumpCtx *ctx, NodeID id) {
                             child.name.ptr);
                     indent(ctx);
                 }
-                dump_tree(ctx, *child.node.data);
+                dump_tree(ctx, child.node);
                 if (child.name.ptr) {
                     deindent(ctx);
                 }
@@ -53,26 +53,27 @@ void dump_tree(TreeDumpCtx *ctx, NodeID id) {
         deindent(ctx);
     }
 
-    if (children->len != 0) {
+    if (da_length(children) != 0) {
         fprintf(ctx->fs, "%*s", ctx->indent_level * ctx->indent_width, "");
     }
     fprintf(ctx->fs, "}\n");
 }
 
-void dump_symbols(const SourceCode *code, NodeMetadata *m) {
-    MapCursor it = map_cursor_create(m->scope_allocs);
+void dump_symbols(Ast *ast, const SourceCode *code) {
+    MapCursor it = map_cursor_create(ast->tree_data.scope);
     while (map_cursor_next(&it)) {
         Scope **item = it.current;
-        NodeID id = *(NodeID *)map_key_of(m->scope_allocs, item);
+        // NodeID id = *(NodeID *)map_key_of(m->scope_allocs, item);
+        AstNode *self = (*item)->self;
 
-        printf("scope: [node_id = %d]\n", id);
-        printf("  node_type: <%s>\n", get_node_name(m, id));
+        printf("scope: [node_ptr = %p]\n", (void *)self);
+        printf("  node_type: <%s>\n", node_kind_to_string(self->kind));
 
         Scope *scope = *item;
         Scope *enclosing_scope = scope->enclosing_scope.ptr;
         if (enclosing_scope) {
-            printf("  enclosing_scope: [node_id = %d]\n",
-                   *(NodeID *)enclosing_scope->self.data);
+            printf("  enclosing_scope: [node_ptr = %p]\n",
+                   (void *)enclosing_scope->self);
         }
 
         bool first = true;
@@ -89,12 +90,12 @@ void dump_symbols(const SourceCode *code, NodeMetadata *m) {
             printf("  | \"%.*s\":\n", key.length, key.data);
             ScopeEntry *scope_entry_it = *item;
             while (scope_entry_it) {
-                NodeID entry_id = *(NodeID *)scope_entry_it->node.data;
-                u32 offset = get_node_offset(m, entry_id);
+                AstNode *entry = scope_entry_it->node;
+                u32 offset = entry->offset;
                 Position pos = line_and_column(code->lines, offset);
-                printf("  |   <%s> @ %d:%d [node_id = %d]\n",
-                       node_kind_name(scope_entry_it->node.kind), pos.line,
-                       pos.column, entry_id);
+                printf("  |   <%s> @ %d:%d [node_ptr = %p]\n",
+                       node_kind_to_string(entry->kind), pos.line, pos.column,
+                       (void *)entry);
                 scope_entry_it = scope_entry_it->shadows;
             }
         }
