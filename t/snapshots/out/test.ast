@@ -4,7 +4,8 @@ source_file {
     decl {
       var_decl {
         binding:
-          var_binding {
+          binding {
+            qualifier='let'
             ident {
               '_'
             }
@@ -44,7 +45,8 @@ source_file {
             decl {
               var_decl {
                 binding:
-                  var_binding {
+                  binding {
+                    qualifier='let'
                     ident {
                       'y'
                     }
@@ -75,7 +77,8 @@ source_file {
             decl {
               var_decl {
                 binding:
-                  var_binding {
+                  binding {
+                    qualifier='let'
                     ident {
                       'x'
                     }

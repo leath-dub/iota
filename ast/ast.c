@@ -40,7 +40,9 @@ void tree_data_delete(TreeData td) {
     MapCursor it = map_cursor_create(td.scope);
     while (map_cursor_next(&it)) {
         Scope **scope = it.current;
-        scope_entry_map_delete((*scope)->table);
+        if ((*scope)->table) {
+            scope_entry_map_delete((*scope)->table);
+        }
     }
     scope_map_delete(td.scope);
     resolves_to_map_delete(td.resolves_to);
@@ -149,10 +151,14 @@ void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n) {
 ScopeLookup scope_lookup(Scope *scope, string name, ScopeLookupMode mode) {
     bytes name_bytes = {RSPLATU(name)};
 
-    ScopeEntry **entry = scope_entry_map_get(scope->table, name_bytes);
-    if (entry) {
-        return (ScopeLookup){*entry, scope};
+    ScopeEntry **entry = NULL;
+    if (scope->table) {
+        entry = scope_entry_map_get(scope->table, name_bytes);
+        if (entry) {
+            return (ScopeLookup){*entry, scope};
+        }
     }
+
     // If not doing lexical lookup, just fail here
     if (mode == LOOKUP_MODE_DIRECT) {
         return (ScopeLookup){NULL, NULL};
@@ -219,6 +225,31 @@ void ast_node_child_add(AstNode *node, Child child) {
         node->children = children_create();
     }
     children_append(&node->children, child);
+}
+
+void ast_node_reparent(AstNode *node, AstNode *new_parent) {
+    // If the node already has a parent, remove it from the
+    // current parent's child list
+    if (node->parent.ptr != NULL) {
+        AstNode *p = node->parent.ptr;
+        // Find the position of the node in the parent's child list
+        size_t i = 0;
+        assert(da_length(p->children) != 0);
+        for (; i < da_length(p->children); i++) {
+            Child child = p->children[i];
+            if (child.t == CHILD_NODE && child.node == node) {
+                break;
+            }
+        }
+
+        Child found = p->children[i];
+        assert(found.t == CHILD_NODE && found.node == node);
+
+        children_remove(p->children, i);
+    }
+
+    ast_node_child_add(new_parent, child_node_create(node));
+    node->parent.ptr = new_parent;
 }
 
 void ast_resolves_to_set(Ast *ast, Ident *ident, AstNode *to) {

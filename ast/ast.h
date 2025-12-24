@@ -19,73 +19,65 @@
 // For these reasons, The weird and arcane trick known as "X macro" is used
 // below (see here for more: info https://en.wikipedia.org/wiki/X_macro).
 
-#define EACH_NODE(USE)                                 \
-    USE(SourceFile, SOURCE_FILE, source_file)          \
-    USE(Imports, IMPORTS, imports)                     \
-    USE(Decls, DECLS, decls)                           \
-    USE(Import, IMPORT, import)                        \
-    USE(Decl, DECL, decl)                              \
-    USE(VarDecl, VAR_DECL, var_decl)                   \
-    USE(FnDecl, FN_DECL, fn_decl)                      \
-    USE(FnMods, FN_MODS, fn_mods)                      \
-    USE(FnMod, FN_MOD, fn_mod)                         \
-    USE(TypeParams, TYPE_PARAMS, type_params)          \
-    USE(StructDecl, STRUCT_DECL, struct_decl)          \
-    USE(StructBody, STRUCT_BODY, struct_body)          \
-    USE(EnumDecl, ENUM_DECL, enum_decl)                \
-    USE(ErrDecl, ERR_DECL, err_decl)                   \
-    USE(UnionDecl, UNION_DECL, union_decl)             \
-    USE(VarBinding, VAR_BINDING, var_binding)          \
-    USE(UnpackTuple, UNPACK_TUPLE, unpack_tuple)       \
-    USE(UnpackStruct, UNPACK_STRUCT, unpack_struct)    \
-    USE(UnpackUnion, UNPACK_UNION, unpack_union)       \
-    USE(Binding, BINDING, binding)                     \
-    USE(Bindings, BINDINGS, bindings)                  \
-    USE(AliasBinding, ALIAS_BINDING, alias_binding)    \
-    USE(AliasBindings, ALIAS_BINDINGS, alias_bindings) \
-    USE(FnParams, FN_PARAMS, fn_params)                \
-    USE(FnParam, FN_PARAM, fn_param)                   \
-    USE(Types, TYPES, types)                           \
-    USE(Fields, FIELDS, fields)                        \
-    USE(Field, FIELD, field)                           \
-    USE(Idents, IDENTS, idents)                        \
-    USE(Errs, ERRS, errs)                              \
-    USE(Err, ERR, err)                                 \
-    USE(Stmt, STMT, stmt)                              \
-    USE(IfStmt, IF_STMT, if_stmt)                      \
-    USE(WhileStmt, WHILE_STMT, while_stmt)             \
-    USE(CasePatt, CASE_PATT, case_patt)                \
-    USE(CaseBranch, CASE_BRANCH, case_branch)          \
-    USE(CaseBranches, CASE_BRANCHES, case_branches)    \
-    USE(CaseStmt, CASE_STMT, case_stmt)                \
-    USE(Cond, COND, cond)                              \
-    USE(UnionTagCond, UNION_TAG_COND, union_tag_cond)  \
-    USE(ReturnStmt, RETURN_STMT, return_stmt)          \
-    USE(DeferStmt, DEFER_STATEMENT, defer_stmt)        \
-    USE(CompStmt, COMP_STMT, comp_stmt)                \
-    USE(Else, ELSE, else)                              \
-    USE(AssignOrExpr, ASSIGN_OR_EXPR, assign_or_expr)  \
-    USE(Type, TYPE, type)                              \
-    USE(BuiltinType, BUILTIN_TYPE, builtin_type)       \
-    USE(CollType, COLL_TYPE, coll_type)                \
-    USE(StructType, STRUCT_TYPE, struct_type)          \
-    USE(UnionType, UNION_TYPE, union_type)             \
-    USE(EnumType, ENUM_TYPE, enum_type)                \
-    USE(ErrType, ERR_TYPE, err_type)                   \
-    USE(PtrType, PTR_TYPE, ptr_type)                   \
-    USE(FnType, FN_TYPE, fn_type)                      \
-    USE(ScopedIdent, SCOPED_IDENT, scoped_ident)       \
-    USE(Ident, IDENT, ident)                           \
-    USE(Expr, EXPR, expr)                              \
-    USE(Atom, ATOM, atom)                              \
-    USE(PostfixExpr, POSTFIX_EXPR, postfix_expr)       \
-    USE(Call, CALL, call)                              \
-    USE(CallArgs, CALL_ARGS, call_args)                \
-    USE(CallArg, CALL_ARG, call_arg)                   \
-    USE(FieldAccess, FIELD_ACCESS, field_access)       \
-    USE(CollAccess, COLL_ACCESS, coll_access)          \
-    USE(UnaryExpr, UNARY_EXPR, unary_expr)             \
-    USE(BinExpr, BIN_EXPR, bin_expr)                   \
+#define EACH_NODE(USE)                                         \
+    USE(SourceFile, SOURCE_FILE, source_file)                  \
+    USE(Imports, IMPORTS, imports)                             \
+    USE(Decls, DECLS, decls)                                   \
+    USE(Import, IMPORT, import)                                \
+    USE(Decl, DECL, decl)                                      \
+    USE(VarDecl, VAR_DECL, var_decl)                           \
+    USE(FnDecl, FN_DECL, fn_decl)                              \
+    USE(FnMods, FN_MODS, fn_mods)                              \
+    USE(FnMod, FN_MOD, fn_mod)                                 \
+    USE(TypeParams, TYPE_PARAMS, type_params)                  \
+    USE(TypeDecl, TYPE_DECL, type_decl)                        \
+    USE(Binding, BINDING, binding)                             \
+    USE(TypedBinding, TYPED_BINDING, typed_binding)            \
+    USE(TypedBindings, TYPED_BINDINGS, typed_bindings)         \
+    USE(FnParams, FN_PARAMS, fn_params)                        \
+    USE(FnParam, FN_PARAM, fn_param)                           \
+    USE(Types, TYPES, types)                                   \
+    USE(Idents, IDENTS, idents)                                \
+    USE(Stmt, STMT, stmt)                                      \
+    USE(IfStmt, IF_STMT, if_stmt)                              \
+    USE(WhileStmt, WHILE_STMT, while_stmt)                     \
+    USE(CasePatt, CASE_PATT, case_patt)                        \
+    USE(CaseBranch, CASE_BRANCH, case_branch)                  \
+    USE(CaseBranches, CASE_BRANCHES, case_branches)            \
+    USE(CaseStmt, CASE_STMT, case_stmt)                        \
+    USE(Cond, COND, cond)                                      \
+    USE(UnionReduceCond, UNION_REDUCE_COND, union_reduce_cond) \
+    USE(ReturnStmt, RETURN_STMT, return_stmt)                  \
+    USE(DeferStmt, DEFER_STATEMENT, defer_stmt)                \
+    USE(CompStmt, COMP_STMT, comp_stmt)                        \
+    USE(Else, ELSE, else)                                      \
+    USE(AssignOrExpr, ASSIGN_OR_EXPR, assign_or_expr)          \
+    USE(Type, TYPE, type)                                      \
+    USE(BuiltinType, BUILTIN_TYPE, builtin_type)               \
+    USE(CollType, COLL_TYPE, coll_type)                        \
+    USE(TupleType, TUPLE_TYPE, tuple_type)                     \
+    USE(StructType, STRUCT_TYPE, struct_type)                  \
+    USE(StructFields, STRUCT_FIELDS, struct_fields)            \
+    USE(StructField, STRUCT_FIELD, struct_field)               \
+    USE(TaggedUnionType, TAGGED_UNION_TYPE, tagged_union_type) \
+    USE(UnionAlts, UNION_ALTS, union_alts)                     \
+    USE(UnionAlt, UNION_ALT, union_alt)                        \
+    USE(EnumType, ENUM_TYPE, enum_type)                        \
+    USE(PtrType, PTR_TYPE, ptr_type)                           \
+    USE(ErrType, ERR_TYPE, err_type)                           \
+    USE(FnType, FN_TYPE, fn_type)                              \
+    USE(ScopedIdent, SCOPED_IDENT, scoped_ident)               \
+    USE(Ident, IDENT, ident)                                   \
+    USE(Expr, EXPR, expr)                                      \
+    USE(Atom, ATOM, atom)                                      \
+    USE(PostfixExpr, POSTFIX_EXPR, postfix_expr)               \
+    USE(Call, CALL, call)                                      \
+    USE(CallArgs, CALL_ARGS, call_args)                        \
+    USE(CallArg, CALL_ARG, call_arg)                           \
+    USE(FieldAccess, FIELD_ACCESS, field_access)               \
+    USE(CollAccess, COLL_ACCESS, coll_access)                  \
+    USE(UnaryExpr, UNARY_EXPR, unary_expr)                     \
+    USE(BinExpr, BIN_EXPR, bin_expr)                           \
     USE(Index, INDEX, index)
 
 #define FWD_DECL_NODE(NODE, ...) struct NODE;
@@ -146,10 +138,7 @@ struct Decls {
 typedef enum {
     DECL_VAR,
     DECL_FN,
-    DECL_STRUCT,
-    DECL_ENUM,
-    DECL_ERR,
-    DECL_UNION,
+    DECL_TYPE,
 } DeclKind;
 
 struct Decl {
@@ -158,75 +147,29 @@ struct Decl {
     union {
         struct VarDecl *var_decl;
         struct FnDecl *fn_decl;
-        struct StructDecl *struct_decl;
-        struct EnumDecl *enum_decl;
-        struct ErrDecl *err_decl;
-        struct UnionDecl *union_decl;
+        struct TypeDecl *type_decl;
     };
 };
 
 struct VarDecl {
     AstNode head;
-    struct VarBinding *binding;
-    struct Type *type;  // nullable
-    struct {
-        Tok assign_token;
-        struct Expr *expr;
-        bool ok;
-    } init;
-};
-
-typedef enum {
-    VAR_BINDING_BASIC,
-    VAR_BINDING_UNPACK_TUPLE,
-    VAR_BINDING_UNPACK_STRUCT,
-} VarBindingKind;
-
-struct VarBinding {
-    AstNode head;
-    VarBindingKind t;
-    union {
-        struct Ident *basic;
-        struct UnpackTuple *unpack_tuple;
-        struct UnpackStruct *unpack_struct;
-    };
-};
-
-struct AliasBinding {
-    AstNode head;
     struct Binding *binding;
-    MAYBE(Tok) alias;
-};
-
-struct AliasBindings {
-    AstNode head;
+    Tok assign_token;
+    NULLABLE_PTR(struct Expr) init;
 };
 
 struct Binding {
     AstNode head;
+    Tok qualifier;
     struct Ident *name;
-    MAYBE(Tok) ref;  // could be a '*' meaning the binding is a reference
-    MAYBE(Tok) mod;
+    NULLABLE_PTR(struct Type) type;
 };
 
-struct Bindings {
+struct TypedBinding {
     AstNode head;
-};
-
-struct UnpackTuple {
-    AstNode head;
-    struct Bindings *bindings;
-};
-
-struct UnpackStruct {
-    AstNode head;
-    struct AliasBindings *bindings;
-};
-
-struct UnpackUnion {
-    AstNode head;
-    struct Ident *tag;
-    struct Binding *binding;
+    Tok qualifier;
+    struct Ident *name;
+    struct Type *type;
 };
 
 struct FnDecl {
@@ -254,8 +197,7 @@ struct FnParams {
 
 struct FnParam {
     AstNode head;
-    struct VarBinding *binding;
-    struct Type *type;
+    struct TypedBinding *binding;
     bool variadic;
 };
 
@@ -263,63 +205,33 @@ struct TypeParams {
     AstNode head;
 };
 
-struct StructDecl {
+struct TupleType {
     AstNode head;
-    struct Ident *name;
-    NULLABLE_PTR(struct TypeParams) type_params;
-    struct StructBody *body;
+    struct Types *types;
 };
 
-struct StructBody {
+struct StructType {
     AstNode head;
-    bool tuple_like;
-    union {
-        struct Types *types;
-        struct Fields *fields;
-    };
+    struct StructFields *fields;
 };
 
-struct Fields {
+struct StructFields {
     AstNode head;
 };
 
-struct Field {
+struct StructField {
     AstNode head;
-    struct Ident *name;
-    struct Type *type;
+    struct TypedBinding *binding;
+    Tok assign_token;
+    NULLABLE_PTR(struct Expr) default_value;
 };
 
-struct EnumDecl {
+struct TypedBindings {
     AstNode head;
-    struct Ident *name;
-    struct Idents *alts;
 };
 
 struct Idents {
     AstNode head;
-};
-
-struct ErrDecl {
-    AstNode head;
-    struct Ident *name;
-    struct Errs *errs;
-};
-
-struct Errs {
-    AstNode head;
-};
-
-struct Err {
-    AstNode head;
-    bool embedded;  // e.g. !Foo
-    struct ScopedIdent *scoped_ident;
-};
-
-struct UnionDecl {
-    AstNode head;
-    struct Ident *name;
-    NULLABLE_PTR(struct TypeParams) type_params;
-    struct Fields *alts;
 };
 
 typedef enum {
@@ -361,10 +273,13 @@ struct WhileStmt {
     struct CompStmt *true_branch;
 };
 
+// Binding
+
 typedef enum {
     CASE_PATT_EXPR,
     CASE_PATT_DEFAULT,
-    CASE_PATT_UNPACK_UNION,
+    CASE_PATT_TYPE,
+    CASE_PATT_BINDING,
 } CasePattKind;
 
 struct CasePatt {
@@ -373,7 +288,8 @@ struct CasePatt {
     union {
         struct Expr *expr;
         Tok default_;
-        struct UnpackUnion *unpack_union;
+        struct Type *type;
+        struct TypedBinding *binding;
     };
 };
 
@@ -394,7 +310,7 @@ struct CaseStmt {
 };
 
 typedef enum {
-    COND_UNION_TAG,
+    COND_UNION_REDUCE,
     COND_EXPR,
 } CondKind;
 
@@ -402,14 +318,14 @@ struct Cond {
     AstNode head;
     CondKind t;
     union {
-        struct UnionTagCond *union_tag;
+        struct UnionReduceCond *union_reduce;
         struct Expr *expr;
     };
 };
 
-struct UnionTagCond {
+struct UnionReduceCond {
     AstNode head;
-    struct UnpackUnion *trigger;
+    struct TypedBinding *trigger;
     Tok assign_token;
     struct Expr *expr;
 };
@@ -449,11 +365,18 @@ struct AssignOrExpr {
     NULLABLE_PTR(struct Expr) rvalue;
 };
 
+struct TypeDecl {
+    AstNode head;
+    struct Ident *name;
+    struct Type *type;
+};
+
 typedef enum {
     TYPE_BUILTIN,
     TYPE_COLL,
+    TYPE_TUPLE,
     TYPE_STRUCT,
-    TYPE_UNION,
+    TYPE_TAGGED_UNION,
     TYPE_ENUM,
     TYPE_ERR,
     TYPE_PTR,
@@ -467,8 +390,9 @@ struct Type {
     union {
         struct BuiltinType *builtin_type;
         struct CollType *coll_type;
+        struct TupleType *tuple_type;
         struct StructType *struct_type;
-        struct UnionType *union_type;
+        struct TaggedUnionType *tagged_union_type;
         struct EnumType *enum_type;
         struct ErrType *err_type;
         struct PtrType *ptr_type;
@@ -488,20 +412,31 @@ struct CollType {
     struct Type *element_type;
 };
 
-struct StructType {
-    AstNode head;
-    NULLABLE_PTR(struct TypeParams) type_params;
-    struct StructBody *body;
-};
-
 struct Types {
     AstNode head;
 };
 
-struct UnionType {
+struct TaggedUnionType {
     AstNode head;
-    NULLABLE_PTR(struct TypeParams) type_params;
-    struct Fields *fields;
+    struct UnionAlts *alts;
+};
+
+struct UnionAlts {
+    AstNode head;
+};
+
+typedef enum {
+    UNION_ALT_TYPE,
+    UNION_ALT_INLINE_DECL,
+} UnionAltKind;
+
+struct UnionAlt {
+    AstNode head;
+    UnionAltKind t;
+    union {
+        struct Type *type;
+        struct TypeDecl *inline_decl;
+    };
 };
 
 struct EnumType {
@@ -511,7 +446,7 @@ struct EnumType {
 
 struct ErrType {
     AstNode head;
-    struct Errs *errs;
+    struct Type *type;
 };
 
 struct PtrType {
@@ -751,6 +686,8 @@ void ast_scope_insert(Ast *ast, Scope *s, string name, AstNode *n);
 
 AstNode *ast_node_create(Ast *ast, NodeKind kind);
 void ast_node_child_add(AstNode *node, Child child);
+
+void ast_node_reparent(AstNode *child, AstNode *new_parent);
 
 typedef enum {
     LOOKUP_MODE_LEXICAL,

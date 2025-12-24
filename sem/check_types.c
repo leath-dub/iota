@@ -149,7 +149,8 @@ static TypeRepr *type_from_tree(TypeCheckCtx *ctx, Type *tree) {
         case TYPE_FN:
         case TYPE_COLL:
         case TYPE_STRUCT:
-        case TYPE_UNION:
+        case TYPE_TUPLE:
+        case TYPE_TAGGED_UNION:
         case TYPE_ENUM:
         case TYPE_ERR:
             break;
@@ -171,7 +172,7 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol) {
             for (u32 i = 0; i < da_length(h->children); i++) {
                 FnParam *param = child_fn_param_at(h, i);
                 FnTParam tparam = {
-                    .type = type_from_tree(ctx, param->type),
+                    .type = type_from_tree(ctx, param->binding->type),
                     .variadic = param->variadic,
                 };
                 fnt_params_append(&fn_type->fn.params, tparam);
@@ -191,7 +192,6 @@ static TypeRepr *type_from_symbol(TypeCheckCtx *ctx, AstNode *symbol) {
         }
         case NODE_VAR_DECL: {
             VarDecl *var = (VarDecl *)symbol;
-            assert(var->binding->t == VAR_BINDING_BASIC && "TODO");
             TypeRepr *type = ast_type_get(ctx->ast, &var->head);
             assert(type);
             return type;
@@ -282,12 +282,13 @@ static void check_bin_expr(TypeCheckCtx *ctx, BinExpr *bin_expr) {
 static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {
     TypeRepr *resolved_type = BAD_PTR;
 
-    if (var_decl->init.ok) {
-        resolved_type = type_of_expr(ctx, var_decl->init.expr);
+    if (var_decl->init.ptr != NULL) {
+        resolved_type = type_of_expr(ctx, var_decl->init.ptr);
     }
 
-    if (var_decl->type) {
-        TypeRepr *expected_type = type_from_tree(ctx, var_decl->type);
+    Type *type = var_decl->binding->type.ptr;
+    if (type != NULL) {
+        TypeRepr *expected_type = type_from_tree(ctx, type);
         if (resolved_type != BAD_PTR && expected_type->t != resolved_type->t) {
             sem_raise(ctx, var_decl->head.offset, "type error",
                       "expression does not match declared type");

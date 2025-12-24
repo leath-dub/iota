@@ -1,3 +1,7 @@
+* Changing syntax:
+  * need to fix all delimited lists (maybe write a helper)
+  * need to fix all snapshot test inputs
+
 * Fleshing out 'sem'. Right now working on type resolution and checking.
   Will probably need pre-pass for global variables. Right now I am using
   exit function on each expression to validate them, which means post

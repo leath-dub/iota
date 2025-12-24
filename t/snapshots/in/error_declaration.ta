@@ -1,6 +1,0 @@
-
-error Parse_Error {
-    Missing_Semicolon,
-    Unmatched_Quote,
-    !IO_Error,
-}

@@ -4,7 +4,8 @@ source_file {
     decl {
       var_decl {
         binding:
-          var_binding {
+          binding {
+            qualifier='let'
             ident {
               '_'
             }

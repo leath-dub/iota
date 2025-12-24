@@ -2,22 +2,26 @@ source_file {
   imports {}
   decls {
     decl {
-      enum_decl {
+      type_decl {
         ident {
           'Direction'
         }
-        idents {
-          ident {
-            'north'
-          }
-          ident {
-            'south'
-          }
-          ident {
-            'east'
-          }
-          ident {
-            'west'
+        type {
+          enum_type {
+            idents {
+              ident {
+                'north'
+              }
+              ident {
+                'south'
+              }
+              ident {
+                'east'
+              }
+              ident {
+                'west'
+              }
+            }
           }
         }
       }

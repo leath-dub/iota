@@ -8,6 +8,7 @@
 void *da_create(size_t item_size);
 void da_delete(void *da);
 void da_append(void **da, void *item, size_t item_size);
+void da_remove(void *da, size_t index, size_t item_size);
 void da_shrink(void **da, size_t item_size);
 size_t da_length(void *da);
 
@@ -45,6 +46,9 @@ static inline void *da_unsafe_at(void *da, size_t index, size_t item_size) {
     }                                                                          \
     static inline void name##_shrink(V **values) {                             \
         da_shrink((void **)values, sizeof(V));                                 \
+    }                                                                          \
+    static inline void name##_remove(V *values, size_t index) {                \
+        da_remove((void *)values, index, sizeof(V));                           \
     }
 
 #endif

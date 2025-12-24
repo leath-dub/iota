@@ -1,5 +1,4 @@
-
-struct Point {
-    x f32,
-    y f32,
-}
+type Point = struct {
+    x: f32,
+    y: f32,
+};

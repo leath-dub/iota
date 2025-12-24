@@ -90,6 +90,7 @@ Decl *parse_decl(ParseCtx *c) {
 again:
     switch (at(c).t) {
         case T_LET:
+        case T_VAR:
             n->t = DECL_VAR;
             n->var_decl = parse_var_decl(c);
             break;
@@ -97,118 +98,16 @@ again:
             n->t = DECL_FN;
             n->fn_decl = parse_fn_decl(c);
             break;
-        case T_STRUCT:
-            n->t = DECL_STRUCT;
-            n->struct_decl = parse_struct_decl(c);
-            break;
-        case T_ENUM:
-            n->t = DECL_ENUM;
-            n->enum_decl = parse_enum_decl(c);
-            break;
-        case T_UNION:
-            n->t = DECL_UNION;
-            n->union_decl = parse_union_decl(c);
-            break;
-        case T_ERROR:
-            n->t = DECL_ERR;
-            n->err_decl = parse_err_decl(c);
+        case T_TYPE:
+            n->t = DECL_TYPE;
+            n->type_decl = parse_type_decl(c, true);
             break;
         default:
-            if (expect_one_of(
-                    c, &n->head,
-                    TOKS(T_LET, T_FUN, T_STRUCT, T_ENUM, T_UNION, T_ERROR),
-                    "start of declaration")) {
+            if (expect_one_of(c, &n->head, TOKS(T_LET, T_VAR, T_FUN, T_TYPE),
+                              "start of declaration")) {
                 goto again;
             }
             break;
-    }
-    return end_node(c, nc);
-}
-
-StructDecl *parse_struct_decl(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_STRUCT_DECL);
-    StructDecl *n = (StructDecl *)nc.node;
-    assert(consume(c).t == T_STRUCT);
-    n->name = parse_ident(c);
-    n->body = parse_struct_body(c);
-    return end_node(c, nc);
-}
-
-StructBody *parse_struct_body(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_STRUCT_BODY);
-    StructBody *n = (StructBody *)nc.node;
-again:
-    switch (at(c).t) {
-        case T_LBRC:
-            next(c);
-            n->tuple_like = false;
-            n->fields = parse_fields(c);
-            if (!skip_if(c, &n->head, T_RBRC)) {
-                return end_node(c, nc);
-            }
-            break;
-        case T_LPAR:
-            next(c);
-            n->tuple_like = true;
-            n->types = parse_types(c);
-            if (!skip_if(c, &n->head, T_RPAR)) {
-                return end_node(c, nc);
-            }
-            if (!skip_if(c, &n->head, T_SCLN)) {
-                return end_node(c, nc);
-            }
-            break;
-        default:
-            if (!expect_one_of(c, &n->head, TOKS(T_LBRC, T_LPAR),
-                               "a struct or tuple body")) {
-                goto again;
-            }
-            break;
-    }
-    return end_node(c, nc);
-}
-
-EnumDecl *parse_enum_decl(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_ENUM_DECL);
-    EnumDecl *n = (EnumDecl *)nc.node;
-    assert(consume(c).t == T_ENUM);
-    n->name = parse_ident(c);
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->alts = parse_idents(c);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
-    }
-    return end_node(c, nc);
-}
-
-UnionDecl *parse_union_decl(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNION_DECL);
-    UnionDecl *n = (UnionDecl *)nc.node;
-    assert(consume(c).t == T_UNION);
-    n->name = parse_ident(c);
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->alts = parse_fields(c);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
-    }
-    return end_node(c, nc);
-}
-
-ErrDecl *parse_err_decl(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_ERR_DECL);
-    ErrDecl *n = (ErrDecl *)nc.node;
-    assert(consume(c).t == T_ERROR);
-    n->name = parse_ident(c);
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->errs = parse_errs(c);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
     }
     return end_node(c, nc);
 }
@@ -216,17 +115,10 @@ ErrDecl *parse_err_decl(ParseCtx *c) {
 VarDecl *parse_var_decl(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_VAR_DECL);
     VarDecl *n = (VarDecl *)nc.node;
-    assert(consume(c).t == T_LET);
-    n->binding = attr(c, "binding", parse_var_binding(c));
-    if (!looking_at(c, T_EQ) && !looking_at(c, T_SCLN)) {
-        // Must have a type
-        n->type = parse_type(c);
-    }
-    // sync_if_none_of(c, TOKS(T_EQ, T_SCLN));
+    n->binding = attr(c, "binding", parse_binding(c));
     if (looking_at(c, T_EQ)) {
-        n->init.ok = true;
-        n->init.assign_token = consume(c);
-        n->init.expr = attr(c, "value", parse_expr(c));
+        n->assign_token = consume(c);
+        n->init.ptr = attr(c, "value", parse_expr(c));
     }
     if (!skip_if(c, &n->head, T_SCLN)) {
         return end_node(c, nc);
@@ -234,30 +126,17 @@ VarDecl *parse_var_decl(ParseCtx *c) {
     return end_node(c, nc);
 }
 
-VarBinding *parse_var_binding(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_VAR_BINDING);
-    VarBinding *n = (VarBinding *)nc.node;
-again:
-    switch (at(c).t) {
-        case T_LPAR:
-            n->t = VAR_BINDING_UNPACK_TUPLE;
-            n->unpack_tuple = parse_unpack_tuple(c);
-            break;
-        case T_LBRC:
-            n->t = VAR_BINDING_UNPACK_STRUCT;
-            n->unpack_struct = parse_unpack_struct(c);
-            break;
-        case T_IDENT: {
-            n->t = VAR_BINDING_BASIC;
-            n->basic = parse_ident(c);
-            break;
-        }
-        default:
-            if (expect_one_of(c, &n->head, TOKS(T_LPAR, T_LBRC, T_IDENT),
-                              "a variable binding")) {
-                goto again;
-            }
-            break;
+TypeDecl *parse_type_decl(ParseCtx *c, bool semicolon) {
+    NodeCtx nc = start_node(c, NODE_TYPE_DECL);
+    TypeDecl *n = (TypeDecl *)nc.node;
+    assert(consume(c).t == T_TYPE);
+    n->name = parse_ident(c);
+    if (!skip_if(c, &n->head, T_EQ)) {
+        return end_node(c, nc);
+    }
+    n->type = parse_type(c);
+    if (semicolon) {
+        (void)skip_if(c, &n->head, T_SCLN);
     }
     return end_node(c, nc);
 }
@@ -265,102 +144,37 @@ again:
 Binding *parse_binding(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_BINDING);
     Binding *n = (Binding *)nc.node;
-    if (looking_at(c, T_STAR)) {
-        n->ref.ok = true;
-        n->ref.value = token_attr(c, "kind", consume(c));
-        if (looking_at(c, T_RO)) {
-            n->ref.ok = true;
-            n->mod.value = token_attr(c, "modifier", consume(c));
-        }
+again:
+    switch (at(c).t) {
+        case T_LET:
+        case T_VAR:
+            n->qualifier = token_attr(c, "qualifier", consume(c));
+            break;
+        default:
+            if (expect_one_of(c, &n->head, TOKS(T_LET, T_VAR), "var or let")) {
+                goto again;
+            }
+            break;
     }
     n->name = parse_ident(c);
-    return end_node(c, nc);
-}
 
-AliasBinding *parse_alias_binding(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_ALIAS_BINDING);
-    AliasBinding *n = (AliasBinding *)nc.node;
-    n->binding = parse_binding(c);
-    if (looking_at(c, T_EQ)) {
+    n->type.ptr = NULL;
+    if (looking_at(c, T_CLN)) {
         next(c);
-        if (!expect(c, &n->head, T_IDENT)) {
-            return end_node(c, nc);
-        }
-        Tok name = consume(c);
-        n->alias.ok = true;
-        n->alias.value = token_attr(c, "alias", name);
-    }
-    return end_node(c, nc);
-}
-
-UnpackStruct *parse_unpack_struct(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNPACK_STRUCT);
-    UnpackStruct *n = (UnpackStruct *)nc.node;
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->bindings = parse_alias_bindings(c, T_RBRC);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
-    }
-    return end_node(c, nc);
-}
-
-UnpackTuple *parse_unpack_tuple(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNPACK_TUPLE);
-    UnpackTuple *n = (UnpackTuple *)nc.node;
-    if (!skip_if(c, &n->head, T_LPAR)) {
-        return end_node(c, nc);
-    }
-    n->bindings = parse_bindings(c, T_RPAR);
-    if (!skip_if(c, &n->head, T_RPAR)) {
-        return end_node(c, nc);
-    }
-    return end_node(c, nc);
-}
-
-UnpackUnion *parse_unpack_union(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNPACK_UNION);
-    UnpackUnion *n = (UnpackUnion *)nc.node;
-
-    n->tag = parse_ident(c);
-
-    if (!skip_if(c, &n->head, T_LPAR)) {
-        return end_node(c, nc);
-    }
-    n->binding = parse_binding(c);
-    if (!skip_if(c, &n->head, T_RPAR)) {
-        return end_node(c, nc);
+        n->type.ptr = parse_type(c);
     }
 
     return end_node(c, nc);
 }
 
-AliasBindings *parse_alias_bindings(ParseCtx *c, TokKind end) {
-    NodeCtx nc = start_node(c, NODE_ALIAS_BINDINGS);
-    (void)parse_alias_binding(c);
-    while (looking_at(c, T_COMMA)) {
-        next(c);
-        // Ignore trailing comma
-        if (looking_at(c, end)) {
-            break;
-        }
-        (void)parse_alias_binding(c);
+TypedBinding *parse_typed_binding(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_TYPED_BINDING);
+    TypedBinding *n = (TypedBinding *)nc.node;
+    n->name = parse_ident(c);
+    if (!skip_if(c, &n->head, T_CLN)) {
+        return end_node(c, nc);
     }
-    return end_node(c, nc);
-}
-
-Bindings *parse_bindings(ParseCtx *c, TokKind end) {
-    NodeCtx nc = start_node(c, NODE_BINDINGS);
-    (void)parse_binding(c);
-    while (looking_at(c, T_COMMA)) {
-        next(c);
-        // Ignore trailing comma
-        if (looking_at(c, end)) {
-            break;
-        }
-        (void)parse_binding(c);
-    }
+    n->type = parse_type(c);
     return end_node(c, nc);
 }
 
@@ -426,13 +240,11 @@ FnParams *parse_fn_params(ParseCtx *c) {
 FnParam *parse_fn_param(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_FN_PARAM);
     FnParam *n = (FnParam *)nc.node;
-    n->binding = parse_var_binding(c);
     if (looking_at(c, T_DOTDOT)) {
-        token_attr(c, "kind", at(c));
-        next(c);
+        token_attr(c, "kind", consume(c));
         n->variadic = true;
     }
-    n->type = parse_type(c);
+    n->binding = parse_typed_binding(c);
     return end_node(c, nc);
 }
 
@@ -444,8 +256,6 @@ Stmt *parse_stmt(ParseCtx *c) {
         case T_LET:
         case T_STRUCT:
         case T_ENUM:
-        case T_ERROR:
-        case T_UNION:
             n->t = STMT_DECL;
             n->decl = parse_decl(c);
             break;
@@ -487,11 +297,7 @@ CompStmt *parse_comp_stmt(ParseCtx *c) {
         return end_node(c, nc);
     }
     while (!looking_at(c, T_RBRC)) {
-        if (looking_at(c, T_EOF)) {
-            expected(c, &n->head, "a statement");
-            break;
-        }
-        (void)parse_stmt(c);
+        ensure_progress(c, (ParseFn)parse_stmt);
     }
     next(c);
     return end_node(c, nc);
@@ -522,10 +328,31 @@ CasePatt *parse_case_patt(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_CASE_PATT);
     CasePatt *n = (CasePatt *)nc.node;
     switch (at(c).t) {
+        case T_VAR:
         case T_LET:
+        again: {
+            Tok qual = {0};
+            switch (at(c).t) {
+                case T_LET:
+                case T_VAR:
+                    qual = token_attr(c, "qualifier", consume(c));
+                    break;
+                default:
+                    if (expect_one_of(c, &n->head, TOKS(T_LET, T_VAR),
+                                      "var or let")) {
+                        goto again;
+                    }
+                    break;
+            }
+            n->t = CASE_PATT_BINDING;
+            n->binding = parse_typed_binding(c);
+            n->binding->qualifier = qual;
+            break;
+        }
+        case T_CLN:
             next(c);
-            n->t = CASE_PATT_UNPACK_UNION;
-            n->unpack_union = parse_unpack_union(c);
+            n->t = CASE_PATT_TYPE;
+            n->type = parse_type(c);
             break;
         case T_ELSE:
             n->t = CASE_PATT_DEFAULT;
@@ -620,8 +447,9 @@ Cond *parse_cond(ParseCtx *c) {
     Cond *n = (Cond *)nc.node;
     switch (at(c).t) {
         case T_LET:
-            n->t = COND_UNION_TAG;
-            n->union_tag = parse_union_tag_cond(c);
+        case T_VAR:
+            n->t = COND_UNION_REDUCE;
+            n->union_reduce = parse_union_reduce_cond(c);
             break;
         default:
             n->t = COND_EXPR;
@@ -631,15 +459,17 @@ Cond *parse_cond(ParseCtx *c) {
     return end_node(c, nc);
 }
 
-UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNION_TAG_COND);
-    UnionTagCond *n = (UnionTagCond *)nc.node;
+UnionReduceCond *parse_union_reduce_cond(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_UNION_REDUCE_COND);
+    UnionReduceCond *n = (UnionReduceCond *)nc.node;
 
-    assert(consume(c).t == T_LET);
+    Tok qual = consume(c);
+    assert(qual.t == T_LET || qual.t == T_VAR);
 
-    n->trigger = parse_unpack_union(c);
+    n->trigger = parse_typed_binding(c);
+    n->trigger->qualifier = qual;
 
-    if (!expect(c, &n->head, T_EQ)) {
+    if (!skip_if(c, &n->head, T_EQ)) {
         return end_node(c, nc);
     }
 
@@ -647,6 +477,95 @@ UnionTagCond *parse_union_tag_cond(ParseCtx *c) {
     n->expr = parse_expr(c);
 
     return end_node(c, nc);
+}
+
+static Types *parse_tuple_types(ParseCtx *c, Type *first_type) {
+    NodeCtx nc = start_node(c, NODE_TYPES);
+    Types *n = (Types *)nc.node;
+
+    ast_node_reparent(&first_type->head, &n->head);
+
+    while (consume(c).t == T_COMMA && !looking_at(c, T_RPAR)) {
+        (void)parse_type(c);
+    }
+
+    return end_node(c, nc);
+}
+
+static TupleType *parse_tuple_type(ParseCtx *c, Type *first_type) {
+    NodeCtx nc = start_node(c, NODE_TUPLE_TYPE);
+    TupleType *n = (TupleType *)nc.node;
+    n->types = parse_tuple_types(c, first_type);
+    (void)skip_if(c, &n->head, T_RPAR);
+    return end_node(c, nc);
+}
+
+static UnionAlt *parse_union_alt(ParseCtx *c, Type *first_type) {
+    NodeCtx nc = start_node(c, NODE_UNION_ALT);
+    UnionAlt *n = (UnionAlt *)nc.node;
+    if (first_type) {
+        ast_node_reparent(&first_type->head, &n->head);
+        return end_node(c, nc);
+    }
+    if (looking_at(c, T_TYPE)) {
+        n->t = UNION_ALT_INLINE_DECL;
+        n->inline_decl = parse_type_decl(c, false);
+    } else {
+        n->t = UNION_ALT_TYPE;
+        n->type = parse_type(c);
+    }
+    return end_node(c, nc);
+}
+
+static UnionAlts *parse_union_alts(ParseCtx *c, Type *first_type) {
+    NodeCtx nc = start_node(c, NODE_UNION_ALTS);
+    (void)parse_union_alt(c, first_type);
+    while (looking_at(c, T_PIPE)) {
+        next(c);
+        if (looking_at(c, T_RPAR)) {
+            break;
+        }
+        (void)parse_union_alt(c, NULL);
+    }
+    return end_node(c, nc);
+}
+
+static TaggedUnionType *parse_tagged_union_type(ParseCtx *c, Type *first_type) {
+    NodeCtx nc = start_node(c, NODE_TAGGED_UNION_TYPE);
+    TaggedUnionType *n = (TaggedUnionType *)nc.node;
+    n->alts = parse_union_alts(c, first_type);
+    (void)skip_if(c, &n->head, T_RPAR);
+    return end_node(c, nc);
+}
+
+static void parse_tuple_or_union(ParseCtx *c, Type *type) {
+    assert(consume(c).t == T_LPAR);
+    if (looking_at(c, T_TYPE)) {
+        type->t = TYPE_TAGGED_UNION;
+        type->tagged_union_type = parse_tagged_union_type(c, NULL);
+        return;
+    }
+    Type *first_type = parse_type(c);
+again:
+    switch (at(c).t) {
+        case T_COMMA:
+        case T_RPAR:
+            // You can't have a union of single type so this is interpreted
+            // as a tuple
+            type->t = TYPE_TUPLE;
+            type->tuple_type = parse_tuple_type(c, first_type);
+            break;
+        case T_PIPE:
+            type->t = TYPE_TAGGED_UNION;
+            type->tagged_union_type = parse_tagged_union_type(c, first_type);
+            break;
+        default:
+            if (expect_one_of(c, &type->head, TOKS(T_RPAR, T_PIPE, T_COMMA),
+                              "a tagged union or tuple")) {
+                goto again;
+            }
+            break;
+    }
 }
 
 Type *parse_type(ParseCtx *c) {
@@ -685,15 +604,14 @@ again:
             n->t = TYPE_STRUCT;
             n->struct_type = parse_struct_type(c);
             break;
-        case T_UNION:
-            n->t = TYPE_UNION;
-            n->union_type = parse_union_type(c);
-            break;
         case T_ENUM:
             n->t = TYPE_ENUM;
             n->enum_type = parse_enum_type(c);
             break;
-        case T_ERROR:
+        case T_LPAR:
+            parse_tuple_or_union(c, n);
+            break;
+        case T_BANG:
             n->t = TYPE_ERR;
             n->err_type = parse_err_type(c);
             break;
@@ -715,7 +633,7 @@ again:
                     c, &n->head,
                     TOKS(T_S8, T_U8, T_S16, T_U16, T_S32, T_U32, T_S64, T_U64,
                          T_F32, T_F64, T_BOOL, T_STRING, T_UNIT, T_ANY, T_LBRK,
-                         T_STRUCT, T_UNION, T_ENUM, T_ERROR, T_STAR, T_FUN,
+                         T_BANG, T_LPAR, T_STRUCT, T_ENUM, T_STAR, T_FUN,
                          T_SCOPE, T_IDENT),
                     "a type")) {
                 goto again;
@@ -747,32 +665,36 @@ StructType *parse_struct_type(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_STRUCT_TYPE);
     StructType *n = (StructType *)nc.node;
     assert(consume(c).t == T_STRUCT);
-    n->body = parse_struct_body(c);
+    n->fields = parse_struct_fields(c);
     return end_node(c, nc);
 }
 
-Fields *parse_fields(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_FIELDS);
-    if (looking_at(c, T_RBRC)) {
+StructField *parse_struct_field(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_STRUCT_FIELD);
+    StructField *n = (StructField *)nc.node;
+    n->binding = parse_typed_binding(c);
+    if (looking_at(c, T_EQ)) {
+        n->assign_token = consume(c);
+        n->default_value.ptr = parse_expr(c);
+    }
+    return end_node(c, nc);
+}
+
+StructFields *parse_struct_fields(ParseCtx *c) {
+    NodeCtx nc = start_node(c, NODE_STRUCT_FIELDS);
+    StructFields *n = (StructFields *)nc.node;
+    if (!skip_if(c, &n->head, T_LBRC)) {
         return end_node(c, nc);
     }
-    (void)parse_field(c);
-    while (looking_at(c, T_COMMA)) {
+    (void)parse_struct_field(c);
+    while (at(c).t == T_COMMA) {
         next(c);
-        // Ignore trailing comma
         if (looking_at(c, T_RBRC)) {
             break;
         }
-        (void)parse_field(c);
+        (void)parse_struct_field(c);
     }
-    return end_node(c, nc);
-}
-
-Field *parse_field(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_FIELD);
-    Field *n = (Field *)nc.node;
-    n->name = parse_ident(c);
-    n->type = parse_type(c);
+    (void)skip_if(c, &n->head, T_RBRC);
     return end_node(c, nc);
 }
 
@@ -789,20 +711,6 @@ Types *parse_types(ParseCtx *c) {
             break;
         }
         (void)parse_type(c);
-    }
-    return end_node(c, nc);
-}
-
-UnionType *parse_union_type(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_UNION_TYPE);
-    UnionType *n = (UnionType *)nc.node;
-    assert(consume(c).t == T_UNION);
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->fields = parse_fields(c);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
     }
     return end_node(c, nc);
 }
@@ -824,14 +732,8 @@ EnumType *parse_enum_type(ParseCtx *c) {
 ErrType *parse_err_type(ParseCtx *c) {
     NodeCtx nc = start_node(c, NODE_ERR_TYPE);
     ErrType *n = (ErrType *)nc.node;
-    assert(consume(c).t == T_ERROR);
-    if (!skip_if(c, &n->head, T_LBRC)) {
-        return end_node(c, nc);
-    }
-    n->errs = parse_errs(c);
-    if (!skip_if(c, &n->head, T_RBRC)) {
-        return end_node(c, nc);
-    }
+    assert(consume(c).t == T_BANG);
+    n->type = parse_type(c);
     return end_node(c, nc);
 }
 
@@ -850,35 +752,6 @@ Idents *parse_idents(ParseCtx *c) {
         (void)parse_ident(c);
         start = false;
     }
-    return end_node(c, nc);
-}
-
-Errs *parse_errs(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_ERRS);
-    Errs *n = (Errs *)nc.node;
-    bool start = true;
-    while (!looking_at(c, T_RBRC)) {
-        if (!start && !skip_if(c, &n->head, T_COMMA)) {
-            return end_node(c, nc);
-        }
-        // Ignore trailing comma
-        if (looking_at(c, T_RBRC)) {
-            break;
-        }
-        (void)parse_err(c);
-        start = false;
-    }
-    return end_node(c, nc);
-}
-
-Err *parse_err(ParseCtx *c) {
-    NodeCtx nc = start_node(c, NODE_ERR);
-    Err *n = (Err *)nc.node;
-    if (looking_at(c, T_BANG)) {
-        n->embedded = true;
-        token_attr(c, "kind", consume(c));
-    }
-    n->scoped_ident = parse_scoped_ident(c);
     return end_node(c, nc);
 }
 

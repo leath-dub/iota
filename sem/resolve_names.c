@@ -223,21 +223,13 @@ typedef struct {
 
 static DeclDesc get_decl_desc(Decl *decl) {
     switch (decl->t) {
-        case DECL_STRUCT:
-            return (DeclDesc){decl->struct_decl->name,
-                              &decl->struct_decl->head};
-        case DECL_ENUM:
-            return (DeclDesc){decl->enum_decl->name, &decl->enum_decl->head};
-        case DECL_ERR:
-            return (DeclDesc){decl->err_decl->name, &decl->err_decl->head};
         case DECL_FN:
             return (DeclDesc){decl->fn_decl->name, &decl->fn_decl->head};
-        case DECL_UNION:
-            return (DeclDesc){decl->union_decl->name, &decl->union_decl->head};
         case DECL_VAR:
-            assert(decl->var_decl->binding->t == VAR_BINDING_BASIC && "TODO");
-            return (DeclDesc){decl->var_decl->binding->basic,
+            return (DeclDesc){decl->var_decl->binding->name,
                               &decl->var_decl->head};
+        case DECL_TYPE:
+            return (DeclDesc){decl->type_decl->name, &decl->var_decl->head};
     }
     assert(false && "unreachable");
 }

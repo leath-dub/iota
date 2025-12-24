@@ -28,6 +28,20 @@ void da_append(void **da, void *item, size_t item_size) {
     h->length++;
 }
 
+void da_remove(void *da, size_t index, size_t item_size) {
+    DaHeader *h = da_header_get(da);
+    assert(index < h->length);
+
+    size_t after = index + 1;
+    size_t to_move = h->length - after;
+
+    // Shift the bytes after index onto index itself
+    uint8_t *v = da;
+    memmove(&v[index * item_size], &v[after * item_size], to_move * item_size);
+
+    h->length--;
+}
+
 size_t da_length(void *da) {
     if (da == NULL) {
         return 0;

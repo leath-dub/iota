@@ -59,13 +59,12 @@
     KEYWORD(ELSE, "else")                     \
     KEYWORD(FOR, "for")                       \
     KEYWORD(DEFER, "defer")                   \
-    KEYWORD(STRUCT, "struct")                 \
-    KEYWORD(UNION, "union")                   \
-    KEYWORD(ENUM, "enum")                     \
     KEYWORD(LET, "let")                       \
+    KEYWORD(VAR, "var")                       \
     KEYWORD(TYPE, "type")                     \
+    KEYWORD(STRUCT, "struct")                 \
+    KEYWORD(ENUM, "enum")                     \
     KEYWORD(IMPORT, "import")                 \
-    KEYWORD(ERROR, "error")                   \
     KEYWORD(S8, "s8")                         \
     KEYWORD(U8, "u8")                         \
     KEYWORD(S16, "s16")                       \

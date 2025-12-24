@@ -6,5 +6,5 @@ for test in snapshots/in/*; do
   esac
 done
 
-redo-ifchange $TESTS ./snaps.py
+redo-ifchange ../ffi/libiota.so $TESTS ./snaps.py
 ./snaps.py test

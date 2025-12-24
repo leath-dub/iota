@@ -1,7 +1,6 @@
-
 fun _() {
     case x {
-        let Just(_) -> do();
+        let _: Just -> do();
         ::x -> return 10;
         'x' -> {}
         10 -> {}

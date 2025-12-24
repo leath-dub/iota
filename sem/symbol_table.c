@@ -29,9 +29,9 @@ void do_build_symbol_table(Ast *ast) {
 static void subscope_start(SymbolTableCtx *ctx, string symbol, AstNode *node);
 static void enter_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
 static void exit_source_file(SymbolTableCtx *ctx, SourceFile *source_file);
-static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl);
-static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl);
-static void enter_field(SymbolTableCtx *ctx, Field *field);
+static void enter_type_decl(SymbolTableCtx *ctx, TypeDecl *decl);
+static void exit_type_decl(SymbolTableCtx *ctx, TypeDecl *decl);
+static void enter_struct_field(SymbolTableCtx *ctx, StructField *field);
 static void enter_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl);
 static void exit_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl);
 static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl);
@@ -48,11 +48,11 @@ static DfsCtrl build_symbol_table_enter(void *_ctx, AstNode *node) {
         case NODE_SOURCE_FILE:
             enter_source_file(ctx, (SourceFile *)node);
             break;
-        case NODE_STRUCT_DECL:
-            enter_struct_decl(ctx, (StructDecl *)node);
+        case NODE_TYPE_DECL:
+            enter_type_decl(ctx, (TypeDecl *)node);
             break;
-        case NODE_FIELD:
-            enter_field(ctx, (Field *)node);
+        case NODE_STRUCT_FIELD:
+            enter_struct_field(ctx, (StructField *)node);
             break;
         case NODE_FN_DECL:
             enter_fn_decl(ctx, (FnDecl *)node);
@@ -78,8 +78,8 @@ static DfsCtrl build_symbol_table_exit(void *_ctx, AstNode *node) {
         case NODE_SOURCE_FILE:
             exit_source_file(ctx, (SourceFile *)node);
             break;
-        case NODE_STRUCT_DECL:
-            exit_struct_decl(ctx, (StructDecl *)node);
+        case NODE_TYPE_DECL:
+            exit_type_decl(ctx, (TypeDecl *)node);
             break;
         case NODE_FN_DECL:
             exit_fn_decl(ctx, (FnDecl *)node);
@@ -151,17 +151,17 @@ static void anon_subscope_start(SymbolTableCtx *ctx, AstNode *node) {
     *entry = node;
 }
 
-static void enter_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
+static void enter_type_decl(SymbolTableCtx *ctx, TypeDecl *decl) {
     subscope_start(ctx, decl->name->token.text, &decl->head);
 }
 
-static void exit_struct_decl(SymbolTableCtx *ctx, StructDecl *decl) {
+static void exit_type_decl(SymbolTableCtx *ctx, TypeDecl *decl) {
     (void)decl;
     stack_pop(&ctx->scope_node_ctx);
 }
 
-static void enter_field(SymbolTableCtx *ctx, Field *field) {
-    scope_insert_enclosing(ctx, field->name->token.text, &field->head);
+static void enter_struct_field(SymbolTableCtx *ctx, StructField *field) {
+    scope_insert_enclosing(ctx, field->binding->name->token.text, &field->head);
 }
 
 static void enter_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
@@ -174,15 +174,8 @@ static void exit_fn_decl(SymbolTableCtx *ctx, FnDecl *fn_decl) {
 }
 
 static void exit_var_decl(SymbolTableCtx *ctx, VarDecl *var_decl) {
-    VarBinding *binding = var_decl->binding;
-    switch (binding->t) {
-        case VAR_BINDING_BASIC:
-            scope_insert_enclosing(ctx, binding->basic->token.text,
-                                   &var_decl->head);
-            break;
-        default:
-            TODO("other variable bindings");
-    }
+    Binding *binding = var_decl->binding;
+    scope_insert_enclosing(ctx, binding->name->token.text, &var_decl->head);
 }
 
 static void enter_if_stmt(SymbolTableCtx *ctx, IfStmt *if_stmt) {

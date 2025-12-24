@@ -23,13 +23,16 @@ source_file {
               case_branches {
                 case_branch {
                   case_patt {
-                    unpack_union {
+                    qualifier='let'
+                    typed_binding {
                       ident {
-                        'Just'
+                        '_'
                       }
-                      binding {
-                        ident {
-                          '_'
+                      type {
+                        scoped_ident {
+                          ident {
+                            'Just'
+                          }
                         }
                       }
                     }

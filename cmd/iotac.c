@@ -69,6 +69,12 @@ int main(int argc, char *argv[]) {
 
     do_build_symbol_table(&ast);
     do_resolve_names(&ast, &code);
+
+    if (code.errors.len != 0) {
+        flush_errors(&code);
+        goto fini;
+    }
+
     do_check_types(&ast, &code);
 
     TreeDumpCtx dump_ctx = {
@@ -79,6 +85,7 @@ int main(int argc, char *argv[]) {
 
     // dump_symbols(&code, &pc.meta);
 
+fini:
     ast_delete(ast);
     arena_free(&arena);
     source_code_free(&code);

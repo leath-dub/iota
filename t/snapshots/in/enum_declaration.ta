@@ -1,7 +1,6 @@
-
-enum Direction {
+type Direction = enum {
     north,
     south,
     east,
     west,
-}
+};
