@@ -1,3 +1,15 @@
+* Working on type resolution
+  - Need to re think type checking with this new resolution strategy
+* Next step is to add type checking
+
+* Working on type resolution
+  - Mount cannoncial types on things like:
+    * type decls
+    * variable declarations
+    * function parameters
+
+  - Second pass validates and resolves expression's types
+
 * Changing syntax:
   * need to fix all delimited lists (maybe write a helper)
   * need to fix all snapshot test inputs

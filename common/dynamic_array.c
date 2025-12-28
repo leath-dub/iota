@@ -28,6 +28,11 @@ void da_append(void **da, void *item, size_t item_size) {
     h->length++;
 }
 
+void da_pop(void *da) {
+    DaHeader *h = da_header_get(da);
+    h->length--;
+}
+
 void da_remove(void *da, size_t index, size_t item_size) {
     DaHeader *h = da_header_get(da);
     assert(index < h->length);

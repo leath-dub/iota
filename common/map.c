@@ -20,6 +20,7 @@ typedef struct MapHeader {
     size_t occupied_slots;
     size_t value_size;
     size_t key_size;
+    MapConfig config;
 } MapHeader;
 
 // The data section for the hash map is made up of 3 different arrays:
@@ -56,7 +57,8 @@ static Hash *map_get_hashes(MapHeader *header) {
     return (Hash *)align_forward(unaligned, _Alignof(Hash));
 }
 
-void *map_create(size_t key_size, size_t value_size, size_t slots) {
+void *map_create(size_t key_size, size_t value_size, size_t slots,
+                 MapConfig cfg) {
     uint8_t *block =
         calloc(sizeof(MapHeader) + (value_size * slots) + sizeof(max_align_t) +
                    (key_size * slots) + _Alignof(Hash) + (sizeof(Hash) * slots),
@@ -67,6 +69,7 @@ void *map_create(size_t key_size, size_t value_size, size_t slots) {
     header->occupied_slots = 0;
     header->value_size = value_size;
     header->key_size = key_size;
+    header->config = cfg;
     return map_get_values(header);
 }
 
@@ -99,6 +102,10 @@ static bool map_slot_key_is(MapHeader *header, uint32_t i, void *key,
     if (map_get_hashes(header)[i] != hash) {
         return false;
     }
+    if (header->config.cmp) {
+        return header->config.cmp(&map_get_keys(header)[i * header->key_size],
+                                  (uint8_t *)key);
+    }
     // Only compare if hash is the same
     return memcmp(&map_get_keys(header)[i * header->key_size], (uint8_t *)key,
                   header->key_size) == 0;
@@ -113,9 +120,8 @@ static uint32_t map_find_slot(MapHeader *header, void *key, Hash hash) {
     return i;
 }
 
-void *map_get(void *values, void *key) {
+static inline void *map_get_with_hash(void *values, void *key, uint64_t hash) {
     MapHeader *header = map_get_header(values);
-    Hash hash = map_hash(header, key);
     uint32_t i = map_find_slot(header, key, hash);
     if (map_slot_empty(header, i)) {
         return NULL;
@@ -123,13 +129,25 @@ void *map_get(void *values, void *key) {
     return &map_get_values(header)[i * header->value_size];
 }
 
+void *map_get(void *values, void *key) {
+    MapHeader *header = map_get_header(values);
+    Hash hash = 0;
+    if (header->config.hash) {
+        hash = header->config.hash(key);
+    } else {
+        hash = map_hash(header, key);
+    }
+    return map_get_with_hash(values, key, hash);
+}
+
 static void map_ensure_slot(void **values) {
     MapHeader *header = map_get_header(*values);
 
     // Load factor >= .5
     if (header->occupied_slots >= (header->total_slots / 2)) {
-        uint8_t *new_values = map_create(header->key_size, header->value_size,
-                                         header->total_slots * 2);
+        uint8_t *new_values =
+            map_create(header->key_size, header->value_size,
+                       header->total_slots * 2, header->config);
 
         uint8_t *old_keys = map_get_keys(header);
         uint8_t *old_values = map_get_values(header);
@@ -161,12 +179,11 @@ static void map_ensure_slot(void **values) {
     }
 }
 
-void *map_get_or_insert(void **values, void *key, bool *inserted) {
+static inline void *map_get_or_insert_with_hash(void **values, void *key,
+                                                bool *inserted, uint64_t hash) {
     map_ensure_slot(values);
 
     MapHeader *header = map_get_header(*values);
-
-    Hash hash = map_hash(header, key);
     uint32_t i = map_find_slot(header, key, hash);
     if (inserted) {
         *inserted = false;
@@ -183,6 +200,17 @@ void *map_get_or_insert(void **values, void *key, bool *inserted) {
     }
 
     return &map_get_values(header)[i * header->value_size];
+}
+
+void *map_get_or_insert(void **values, void *key, bool *inserted) {
+    MapHeader *header = map_get_header(*values);
+    Hash hash = 0;
+    if (header->config.hash) {
+        hash = header->config.hash(key);
+    } else {
+        hash = map_hash(header, key);
+    }
+    return map_get_or_insert_with_hash(values, key, inserted, hash);
 }
 
 void *map_key_of(void *values, void *value) {

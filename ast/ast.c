@@ -33,6 +33,7 @@ TreeData tree_data_create(Arena *a) {
         .scope = scope_map_create(128),
         .resolves_to = resolves_to_map_create(128),
         .type = type_map_create(128),
+        .type_data = type_data_create(),
     };
 }
 
@@ -47,6 +48,7 @@ void tree_data_delete(TreeData td) {
     scope_map_delete(td.scope);
     resolves_to_map_delete(td.resolves_to);
     type_map_delete(td.type);
+    type_data_delete(td.type_data);
 }
 
 #define IMPL_CHILD_ACCESS(NODE, UPPER_NAME, lower_name)       \
@@ -261,11 +263,20 @@ AstNode *ast_resolves_to_get(Ast *ast, Ident *ident) {
     return res ? *res : NULL;
 }
 
-TypeRepr *type_create(Arena *a) {
-    return arena_alloc(a, sizeof(TypeRepr), _Alignof(TypeRepr));
+AstNode *ast_resolves_to_get_scoped(Ast *ast, ScopedIdent *scoped_ident) {
+    Ident *last_ident = child_ident_at(
+        &scoped_ident->head, da_length(scoped_ident->head.children) - 1);
+    return ast_resolves_to_get(ast, last_ident);
 }
 
-void ast_type_set(Ast *ast, AstNode *n, TypeRepr *type) {
+TypeId ast_type_create(Ast *ast) {
+    TypeRepr **type_data = &ast->tree_data.type_data;
+    TypeId id = da_length(*type_data);
+    type_data_append(type_data, (TypeRepr){0});
+    return id + 1;
+}
+
+void ast_type_set(Ast *ast, AstNode *n, TypeId tid) {
     switch (n->kind) {
         case NODE_ATOM:
         case NODE_POSTFIX_EXPR:
@@ -275,16 +286,21 @@ void ast_type_set(Ast *ast, AstNode *n, TypeRepr *type) {
         case NODE_UNARY_EXPR:
         case NODE_BIN_EXPR:
         case NODE_VAR_DECL:
+        case NODE_TYPE_DECL:
             break;
         default:
             assert(false &&
                    "can only set type on concrete expression or variable "
                    "declaration");
     }
-    type_map_put(&ast->tree_data.type, n, type);
+    type_map_put(&ast->tree_data.type, n, tid);
 }
 
-TypeRepr *ast_type_get(Ast *ast, AstNode *n) {
-    TypeRepr **res = type_map_get(ast->tree_data.type, n);
-    return res ? *res : NULL;
+TypeId ast_type_get(Ast *ast, AstNode *n) {
+    TypeId *res = type_map_get(ast->tree_data.type, n);
+    return res ? *res : INVALID_TYPE;
+}
+
+TypeRepr *ast_type_repr(Ast *ast, TypeId id) {
+    return type_data_at(ast->tree_data.type_data, id - 1);
 }

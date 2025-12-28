@@ -77,13 +77,14 @@ int main(int argc, char *argv[]) {
 
     do_check_types(&ast, &code);
 
-    TreeDumpCtx dump_ctx = {
-        .fs = stdout, .indent_level = 0, .indent_width = 2, .ast = &ast};
-    dump_tree(&dump_ctx, &root->head);
+    // TreeDumpCtx dump_ctx = {
+    //     .fs = stdout, .indent_level = 0, .indent_width = 2, .ast = &ast};
+    // dump_tree(&dump_ctx, &root->head);
 
     flush_errors(&code);
 
-    // dump_symbols(&code, &pc.meta);
+    // dump_symbols(&ast, &code);
+    dump_types(&ast);
 
 fini:
     ast_delete(ast);

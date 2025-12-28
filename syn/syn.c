@@ -505,6 +505,8 @@ static UnionAlt *parse_union_alt(ParseCtx *c, Type *first_type) {
     UnionAlt *n = (UnionAlt *)nc.node;
     if (first_type) {
         ast_node_reparent(&first_type->head, &n->head);
+        n->t = UNION_ALT_TYPE;
+        n->type = first_type;
         return end_node(c, nc);
     }
     if (looking_at(c, T_TYPE)) {
@@ -763,7 +765,7 @@ PtrType *parse_ptr_type(ParseCtx *c) {
         n->ro.ok = true;
         n->ro.value = token_attr(c, "modifier", consume(c));
     }
-    n->ref_type = parse_type(c);
+    n->points_to = parse_type(c);
     return end_node(c, nc);
 }
 
@@ -1374,6 +1376,9 @@ static void *end_node(ParseCtx *c, NodeCtx ctx) {
         // Make sure we can't accidentally add a cycle
         assert(ctx.parent != c->current);
         if (ctx.parent != NULL) {
+            if (c->current->children) {
+                children_shrink(&c->current->children);
+            }
             ast_node_child_add(ctx.parent, child_node_create(c->current));
             c->current->parent.ptr = ctx.parent;
             set_current_node(c, ctx.parent);
@@ -1404,7 +1409,14 @@ static Tok consume(ParseCtx *c) {
 
 static Tok at(ParseCtx *c) { return lex_peek(&c->lex); }
 
-static bool looking_at(ParseCtx *c, TokKind t) { return at(c).t == t; }
+static bool looking_at(ParseCtx *c, TokKind t) {
+    TokKind it = at(c).t;
+    while (it == T_CMNT) {
+        lex_consume(&c->lex);
+        it = lex_peek(&c->lex).t;
+    }
+    return it == t;
+}
 
 static bool one_of(TokKind t, Toks toks) {
     for (u32 i = 0; i < toks.len; i++) {

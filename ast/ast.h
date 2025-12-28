@@ -452,7 +452,7 @@ struct ErrType {
 struct PtrType {
     AstNode head;
     MAYBE(Tok) ro;
-    struct Type *ref_type;
+    struct Type *points_to;
 };
 
 struct FnType {
@@ -577,7 +577,7 @@ EACH_NODE(TYPEDEF_NODE)
 // This lets us not accidently add a AST node without the id field at the top
 #define CHECK_NODE(NODE, ...)                                    \
     _Static_assert(sizeof(((NODE *)0)->head) == sizeof(AstNode), \
-                   "AST node must define 'id' field of type NodeID");
+                   "AST node must define 'head' field of type AstNode");
 
 EACH_NODE(CHECK_NODE)
 
@@ -606,33 +606,80 @@ typedef enum {
     STORAGE_F32,
     STORAGE_F64,
     STORAGE_UNIT,
+    STORAGE_STRING,
     STORAGE_PTR,
     STORAGE_FN,
+    STORAGE_TUPLE,
+    STORAGE_STRUCT,
+    STORAGE_TAGGED_UNION,
+    STORAGE_ENUM,
+    STORAGE_ALIAS,
 } TypeStorage;
+
+typedef u64 TypeId;
+
+#define INVALID_TYPE (TypeId)(0)
 
 struct TypeRepr;
 
 typedef struct {
-    struct TypeRepr *referent;
-} PtrT;
+    TypeId points_to;
+} TypePtr;
 
 typedef struct {
     bool variadic;
-    struct TypeRepr *type;
-} FnTParam;
+    TypeId type;
+} TypeFnParam;
 
 typedef struct {
-    FnTParam *params;
-    struct TypeRepr *return_type;
-} FnT;
+    TypeFnParam *params;
+    TypeId return_type;
+} TypeFn;
 
-DA_DEFINE(fnt_params, FnTParam)
+DA_DEFINE(type_fn_params, TypeFnParam)
+
+typedef struct {
+    string name;
+    TypeId type;
+} TypeField;
+
+typedef struct {
+    TypeField *fields;
+} TypeStruct;
+
+DA_DEFINE(type_fields, TypeField)
+
+typedef struct {
+    string *alts;
+} TypeEnum;
+
+DA_DEFINE(type_enum_alts, string)
+
+typedef struct {
+    TypeId *types;
+} TypeTuple;
+
+typedef struct {
+    TypeId *types;
+} TypeTaggedUnion;
+
+DA_DEFINE(types, TypeId)
+
+typedef struct {
+    TypeDecl *type_decl;
+    TypeId aliases;
+} TypeAlias;
 
 typedef struct TypeRepr {
     TypeStorage t;
     union {
-        FnT fn;
-        PtrT ptr;
+        TypeFn fn_type;
+        TypePtr ptr_type;
+        TypeAlias alias_type;
+        TypeStruct struct_type;
+        TypeTuple tuple_type;
+        TypeTaggedUnion tagged_union_type;
+        TypeEnum enum_type;
     };
 } TypeRepr;
 
@@ -640,12 +687,14 @@ typedef struct {
     Arena *arena;
     Scope **scope;
     AstNode **resolves_to;
-    TypeRepr **type;
+    TypeId *type;
+    TypeRepr *type_data;
 } TreeData;
 
 MAP_DEFINE(scope_map, AstNode *, Scope *)
 MAP_DEFINE(resolves_to_map, Ident *, AstNode *)
-MAP_DEFINE(type_map, AstNode *, TypeRepr *)
+MAP_DEFINE(type_map, AstNode *, TypeId)
+DA_DEFINE(type_data, TypeRepr)
 
 TreeData tree_data_create(Arena *a);
 void tree_data_delete(TreeData td);
@@ -676,10 +725,12 @@ Scope *ast_scope_get(Ast *ast, AstNode *n);
 
 void ast_resolves_to_set(Ast *ast, Ident *ident, AstNode *to);
 AstNode *ast_resolves_to_get(Ast *ast, Ident *ident);
+AstNode *ast_resolves_to_get_scoped(Ast *ast, ScopedIdent *scoped_ident);
 
-TypeRepr *type_create(Arena *a);
-void ast_type_set(Ast *ast, AstNode *n, TypeRepr *type);
-TypeRepr *ast_type_get(Ast *ast, AstNode *n);
+TypeId ast_type_create(Ast *ast);
+void ast_type_set(Ast *ast, AstNode *n, TypeId tid);
+TypeId ast_type_get(Ast *ast, AstNode *n);
+TypeRepr *ast_type_repr(Ast *ast, TypeId id);
 
 Scope *ast_scope_create(Ast *ast);
 void ast_scope_insert(Ast *ast, Scope *s, string name, AstNode *n);
@@ -722,6 +773,7 @@ typedef struct {
 
 void dump_tree(TreeDumpCtx *ctx, AstNode *n);
 void dump_symbols(Ast *ast, const SourceCode *code);
+void dump_types(Ast *ast);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

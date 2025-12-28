@@ -6,11 +6,17 @@
 #include <stdint.h>
 
 typedef struct {
+    bool (*cmp)(void *, void *);
+    uint64_t (*hash)(void *);
+} MapConfig;
+
+typedef struct {
     const uint8_t *data;
     uint32_t length;
 } bytes;
 
-void *map_create(size_t key_size, size_t value_size, size_t slots);
+void *map_create(size_t key_size, size_t value_size, size_t slots,
+                 MapConfig config);
 void map_delete(void *values);
 void *map_get(void *values, void *key);
 void *map_get_or_insert(void **values, void *key, bool *inserted);
@@ -32,7 +38,14 @@ void *map_bytes_get_or_insert(void **values, bytes *key, bool *inserted);
 
 #define MAP_DEFINE(name, K, V)                                                 \
     static inline V *name##_create(size_t slots) {                             \
-        return map_create(sizeof(K), sizeof(V), slots);                        \
+        return map_create(sizeof(K), sizeof(V), slots,                         \
+                          (MapConfig){                                         \
+                              .cmp = NULL,                                     \
+                              .hash = NULL,                                    \
+                          });                                                  \
+    }                                                                          \
+    static inline V *name##_create_with_cfg(size_t slots, MapConfig cfg) {     \
+        return map_create(sizeof(K), sizeof(V), slots, cfg);                   \
     }                                                                          \
     static inline void name##_delete(V *values) { map_delete(values); }        \
     static inline V *name##_get(V *values, K key) {                            \
@@ -47,7 +60,11 @@ void *map_bytes_get_or_insert(void **values, bytes *key, bool *inserted);
 
 #define MAP_BYTES_DEFINE(name, V)                                        \
     static inline V *name##_create(size_t slots) {                       \
-        return map_create(sizeof(bytes), sizeof(V), slots);              \
+        return map_create(sizeof(bytes), sizeof(V), slots,               \
+                          (MapConfig){                                   \
+                              .cmp = NULL,                               \
+                              .hash = NULL,                              \
+                          });                                            \
     }                                                                    \
     static inline void name##_delete(V *values) { map_delete(values); }  \
     static inline V *name##_get(V *values, bytes key) {                  \
