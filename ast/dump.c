@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 
 #include "ast.h"
 
@@ -97,110 +98,124 @@ void dump_symbols(Ast *ast, const SourceCode *code) {
                 AstNode *entry = scope_entry_it->node;
                 u32 offset = entry->offset;
                 Position pos = line_and_column(code->lines, offset);
-                printf("  |   <%s> @ %d:%d [node_ptr = %p]\n",
+                printf("  |   <%s> @ %d:%d [node_ptr = %p]",
                        node_kind_to_string(entry->kind), pos.line, pos.column,
                        (void *)entry);
+                Scope *sub_scope = scope_entry_it->sub_scope.ptr;
+                if (sub_scope != NULL) {
+                    printf(" [scope_ptr = %p]", (void *)sub_scope);
+                }
+                printf("\n");
                 scope_entry_it = scope_entry_it->shadows;
             }
         }
     }
 }
 
-static void dump_type(Ast *ast, FILE *fs, TypeRepr repr) {
+void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr) {
     switch (repr.t) {
         case STORAGE_U8:
-            fprintf(fs, "u8");
+            snprintf(buf, size, "u8");
             break;
         case STORAGE_S8:
-            fprintf(fs, "s8");
+            snprintf(buf, size, "s8");
             break;
         case STORAGE_U16:
-            fprintf(fs, "u16");
+            snprintf(buf, size, "u16");
             break;
         case STORAGE_S16:
-            fprintf(fs, "s16");
+            snprintf(buf, size, "s16");
             break;
         case STORAGE_U32:
-            fprintf(fs, "u32");
+            snprintf(buf, size, "u32");
             break;
         case STORAGE_S32:
-            fprintf(fs, "s32");
+            snprintf(buf, size, "s32");
             break;
         case STORAGE_U64:
-            fprintf(fs, "u64");
+            snprintf(buf, size, "u64");
             break;
         case STORAGE_S64:
-            fprintf(fs, "s64");
+            snprintf(buf, size, "s64");
             break;
         case STORAGE_F32:
-            fprintf(fs, "f32");
+            snprintf(buf, size, "f32");
             break;
         case STORAGE_F64:
-            fprintf(fs, "f64");
+            snprintf(buf, size, "f64");
             break;
         case STORAGE_UNIT:
-            fprintf(fs, "unit");
+            snprintf(buf, size, "unit");
             break;
         case STORAGE_STRING:
-            fprintf(fs, "string");
+            snprintf(buf, size, "string");
             break;
         case STORAGE_PTR:
-            fprintf(fs, "*");
-            dump_type(ast, fs, *ast_type_repr(ast, repr.ptr_type.points_to));
+            snprintf(buf, size, "*");
+            fmt_type(buf, size, ast,
+                     *ast_type_repr(ast, repr.ptr_type.points_to));
             break;
         case STORAGE_TUPLE:
-            fprintf(fs, "(");
+            snprintf(buf, size, "(");
             for (size_t i = 0; i < da_length(repr.tuple_type.types); i++) {
-                dump_type(ast, fs,
-                          *ast_type_repr(ast, repr.tuple_type.types[i]));
-                fprintf(fs, ",");
+                fmt_type(buf, size, ast,
+                         *ast_type_repr(ast, repr.tuple_type.types[i]));
+                snprintf(buf, size, ",");
             }
-            fprintf(fs, ")");
+            snprintf(buf, size, ")");
             break;
         case STORAGE_STRUCT:
-            fprintf(fs, "struct { ");
+            snprintf(buf, size, "struct { ");
             for (size_t i = 0; i < da_length(repr.struct_type.fields); i++) {
                 if (i != 0) {
-                    fprintf(fs, " ");
+                    snprintf(buf, size, " ");
                 }
                 TypeField f = repr.struct_type.fields[i];
-                fprintf(fs, "%.*s: ", SPLAT(f.name));
-                dump_type(ast, fs, *ast_type_repr(ast, f.type));
-                fprintf(fs, ",");
+                snprintf(buf, size, "%.*s: ", SPLAT(f.name));
+                fmt_type(buf, size, ast, *ast_type_repr(ast, f.type));
+                snprintf(buf, size, ",");
             }
-            fprintf(fs, " }");
+            snprintf(buf, size, " }");
             break;
         case STORAGE_TAGGED_UNION:
-            fprintf(fs, "(");
+            snprintf(buf, size, "(");
             for (size_t i = 0; i < da_length(repr.tagged_union_type.types);
                  i++) {
-                dump_type(ast, fs,
-                          *ast_type_repr(ast, repr.tagged_union_type.types[i]));
-                fprintf(fs, "|");
+                fmt_type(buf, size, ast,
+                         *ast_type_repr(ast, repr.tagged_union_type.types[i]));
+                snprintf(buf, size, "|");
             }
-            fprintf(fs, ")");
+            snprintf(buf, size, ")");
             break;
         case STORAGE_ENUM:
-            fprintf(fs, "enum { ");
+            snprintf(buf, size, "enum { ");
             for (size_t i = 0; i < da_length(repr.enum_type.alts); i++) {
                 if (i != 0) {
-                    fprintf(fs, " ");
+                    snprintf(buf, size, " ");
                 }
                 string alt = repr.enum_type.alts[i];
-                fprintf(fs, "%.*s", SPLAT(alt));
-                fprintf(fs, ",");
+                snprintf(buf, size, "%.*s", SPLAT(alt));
+                snprintf(buf, size, ",");
             }
-            fprintf(fs, " }");
+            snprintf(buf, size, " }");
             break;
         case STORAGE_ALIAS: {
             string name = repr.alias_type.type_decl->name->token.text;
-            fprintf(fs, "%.*s", SPLAT(name));
+            snprintf(buf, size, "%.*s", SPLAT(name));
             break;
         }
         case STORAGE_FN:
             TODO("function types");
             break;
     }
+}
+
+#define FMT_BUF_SZ 4096
+
+static void dump_type(Ast *ast, FILE *fs, TypeRepr repr) {
+    static char buf[FMT_BUF_SZ];
+    fmt_type(buf, FMT_BUF_SZ, ast, repr);
+    fprintf(fs, "%s", buf);
 }
 
 void dump_types(Ast *ast) {

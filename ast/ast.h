@@ -581,8 +581,11 @@ EACH_NODE(TYPEDEF_NODE)
 
 EACH_NODE(CHECK_NODE)
 
+struct Scope;
+
 typedef struct ScopeEntry {
     AstNode *node;
+    NULLABLE_PTR(struct Scope) sub_scope;
     struct ScopeEntry *shadows;
 } ScopeEntry;
 
@@ -688,12 +691,14 @@ typedef struct {
     Scope **scope;
     AstNode **resolves_to;
     TypeId *type;
+    TypeId *builtin_type;
     TypeRepr *type_data;
 } TreeData;
 
 MAP_DEFINE(scope_map, AstNode *, Scope *)
 MAP_DEFINE(resolves_to_map, Ident *, AstNode *)
 MAP_DEFINE(type_map, AstNode *, TypeId)
+MAP_DEFINE(builtin_type_map, TokKind, TypeId)
 DA_DEFINE(type_data, TypeRepr)
 
 TreeData tree_data_create(Arena *a);
@@ -733,7 +738,8 @@ TypeId ast_type_get(Ast *ast, AstNode *n);
 TypeRepr *ast_type_repr(Ast *ast, TypeId id);
 
 Scope *ast_scope_create(Ast *ast);
-void ast_scope_insert(Ast *ast, Scope *s, string name, AstNode *n);
+void ast_scope_insert(Ast *ast, Scope *s, string name, AstNode *n,
+                      Scope *sub_scope);
 
 AstNode *ast_node_create(Ast *ast, NodeKind kind);
 void ast_node_child_add(AstNode *node, Child child);
@@ -774,6 +780,7 @@ typedef struct {
 void dump_tree(TreeDumpCtx *ctx, AstNode *n);
 void dump_symbols(Ast *ast, const SourceCode *code);
 void dump_types(Ast *ast);
+void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
 

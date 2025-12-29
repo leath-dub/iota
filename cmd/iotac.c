@@ -83,8 +83,8 @@ int main(int argc, char *argv[]) {
 
     flush_errors(&code);
 
-    // dump_symbols(&ast, &code);
-    dump_types(&ast);
+    dump_symbols(&ast, &code);
+    // dump_types(&ast);
 
 fini:
     ast_delete(ast);

@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 Ast ast_create(Arena *a) {
@@ -33,6 +34,7 @@ TreeData tree_data_create(Arena *a) {
         .scope = scope_map_create(128),
         .resolves_to = resolves_to_map_create(128),
         .type = type_map_create(128),
+        .builtin_type = calloc(TOK_KIND_COUNT, sizeof(TypeId)),
         .type_data = type_data_create(),
     };
 }
@@ -43,12 +45,14 @@ void tree_data_delete(TreeData td) {
         Scope **scope = it.current;
         if ((*scope)->table) {
             scope_entry_map_delete((*scope)->table);
+            (*scope)->table = NULL;
         }
     }
     scope_map_delete(td.scope);
     resolves_to_map_delete(td.resolves_to);
     type_map_delete(td.type);
     type_data_delete(td.type_data);
+    free(td.builtin_type);
 }
 
 #define IMPL_CHILD_ACCESS(NODE, UPPER_NAME, lower_name)       \
@@ -127,7 +131,8 @@ Scope *ast_scope_get(Ast *ast, AstNode *n) {
     return res ? *res : NULL;
 }
 
-void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n) {
+void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n,
+                      Scope *sub_scope) {
     if (scope->table == NULL) {
         scope->table = scope_entry_map_create(128);
     }
@@ -137,6 +142,7 @@ void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n) {
     if (ins) {
         *er = arena_alloc(ast->arena, sizeof(ScopeEntry), _Alignof(ScopeEntry));
         (*er)->node = n;
+        (*er)->sub_scope.ptr = sub_scope;
         (*er)->shadows = NULL;
         return;
     }
@@ -147,6 +153,7 @@ void ast_scope_insert(Ast *ast, Scope *scope, string name, AstNode *n) {
     *old_ent = **er;
 
     (*er)->node = n;
+    (*er)->sub_scope.ptr = sub_scope;
     (*er)->shadows = old_ent;
 }
 

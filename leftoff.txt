@@ -1,3 +1,4 @@
+* Working on type checking and expression type resolution
 * Working on type resolution
   - Need to re think type checking with this new resolution strategy
 * Next step is to add type checking

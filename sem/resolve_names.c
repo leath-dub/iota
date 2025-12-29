@@ -40,16 +40,38 @@ static void push_any_scope(NameResCtx *ctx, AstNode *n);
 static void pop_any_scope(NameResCtx *ctx, AstNode *n);
 
 static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident);
-static void check_top_level_decl(NameResCtx *ctx, Decl *decl);
+
+typedef struct {
+    Ident *ident;
+    AstNode *resolves_to;
+} DeclDesc;
+
+static DeclDesc get_decl_desc(Decl *decl);
+static void do_shadow_check(NameResCtx *ctx, DeclDesc decl_desc);
+static Scope *get_curr_scope(NameResCtx *ctx);
 
 static DfsCtrl resolve_names_enter(void *_ctx, AstNode *node) {
     NameResCtx *ctx = _ctx;
-    bool top_level = ctx->curr_fn.ptr == NULL;
-    if (top_level && node->kind == NODE_DECL) {
-        check_top_level_decl(ctx, (Decl *)node);
-    }
     manage_scopes_enter_hook(ctx, node);
     switch (node->kind) {
+        case NODE_TYPE_DECL: {
+            TypeDecl *td = (TypeDecl *)node;
+            do_shadow_check(ctx, (DeclDesc){
+                                     .ident = td->name,
+                                     .resolves_to = &td->head,
+                                 });
+            break;
+        }
+        case NODE_DECL: {
+            Decl *d = (Decl *)node;
+            Scope *curr_scope = get_curr_scope(ctx);
+            // Skip local variables (only things legal to shadow)
+            if (d->t == DECL_VAR && curr_scope != ctx->global_scope) {
+                break;
+            }
+            do_shadow_check(ctx, get_decl_desc(d));
+            break;
+        }
         case NODE_FN_DECL:
             assert(ctx->curr_fn.ptr == NULL && "TODO: support local functions");
             ctx->curr_fn.ptr = (FnDecl *)node;
@@ -60,7 +82,7 @@ static DfsCtrl resolve_names_enter(void *_ctx, AstNode *node) {
             break;
         case NODE_SCOPED_IDENT:
             resolve_ref(ctx, (ScopedIdent *)node);
-            return DFS_CTRL_KEEP_GOING;
+            break;
         default:
             break;
     }
@@ -154,7 +176,7 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
             }
             break;
         }
-        scope = ast_scope_get(ctx->ast, lookup.entry->node);
+        scope = lookup.entry->sub_scope.ptr;
 
         // Prevent access to the identifiers inside of a function when
         // not inside its body
@@ -216,11 +238,6 @@ static void pop_any_scope(NameResCtx *ctx, AstNode *n) {
     }
 }
 
-typedef struct {
-    Ident *ident;
-    AstNode *resolves_to;
-} DeclDesc;
-
 static DeclDesc get_decl_desc(Decl *decl) {
     switch (decl->t) {
         case DECL_FN:
@@ -234,13 +251,10 @@ static DeclDesc get_decl_desc(Decl *decl) {
     assert(false && "unreachable");
 }
 
-static void check_top_level_decl(NameResCtx *ctx, Decl *decl) {
-    assert(get_curr_scope(ctx) == ctx->global_scope);
-
-    DeclDesc decl_desc = get_decl_desc(decl);
-
-    ScopeLookup lookup = scope_lookup(
-        ctx->global_scope, decl_desc.ident->token.text, LOOKUP_MODE_DIRECT);
+static void do_shadow_check(NameResCtx *ctx, DeclDesc decl_desc) {
+    Scope *curr_scope = get_curr_scope(ctx);
+    ScopeLookup lookup = scope_lookup(curr_scope, decl_desc.ident->token.text,
+                                      LOOKUP_MODE_DIRECT);
     assert(lookup.entry);  // sanity check, this should be the case if symbol
                            // table has been built
 
@@ -262,7 +276,7 @@ static void check_top_level_decl(NameResCtx *ctx, Decl *decl) {
         u32 prev_decl_offset = shadowed->node->offset;
         Position pos = line_and_column(ctx->code->lines, prev_decl_offset);
         sem_raise(
-            ctx, decl_desc.ident->token.offset, "error",
+            ctx, decl_desc.resolves_to->offset, "error",
             allocf(erra,
                    "declaration shadows previous declaration at %.*s:%d:%d",
                    SPLAT(ctx->code->file_path), pos.line, pos.column));
