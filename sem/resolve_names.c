@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "../ast/ast.h"
+#include "sem.h"
 
 static DfsCtrl resolve_names_enter(void *_ctx, AstNode *node);
 static DfsCtrl resolve_names_exit(void *_ctx, AstNode *node);
@@ -109,15 +110,6 @@ static Scope *get_curr_scope(NameResCtx *ctx) {
     return *(Scope **)stack_top(&ctx->scopes);
 }
 
-static void sem_raise(NameResCtx *ctx, u32 at, const char *banner,
-                      const char *msg) {
-    raise_semantic_error(ctx->code, (SemanticError){
-                                        .at = at,
-                                        .banner = banner,
-                                        .message = msg,
-                                    });
-}
-
 static bool ref_can_resolve_to(NameResCtx *ctx, ScopeLookup lookup, Ident *ref,
                                AstNode *cand) {
     bool ref_out_of_order = ctx->curr_fn.ptr != NULL &&
@@ -140,7 +132,6 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
     }
     assert(first.t == T_IDENT);
 
-    Arena *erra = &ctx->code->error_arena;
     AstNode *h = &scoped_ident->head;
 
     Scope *scope = get_curr_scope(ctx);
@@ -151,12 +142,11 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
 
         if (!scope) {
             string supposed_scope = child_ident_at(h, i - 1)->token.text;
-            sem_raise(ctx, defined_at, "error",
-                      allocf(erra,
-                             "cannot resolve '%.*s' in '%.*s' as '%.*s' does "
-                             "not define a scope",
-                             SPLAT(ident_text), SPLAT(supposed_scope),
-                             SPLAT(supposed_scope)));
+            sem_raisef(
+                ctx->ast, ctx->code, defined_at,
+                "lookup error: cannot resolve '{s}' in '{s}' as '{s}' does "
+                "not define a scope",
+                ident_text, supposed_scope, supposed_scope);
             break;
         }
 
@@ -166,13 +156,13 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
         if (!lookup.entry) {
             if (i != 0) {
                 string parent = child_ident_at(h, i - 1)->token.text;
-                sem_raise(ctx, defined_at, "error",
-                          allocf(erra, "'%.*s' not found inside scope '%.*s'",
-                                 SPLAT(ident_text), SPLAT(parent)));
+                sem_raisef(ctx->ast, ctx->code, defined_at,
+                           "lookup error: '{s}' not found inside scope '{s}'",
+                           ident_text, parent);
             } else {
-                sem_raise(ctx, defined_at, "error",
-                          allocf(erra, "'%.*s' not found in current scope",
-                                 SPLAT(ident_text)));
+                sem_raisef(ctx->ast, ctx->code, defined_at,
+                           "lookup error: '{s}' not found in current scope",
+                           ident_text);
             }
             break;
         }
@@ -185,11 +175,10 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
             FnDecl *res_fn = (FnDecl *)lookup.entry->node;
             FnDecl *curr_fn = ctx->curr_fn.ptr;
             if (curr_fn == NULL || curr_fn != res_fn) {
-                sem_raise(ctx, defined_at, "error",
-                          allocf(erra,
-                                 "illegal access of scope '%.*s'; cannot "
-                                 "access function scope outside of its body",
-                                 SPLAT(res_fn->name->token.text)));
+                sem_raisef(ctx->ast, ctx->code, defined_at, "access error",
+                           "illegal access of scope '{s}'; cannot "
+                           "access function scope outside of its body",
+                           res_fn->name->token.text);
             }
         }
 
@@ -205,7 +194,8 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
         }
         if (!it) {
             // Reached the end, no candidate was valid.
-            sem_raise(ctx, defined_at, "error", "could not resolve name");
+            sem_raisef(ctx->ast, ctx->code, defined_at,
+                       "error: could not resolve name");
         }
     }
 }
@@ -272,13 +262,11 @@ static void do_shadow_check(NameResCtx *ctx, DeclDesc decl_desc) {
     // Other shadows are ignored, we only provide error for the first one.
     ScopeEntry *shadowed = it->shadows;
     if (shadowed && shadowed->shadows == NULL) {
-        Arena *erra = &ctx->code->error_arena;
         u32 prev_decl_offset = shadowed->node->offset;
         Position pos = line_and_column(ctx->code->lines, prev_decl_offset);
-        sem_raise(
-            ctx, decl_desc.resolves_to->offset, "error",
-            allocf(erra,
-                   "declaration shadows previous declaration at %.*s:%d:%d",
-                   SPLAT(ctx->code->file_path), pos.line, pos.column));
+        sem_raisef(
+            ctx->ast, ctx->code, decl_desc.resolves_to->offset,
+            "error: declaration shadows previous declaration at {s}:{i}:{i}",
+            ctx->code->file_path, pos.line, pos.column);
     }
 }

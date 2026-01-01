@@ -152,7 +152,7 @@ void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr) {
             break;
         case STORAGE_PTR:
             snprintf(buf, size, "*");
-            fmt_type(buf, size, ast,
+            fmt_type(buf + 1, size - 1, ast,
                      *ast_type_repr(ast, repr.ptr_type.points_to));
             break;
         case STORAGE_TUPLE:
@@ -202,6 +202,10 @@ void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr) {
         case STORAGE_ALIAS: {
             string name = repr.alias_type.type_decl->name->token.text;
             snprintf(buf, size, "%.*s", SPLAT(name));
+            break;
+        }
+        case STORAGE_BOOL: {
+            snprintf(buf, size, "bool");
             break;
         }
         case STORAGE_FN:

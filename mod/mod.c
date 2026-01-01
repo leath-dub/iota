@@ -150,8 +150,7 @@ void report_error(SourceCode code, Error error) {
         }
         case ERROR_SEMANTIC: {
             SemanticError semantic_error = error.semantic_error;
-            reportf(code, semantic_error.at, "%s: %s", semantic_error.banner,
-                    semantic_error.message);
+            reportf(code, semantic_error.at, "%s", semantic_error.message);
             break;
         }
     }

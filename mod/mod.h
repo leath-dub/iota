@@ -18,7 +18,6 @@ typedef struct {
 
 typedef struct {
     u32 at;
-    const char *banner;
     const char *message;
 } SemanticError;
 

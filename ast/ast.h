@@ -610,6 +610,7 @@ typedef enum {
     STORAGE_F64,
     STORAGE_UNIT,
     STORAGE_STRING,
+    STORAGE_BOOL,
     STORAGE_PTR,
     STORAGE_FN,
     STORAGE_TUPLE,
@@ -780,6 +781,7 @@ typedef struct {
 void dump_tree(TreeDumpCtx *ctx, AstNode *n);
 void dump_symbols(Ast *ast, const SourceCode *code);
 void dump_types(Ast *ast);
+
 void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr);
 
 #define NODE_GENERIC_CASE(NodeT, UPPER_NAME, _) NodeT * : NODE_##UPPER_NAME,
