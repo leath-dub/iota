@@ -36,6 +36,7 @@ TreeData tree_data_create(Arena *a) {
         .type = type_map_create(128),
         .builtin_type = calloc(TOK_KIND_COUNT, sizeof(TypeId)),
         .type_data = type_data_create(),
+        .type_source = type_source_create(128),
     };
 }
 
@@ -52,6 +53,7 @@ void tree_data_delete(TreeData td) {
     resolves_to_map_delete(td.resolves_to);
     type_map_delete(td.type);
     type_data_delete(td.type_data);
+    type_source_delete(td.type_source);
     free(td.builtin_type);
 }
 
@@ -294,11 +296,19 @@ void ast_type_set(Ast *ast, AstNode *n, TypeId tid) {
         case NODE_BIN_EXPR:
         case NODE_VAR_DECL:
         case NODE_TYPE_DECL:
+        case NODE_STRUCT_TYPE:
+        case NODE_ENUM_TYPE:
+        case NODE_TUPLE_TYPE:
+        case NODE_TAGGED_UNION_TYPE:
+        case NODE_PTR_TYPE:
+        case NODE_COLL_TYPE:
+        case NODE_BUILTIN_TYPE:
+        case NODE_SCOPED_IDENT:
             break;
         default:
             assert(false &&
-                   "can only set type on concrete expression or variable "
-                   "declaration");
+                   "can only set type on concrete expression, declaration or "
+                   "type");
     }
     type_map_put(&ast->tree_data.type, n, tid);
 }

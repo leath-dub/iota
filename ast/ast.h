@@ -693,6 +693,7 @@ typedef struct {
     AstNode **resolves_to;
     TypeId *type;
     TypeId *builtin_type;
+    Type **type_source;
     TypeRepr *type_data;
 } TreeData;
 
@@ -700,6 +701,7 @@ MAP_DEFINE(scope_map, AstNode *, Scope *)
 MAP_DEFINE(resolves_to_map, Ident *, AstNode *)
 MAP_DEFINE(type_map, AstNode *, TypeId)
 MAP_DEFINE(builtin_type_map, TokKind, TypeId)
+MAP_DEFINE(type_source, TypeId, Type *)
 DA_DEFINE(type_data, TypeRepr)
 
 TreeData tree_data_create(Arena *a);

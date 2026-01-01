@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdarg.h>
 
 #include "sem.h"
 
@@ -14,11 +15,11 @@ static DfsCtrl check_types_exit(void *_ctx, AstNode *node);
 
 typedef struct {
     Ast *ast;
-    TypeRepr **type_hint;
+    TypeId *type_hint;
     SourceCode *code;
 } TypeCheckCtx;
 
-DA_DEFINE(type_hint, TypeRepr *)
+DA_DEFINE(type_hint, TypeId)
 
 typedef struct {
     Ast *ast;
@@ -43,6 +44,7 @@ void do_check_types(Ast *ast, SourceCode *code) {
     TypeCheckCtx ctx = {
         .ast = ast,
         .code = code,
+        .type_hint = type_hint_create(),
     };
 
     {
@@ -79,6 +81,13 @@ void do_check_types(Ast *ast, SourceCode *code) {
                              .exit = type_resolution_exit,
                          });
 
+        MapCursor it = map_cursor_create(ctx.normalized_type);
+        while (map_cursor_next(&it)) {
+            Type *type = *(Type **)map_key_of(ctx.normalized_type, it.current);
+            TypeId id = *(TypeId *)it.current;
+            type_source_put(&ast->tree_data.type_source, id, type);
+        }
+
         current_type_delete(ctx.current_type);
         normalized_type_delete(ctx.normalized_type);
         type_memo_delete(ctx.type_memo);
@@ -89,6 +98,8 @@ void do_check_types(Ast *ast, SourceCode *code) {
                          .enter = check_types_enter,
                          .exit = check_types_exit,
                      });
+
+    type_hint_delete(ctx.type_hint);
 }
 
 #define FNV1A_64_OFFSET_BASIS (uint64_t)0xcbf29ce484222325
@@ -290,10 +301,11 @@ static DfsCtrl type_resolution_exit(void *_ctx, AstNode *node) {
     return DFS_CTRL_KEEP_GOING;
 }
 
-static void res_type(TypeResCtx *ctx, TypeId ty) {
+static void res_type(TypeResCtx *ctx, TypeId ty, AstNode *res_from) {
     Type **top =
         current_type_at(ctx->current_type, da_length(ctx->current_type) - 1);
     normalized_type_put(&ctx->normalized_type, *top, ty);
+    ast_type_set(ctx->ast, res_from, ty);
 }
 
 static void type_res_enum_type(TypeResCtx *ctx, EnumType *enum_type) {
@@ -315,7 +327,7 @@ static void type_res_enum_type(TypeResCtx *ctx, EnumType *enum_type) {
     arena_own(ctx->ast->arena, da_header_get(*names),
               da_length(*names) * sizeof(**names));
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &enum_type->head);
 }
 
 static void type_res_struct_type(TypeResCtx *ctx, StructType *struct_type) {
@@ -343,7 +355,7 @@ static void type_res_struct_type(TypeResCtx *ctx, StructType *struct_type) {
     arena_own(ctx->ast->arena, da_header_get(*fields),
               da_length(*fields) * sizeof(**fields));
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &struct_type->head);
 }
 
 static void type_res_tuple_type(TypeResCtx *ctx, TupleType *tuple_type) {
@@ -367,7 +379,7 @@ static void type_res_tuple_type(TypeResCtx *ctx, TupleType *tuple_type) {
     arena_own(ctx->ast->arena, da_header_get(*types),
               da_length(*types) * sizeof(**types));
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &tuple_type->head);
 }
 
 static bool types_contains(TypeId *types, TypeId ty) {
@@ -429,7 +441,7 @@ static void type_res_tagged_union_type(TypeResCtx *ctx,
     arena_own(ctx->ast->arena, da_header_get(*types),
               da_length(*types) * sizeof(**types));
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &tu_type->head);
 }
 
 static void type_res_fn_type(TypeResCtx *ctx, FnType *fn_type) {
@@ -493,7 +505,8 @@ static void seed_builtin_type(TypeResCtx *ctx, TokKind kind) {
 
 static void type_res_builtin_type(TypeResCtx *ctx, BuiltinType *builtin_type) {
     TokKind tk = builtin_type->token.t;
-    res_type(ctx, type_id_of(ctx, get_builtin_type_repr(tk)));
+    res_type(ctx, type_id_of(ctx, get_builtin_type_repr(tk)),
+             &builtin_type->head);
 }
 
 static void type_res_ptr_type(TypeResCtx *ctx, PtrType *ptr_type) {
@@ -508,7 +521,7 @@ static void type_res_ptr_type(TypeResCtx *ctx, PtrType *ptr_type) {
         .points_to = *points_to,
     };
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &ptr_type->head);
 }
 
 static void type_res_scoped_ident(TypeResCtx *ctx, ScopedIdent *scoped_ident) {
@@ -533,7 +546,7 @@ static void type_res_scoped_ident(TypeResCtx *ctx, ScopedIdent *scoped_ident) {
         .aliases = INVALID_TYPE,
     };
 
-    res_type(ctx, type_id_of(ctx, ty));
+    res_type(ctx, type_id_of(ctx, ty), &scoped_ident->head);
 }
 
 static bool type_is_identical(TypeRepr *ta, TypeRepr *tb) {
@@ -637,6 +650,9 @@ static bool type_is_identical_generic(void *ta, void *tb) {
     return type_is_identical((TypeRepr *)ta, (TypeRepr *)tb);
 }
 
+static void var_decl_infer_enter(TypeCheckCtx *ctx, VarDecl *vd);
+static void var_decl_infer_exit(TypeCheckCtx *ctx, VarDecl *vd);
+
 static DfsCtrl check_types_enter(void *_ctx, AstNode *node) {
     (void)_ctx;
     (void)node;
@@ -646,7 +662,42 @@ static DfsCtrl check_types_enter(void *_ctx, AstNode *node) {
     //      - variable declaration
     //      - return statement
     //      - case statement
+    TypeCheckCtx *ctx = _ctx;
+    switch (node->kind) {
+        case NODE_VAR_DECL:
+            var_decl_infer_enter(ctx, (VarDecl *)node);
+            break;
+        default:
+            break;
+    }
     return DFS_CTRL_KEEP_GOING;
+}
+
+static void push_type_hint(TypeCheckCtx *ctx, TypeId hint) {
+    assert(hint != INVALID_TYPE);
+    type_hint_append(&ctx->type_hint, hint);
+}
+
+static void pop_type_hint(TypeCheckCtx *ctx) {
+    assert(da_length(ctx->type_hint) != 0);
+    type_hint_remove(ctx->type_hint, da_length(ctx->type_hint) - 1);
+}
+
+static TypeId current_type_hint(TypeCheckCtx *ctx) {
+    assert(da_length(ctx->type_hint) != 0);
+    return ctx->type_hint[da_length(ctx->type_hint) - 1];
+}
+
+static void var_decl_infer_enter(TypeCheckCtx *ctx, VarDecl *vd) {
+    if (vd->binding->type.ptr != NULL) {
+        push_type_hint(ctx, ast_type_get(ctx->ast, &vd->head));
+    }
+}
+
+static void var_decl_infer_exit(TypeCheckCtx *ctx, VarDecl *vd) {
+    if (vd->binding->type.ptr != NULL) {
+        pop_type_hint(ctx);
+    }
 }
 
 static void check_atom(TypeCheckCtx *ctx, Atom *atom);
@@ -657,6 +708,7 @@ static void check_field_access(TypeCheckCtx *ctx, FieldAccess *field_access);
 static void check_unary_expr(TypeCheckCtx *ctx, UnaryExpr *unary_expr);
 static void check_bin_expr(TypeCheckCtx *ctx, BinExpr *bin_expr);
 static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl);
+static void check_scoped_ident(TypeCheckCtx *ctx, ScopedIdent *scoped_ident);
 
 static DfsCtrl check_types_exit(void *_ctx, AstNode *node) {
     TypeCheckCtx *ctx = _ctx;
@@ -672,9 +724,13 @@ static DfsCtrl check_types_exit(void *_ctx, AstNode *node) {
             break;
         case NODE_VAR_DECL:
             check_var_decl(ctx, (VarDecl *)node);
+            var_decl_infer_exit(ctx, (VarDecl *)node);
             break;
         case NODE_FIELD_ACCESS:
             check_field_access(ctx, (FieldAccess *)node);
+            break;
+        case NODE_SCOPED_IDENT:
+            check_scoped_ident(ctx, (ScopedIdent *)node);
             break;
         default:
             break;
@@ -746,6 +802,41 @@ static TypeId get_builtin_type(TypeCheckCtx *ctx, TokKind kind) {
     return ctx->ast->tree_data.builtin_type[kind];
 }
 
+static AstNode *match_parent_chain(AstNode *node, size_t count, ...) {
+    va_list args;
+    va_start(args, count);
+
+    AstNode *it = node->parent.ptr;
+    AstNode *match = it;
+
+    for (size_t i = 0; i < count; i++) {
+        NodeKind kind = va_arg(args, NodeKind);
+        if (!it || it->kind != kind) {
+            return NULL;
+        }
+        match = it;
+        it = it->parent.ptr;
+    }
+
+    return match;
+}
+
+static TypeId type_of_imperative_ref(Ast *ast, AstNode *res) {
+    if (res->kind == NODE_IDENT) {
+        AstNode *enum_type =
+            match_parent_chain(res, 2, NODE_IDENTS, NODE_ENUM_TYPE);
+        if (enum_type) {
+            AstNode *type_decl =
+                match_parent_chain(enum_type, 3, NODE_TYPE, NODE_TYPE_DECL);
+            if (type_decl) {
+                return ast_type_get(ast, type_decl);
+            }
+            return ast_type_get(ast, enum_type);
+        }
+    }
+    return ast_type_get(ast, res);
+}
+
 static void check_atom(TypeCheckCtx *ctx, Atom *atom) {
     switch (atom->t) {
         case ATOM_TOKEN:
@@ -767,7 +858,7 @@ static void check_atom(TypeCheckCtx *ctx, Atom *atom) {
             AstNode *res =
                 ast_resolves_to_get_scoped(ctx->ast, atom->scoped_ident);
             assert(res);
-            TypeId ref_ty = ast_type_get(ctx->ast, res);
+            TypeId ref_ty = type_of_imperative_ref(ctx->ast, res);
             assert(ref_ty != INVALID_TYPE);
             ast_type_set(ctx->ast, &atom->head, ref_ty);
             break;
@@ -877,28 +968,39 @@ static void check_var_decl(TypeCheckCtx *ctx, VarDecl *var_decl) {
     }
 }
 
-static TypeRepr dealias(Ast *ast, TypeRepr tr) {
-    while (tr.t == STORAGE_ALIAS) {
-        tr = *ast_type_repr(ast, tr.alias_type.aliases);
+typedef struct {
+    TypeId id;
+    TypeRepr repr;
+} TypeDesc;
+
+static TypeDesc dealias(Ast *ast, TypeId id) {
+    TypeRepr repr = *ast_type_repr(ast, id);
+    while (repr.t == STORAGE_ALIAS) {
+        id = repr.alias_type.aliases;
+        repr = *ast_type_repr(ast, id);
     }
-    return tr;
+    return (TypeDesc){.id = id, .repr = repr};
 }
 
-static TypeRepr deref(Ast *ast, TypeRepr tr) {
-    while (tr.t == STORAGE_PTR) {
-        tr = *ast_type_repr(ast, tr.ptr_type.points_to);
+static TypeDesc deref(Ast *ast, TypeId id) {
+    TypeRepr repr = *ast_type_repr(ast, id);
+    while (repr.t == STORAGE_PTR) {
+        id = repr.ptr_type.points_to;
+        repr = *ast_type_repr(ast, id);
     }
-    return tr;
+    return (TypeDesc){.id = id, .repr = repr};
 }
 
-static TypeRepr auto_deref(Ast *ast, TypeRepr tr, bool *did_deref) {
-    if (tr.t == STORAGE_PTR) {
-        tr = *ast_type_repr(ast, tr.ptr_type.points_to);
+static TypeDesc auto_deref(Ast *ast, TypeId id, bool *did_deref) {
+    TypeRepr repr = *ast_type_repr(ast, id);
+    if (repr.t == STORAGE_PTR) {
+        id = repr.ptr_type.points_to;
+        repr = *ast_type_repr(ast, id);
         if (did_deref != NULL) {
             *did_deref = true;
         }
     }
-    return tr;
+    return (TypeDesc){.id = id, .repr = repr};
 }
 
 static void check_field_access(TypeCheckCtx *ctx, FieldAccess *field_access) {
@@ -906,16 +1008,14 @@ static void check_field_access(TypeCheckCtx *ctx, FieldAccess *field_access) {
     TypeId lval_ty = type_of_expr(ctx, lval);
     assert(lval_ty != INVALID_TYPE);
 
-    TypeRepr lval_repr = *ast_type_repr(ctx->ast, lval_ty);
     bool did_auto_deref = false;
-    TypeRepr base_repr =
-        dealias(ctx->ast, auto_deref(ctx->ast, lval_repr, &did_auto_deref));
+    TypeDesc base =
+        dealias(ctx->ast, auto_deref(ctx->ast, lval_ty, &did_auto_deref).id);
 
-    if (base_repr.t != STORAGE_STRUCT) {
-        if (did_auto_deref && base_repr.t == STORAGE_PTR) {
-            TypeRepr storage_rep =
-                dealias(ctx->ast, deref(ctx->ast, base_repr));
-            if (storage_rep.t == STORAGE_STRUCT) {
+    if (base.repr.t != STORAGE_STRUCT) {
+        if (did_auto_deref && base.repr.t == STORAGE_PTR) {
+            TypeDesc storage = dealias(ctx->ast, deref(ctx->ast, base.id).id);
+            if (storage.repr.t == STORAGE_STRUCT) {
                 sem_raisef(ctx->ast, ctx->code, lval->head.offset,
                            "field access on struct type with too much pointer "
                            "indirection '{t}'",
@@ -930,7 +1030,7 @@ static void check_field_access(TypeCheckCtx *ctx, FieldAccess *field_access) {
         return;
     }
 
-    TypeStruct st = base_repr.struct_type;
+    TypeStruct st = base.repr.struct_type;
     for (size_t i = 0; i < da_length(st.fields); i++) {
         TypeField f = st.fields[i];
         if (streql(f.name, field_access->field->token.text)) {
@@ -942,4 +1042,90 @@ static void check_field_access(TypeCheckCtx *ctx, FieldAccess *field_access) {
     sem_raisef(ctx->ast, ctx->code, field_access->field->head.offset,
                "invalid access: field '{s}' not found in type '{t}'",
                field_access->field->token.text, lval_ty);
+}
+
+static Scope *scope_hint(TypeCheckCtx *ctx) {
+    if (da_length(ctx->type_hint) == 0) {
+        return NULL;
+    }
+    TypeId hint = dealias(ctx->ast, current_type_hint(ctx)).id;
+    Type **tr = type_source_get(ctx->ast->tree_data.type_source, hint);
+    if (!tr) {
+        return NULL;
+    }
+    Type *ty = *tr;
+    Child *child = children_at(ty->head.children, 0);
+    if (child->t == CHILD_NODE) {
+        return ast_scope_get(ctx->ast, child->node);
+    }
+    return NULL;
+}
+
+static void check_scoped_ident(TypeCheckCtx *ctx, ScopedIdent *scoped_ident) {
+    assert(da_length(scoped_ident->head.children) != 0);
+
+    Tok first = child_ident_at(&scoped_ident->head, 0)->token;
+    if (first.t != T_EMPTY_STRING) {
+        // Skip non inferred reference
+        return;
+    }
+
+    AstNode *h = &scoped_ident->head;
+    if (da_length(ctx->type_hint) == 0) {
+        sem_raisef(ctx->ast, ctx->code, scoped_ident->head.offset,
+                   "inferred name used in context without a hint");
+        return;
+    }
+
+    Scope *scope = scope_hint(ctx);
+    if (!scope) {
+        TypeId hint = current_type_hint(ctx);
+        sem_raisef(
+            ctx->ast, ctx->code, scoped_ident->head.offset,
+            "inferred name cannot be resolved in the current context as the "
+            "type hint '{t}' does not have a scope",
+            hint);
+        return;
+    }
+
+    size_t start_i = 1;
+    for (size_t i = start_i; i < da_length(h->children); i++) {
+        Ident *ident = child_ident_at(&scoped_ident->head, i);
+        u32 defined_at = ident->token.offset;
+        string ident_text = ident->token.text;
+
+        if (!scope) {
+            string supposed_scope = child_ident_at(h, i - 1)->token.text;
+            sem_raisef(ctx->ast, ctx->code, defined_at,
+                       "inferred lookup error: cannot resolve '{s}' in '{s}' "
+                       "as '{s}' does "
+                       "not define a scope",
+                       ident_text, supposed_scope, supposed_scope);
+            break;
+        }
+
+        ScopeLookup lookup =
+            scope_lookup(scope, ident_text,
+                         i == 0 ? LOOKUP_MODE_LEXICAL : LOOKUP_MODE_DIRECT);
+        if (!lookup.entry) {
+            if (i != start_i) {
+                string parent = child_ident_at(h, i - 1)->token.text;
+                sem_raisef(
+                    ctx->ast, ctx->code, defined_at,
+                    "inferred lookup error: '{s}' not found inside scope '{s}'",
+                    ident_text, parent);
+            } else {
+                sem_raisef(
+                    ctx->ast, ctx->code, defined_at,
+                    "inferred lookup error: '{s}' not found in type hint scope",
+                    ident_text);
+            }
+            break;
+        }
+
+        assert(lookup.entry->shadows == NULL);
+        ast_resolves_to_set(ctx->ast, ident, lookup.entry->node);
+
+        scope = lookup.entry->sub_scope.ptr;
+    }
 }

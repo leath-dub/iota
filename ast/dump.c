@@ -112,100 +112,114 @@ void dump_symbols(Ast *ast, const SourceCode *code) {
     }
 }
 
+#define FMT_IN(fmt, ...)                             \
+    do {                                             \
+        len = snprintf(buf, size, fmt, __VA_ARGS__); \
+        buf += len;                                  \
+        size -= len;                                 \
+    } while (0);
+
+#define PRINT_IN(fmt)                   \
+    do {                                \
+        len = snprintf(buf, size, fmt); \
+        buf += len;                     \
+        size -= len;                    \
+    } while (0);
+
 void fmt_type(char *buf, size_t size, Ast *ast, TypeRepr repr) {
+    int len = 0;
     switch (repr.t) {
         case STORAGE_U8:
-            snprintf(buf, size, "u8");
+            PRINT_IN("u8");
             break;
         case STORAGE_S8:
-            snprintf(buf, size, "s8");
+            PRINT_IN("s8");
             break;
         case STORAGE_U16:
-            snprintf(buf, size, "u16");
+            PRINT_IN("u16");
             break;
         case STORAGE_S16:
-            snprintf(buf, size, "s16");
+            PRINT_IN("s16");
             break;
         case STORAGE_U32:
-            snprintf(buf, size, "u32");
+            PRINT_IN("u16");
             break;
         case STORAGE_S32:
-            snprintf(buf, size, "s32");
+            PRINT_IN("s16");
             break;
         case STORAGE_U64:
-            snprintf(buf, size, "u64");
+            PRINT_IN("u16");
             break;
         case STORAGE_S64:
-            snprintf(buf, size, "s64");
+            PRINT_IN("s16");
             break;
         case STORAGE_F32:
-            snprintf(buf, size, "f32");
+            PRINT_IN("f32");
             break;
         case STORAGE_F64:
-            snprintf(buf, size, "f64");
+            PRINT_IN("f64");
             break;
         case STORAGE_UNIT:
-            snprintf(buf, size, "unit");
+            PRINT_IN("unit");
             break;
         case STORAGE_STRING:
-            snprintf(buf, size, "string");
+            PRINT_IN("string");
             break;
         case STORAGE_PTR:
-            snprintf(buf, size, "*");
-            fmt_type(buf + 1, size - 1, ast,
+            PRINT_IN("*");
+            fmt_type(buf, size, ast,
                      *ast_type_repr(ast, repr.ptr_type.points_to));
             break;
         case STORAGE_TUPLE:
-            snprintf(buf, size, "(");
+            PRINT_IN("(");
             for (size_t i = 0; i < da_length(repr.tuple_type.types); i++) {
                 fmt_type(buf, size, ast,
                          *ast_type_repr(ast, repr.tuple_type.types[i]));
-                snprintf(buf, size, ",");
+                PRINT_IN(",");
             }
-            snprintf(buf, size, ")");
+            PRINT_IN(")");
             break;
         case STORAGE_STRUCT:
-            snprintf(buf, size, "struct { ");
+            PRINT_IN("struct {");
             for (size_t i = 0; i < da_length(repr.struct_type.fields); i++) {
                 if (i != 0) {
-                    snprintf(buf, size, " ");
+                    PRINT_IN(" ");
                 }
                 TypeField f = repr.struct_type.fields[i];
-                snprintf(buf, size, "%.*s: ", SPLAT(f.name));
+                FMT_IN("%.*s: ", SPLAT(f.name));
                 fmt_type(buf, size, ast, *ast_type_repr(ast, f.type));
-                snprintf(buf, size, ",");
+                PRINT_IN(",");
             }
-            snprintf(buf, size, " }");
+            PRINT_IN("}");
             break;
         case STORAGE_TAGGED_UNION:
-            snprintf(buf, size, "(");
+            PRINT_IN("(");
             for (size_t i = 0; i < da_length(repr.tagged_union_type.types);
                  i++) {
                 fmt_type(buf, size, ast,
                          *ast_type_repr(ast, repr.tagged_union_type.types[i]));
-                snprintf(buf, size, "|");
+                PRINT_IN("|");
             }
-            snprintf(buf, size, ")");
+            PRINT_IN(")");
             break;
         case STORAGE_ENUM:
-            snprintf(buf, size, "enum { ");
+            PRINT_IN("enum { ");
             for (size_t i = 0; i < da_length(repr.enum_type.alts); i++) {
                 if (i != 0) {
-                    snprintf(buf, size, " ");
+                    PRINT_IN(", ");
                 }
                 string alt = repr.enum_type.alts[i];
-                snprintf(buf, size, "%.*s", SPLAT(alt));
-                snprintf(buf, size, ",");
+                FMT_IN("%.*s", SPLAT(alt));
             }
-            snprintf(buf, size, " }");
+            PRINT_IN(" }");
             break;
         case STORAGE_ALIAS: {
             string name = repr.alias_type.type_decl->name->token.text;
-            snprintf(buf, size, "%.*s", SPLAT(name));
+            FMT_IN("%.*s", SPLAT(name));
             break;
         }
         case STORAGE_BOOL: {
-            snprintf(buf, size, "bool");
+            PRINT_IN("bool");
             break;
         }
         case STORAGE_FN:

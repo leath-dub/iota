@@ -166,7 +166,6 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
             }
             break;
         }
-        scope = lookup.entry->sub_scope.ptr;
 
         // Prevent access to the identifiers inside of a function when
         // not inside its body
@@ -196,6 +195,8 @@ static void resolve_ref(NameResCtx *ctx, ScopedIdent *scoped_ident) {
             // Reached the end, no candidate was valid.
             sem_raisef(ctx->ast, ctx->code, defined_at,
                        "error: could not resolve name");
+        } else {
+            scope = it->sub_scope.ptr;
         }
     }
 }
